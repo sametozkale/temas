@@ -10,9 +10,9 @@ AI-native property management platform for real estate agents. Rental-focused wo
 | 01 | [Design System](docs/01-design-system.md) | Tokens, typography, shadcn patches, icons, layout |
 | 02 | [Architecture](docs/02-architecture.md) | Stack, folder structure, permissions, environments, quality gates |
 | 03 | [Database Schema](docs/03-database-schema.md) | Postgres / Supabase / Drizzle schema, RLS notes |
-| 04 | Slot Engine | _pending_ |
-| 05 | AI Features | _pending_ |
-| 06 | Roadmap | _pending_ |
+| 04 | [Slot Engine](docs/04-slot-engine.md) | Multi-party availability intersection, materialization, public booking flow, mandatory tests |
+| 05 | [AI Features](docs/05-ai-features.md) | Home ask (RAG + tools), Draft with AI, reminders, contract mode, embeddings pipeline |
+| 06 | [Roadmap](docs/06-roadmap.md) | Phase-by-phase build plan (FAZ 0–8) with definition of done |
 | 07 | [Cursor Rules](docs/07-cursor-rules.md) | Source of `.cursor/rules/*.mdc` |
 
 Read the relevant doc before starting a feature. Code must not contradict the docs; update the doc first if needed.
