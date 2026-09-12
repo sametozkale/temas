@@ -79,7 +79,7 @@ export function InviteDialog() {
                 type="email"
                 required
                 autoFocus
-                placeholder="ad@ornek.com"
+                placeholder="you@agency.com"
               />
               {fieldErrors?.email ? (
                 <FieldError>{t("errors.invalid_email")}</FieldError>

@@ -142,6 +142,7 @@ export function ViewingsPanel({
             <Switch
               checked={settings.isPublished}
               disabled={!canManage || pending}
+              aria-label={t("published")}
               onCheckedChange={(v) => {
                 const next = { ...settings, isPublished: v === true };
                 setSettings(next);
@@ -168,6 +169,7 @@ export function ViewingsPanel({
             <Switch
               checked={settings.requireFormFirst}
               disabled={!canManage || pending || !form}
+              aria-label={t("require_form")}
               onCheckedChange={(v) => {
                 const next = {
                   ...settings,

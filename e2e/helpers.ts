@@ -70,19 +70,46 @@ export async function mailpitAvailable(): Promise<boolean> {
   }
 }
 
+function serviceRoleClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+export async function provisionE2EUser(email: string): Promise<string> {
+  const admin = serviceRoleClient();
+  if (!admin) {
+    throw new Error("Supabase service role is required for e2e users");
+  }
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+    user_metadata: { full_name: "E2E Agent" },
+  });
+  if (error || !data.user) {
+    throw new Error(error?.message ?? "createUser failed");
+  }
+  return data.user.id;
+}
+
+export async function deleteE2EUser(userId: string) {
+  const admin = serviceRoleClient();
+  if (!admin) return;
+  await admin.auth.admin.deleteUser(userId);
+}
+
 export async function signInViaMagicLink(
   page: import("@playwright/test").Page,
   email: string,
   next = "/home",
 ) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
+  const admin = serviceRoleClient();
+  if (!admin) {
     throw new Error("Supabase service role is required for e2e sign-in");
   }
-  const admin = createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
   const { data, error } = await admin.auth.admin.generateLink({
     type: "magiclink",
     email,

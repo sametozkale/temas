@@ -263,7 +263,7 @@ describeDb("RLS via withUserContext", () => {
     await db.execute(sql`delete from auth.users where id = ${assistant}::uuid`);
   });
 
-  it("hides other workspaces' conversations, contracts and reminders", async () => {
+  it("hides other workspaces' conversations, contracts, reminders and applications", async () => {
     const [prop] = await withUserContext(userA, (tx) =>
       tx
         .insert(schema.properties)
@@ -309,6 +309,27 @@ describeDb("RLS via withUserContext", () => {
         .returning({ id: schema.reminders.id }),
     );
 
+    const [contact] = await withUserContext(userA, (tx) =>
+      tx
+        .insert(schema.contacts)
+        .values({
+          workspaceId: wsA,
+          fullName: "RLS Applicant",
+          email: `rls-app-${Date.now()}@test.havn`,
+        })
+        .returning({ id: schema.contacts.id }),
+    );
+
+    const [application] = await withUserContext(userA, (tx) =>
+      tx
+        .insert(schema.applications)
+        .values({
+          propertyId: prop!.id,
+          contactId: contact!.id,
+        })
+        .returning({ id: schema.applications.id }),
+    );
+
     const seenConv = await withUserContext(userB, (tx) =>
       tx.select({ id: schema.conversations.id }).from(schema.conversations),
     );
@@ -323,6 +344,11 @@ describeDb("RLS via withUserContext", () => {
       tx.select({ id: schema.reminders.id }).from(schema.reminders),
     );
     expect(seenReminders.map((r) => r.id)).not.toContain(reminder!.id);
+
+    const seenApplications = await withUserContext(userB, (tx) =>
+      tx.select({ id: schema.applications.id }).from(schema.applications),
+    );
+    expect(seenApplications.map((r) => r.id)).not.toContain(application!.id);
 
     await expectRlsViolation(
       withUserContext(userB, (tx) =>
@@ -350,6 +376,15 @@ describeDb("RLS via withUserContext", () => {
           kind: "booking_soon",
           message: "Foreign reminder",
           dueAt: new Date(),
+        }),
+      ),
+    );
+
+    await expectRlsViolation(
+      withUserContext(userB, (tx) =>
+        tx.insert(schema.applications).values({
+          propertyId: prop!.id,
+          contactId: contact!.id,
         }),
       ),
     );
