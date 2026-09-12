@@ -14,12 +14,14 @@ export default async function IntegrationsPage({
     listIntegrations(tx, ctx.workspace.id),
   );
   const gmail = rows.find((r) => r.kind === "gmail") ?? null;
+  const whatsapp = rows.find((r) => r.kind === "whatsapp") ?? null;
   const allowedError =
     error === "gmail_oauth" || error === "gmail_denied" ? error : null;
 
   return (
     <IntegrationsPanel
       gmail={gmail}
+      whatsapp={whatsapp}
       role={ctx.membership.role}
       oauthError={allowedError}
     />

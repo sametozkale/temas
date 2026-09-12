@@ -16,8 +16,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   connectGmailDev,
+  connectWhatsAppDev,
   disconnectGmail,
+  disconnectWhatsApp,
   injectInbound,
+  injectWhatsApp,
   type IntegrationsState,
 } from "@/app/(app)/settings/integrations/actions";
 
@@ -149,6 +152,120 @@ export function DisconnectButton() {
         try {
           const result = await disconnectGmail();
           if (result.ok) toast.success(t("disconnected"));
+          else toast.error(t("errors.generic"));
+        } finally {
+          setPending(false);
+        }
+      }}
+    >
+      {t("disconnect")}
+    </Button>
+  );
+}
+
+export function WhatsAppInboundForm() {
+  const t = useTranslations("settings.integrations");
+  const [state, action, pending] = useActionState<
+    IntegrationsState | undefined,
+    FormData
+  >(injectWhatsApp, undefined);
+
+  React.useEffect(() => {
+    if (!state) return;
+    if (state.ok) toast.success(t("inject_wa_sent"));
+    else if (state.error === "forbidden") toast.error(t("errors.forbidden"));
+    else if (state.error === "not_connected") {
+      toast.error(t("errors.not_connected"));
+    } else if (state.error !== "invalid") toast.error(t("errors.generic"));
+  }, [state, t]);
+
+  const errors = state && !state.ok ? state.fieldErrors : undefined;
+
+  return (
+    <form action={action} className="space-y-4">
+      <FieldGroup>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field data-invalid={errors?.fromName ? true : undefined}>
+            <FieldLabel htmlFor="wa-from-name">{t("from_name")}</FieldLabel>
+            <Input
+              id="wa-from-name"
+              name="fromName"
+              defaultValue="Elif Kaya"
+              required
+            />
+          </Field>
+          <Field data-invalid={errors?.fromPhone ? true : undefined}>
+            <FieldLabel htmlFor="wa-from-phone">{t("from_phone")}</FieldLabel>
+            <Input
+              id="wa-from-phone"
+              name="fromPhone"
+              defaultValue="+905321110000"
+              required
+            />
+            {errors?.fromPhone ? (
+              <FieldError>{t("errors.from_phone")}</FieldError>
+            ) : null}
+          </Field>
+        </div>
+        <Field data-invalid={errors?.body ? true : undefined}>
+          <FieldLabel htmlFor="wa-body">{t("body")}</FieldLabel>
+          <Textarea
+            id="wa-body"
+            name="body"
+            rows={4}
+            defaultValue={t("inject_wa_body_default")}
+            required
+          />
+        </Field>
+      </FieldGroup>
+      <Button type="submit" size="sm" disabled={pending}>
+        {t("inject_wa_submit")}
+      </Button>
+    </form>
+  );
+}
+
+export function ConnectWhatsAppButton() {
+  const t = useTranslations("settings.integrations");
+  const [pending, setPending] = React.useState(false);
+
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      disabled={pending}
+      onClick={async () => {
+        setPending(true);
+        try {
+          const result = await connectWhatsAppDev();
+          if (result.ok) toast.success(t("whatsapp_connected_toast"));
+          else toast.error(t("errors.generic"));
+        } finally {
+          setPending(false);
+        }
+      }}
+    >
+      {t("connect_whatsapp")}
+    </Button>
+  );
+}
+
+export function DisconnectWhatsAppButton() {
+  const t = useTranslations("settings.integrations");
+  const [pending, setPending] = React.useState(false);
+
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      disabled={pending}
+      onClick={async () => {
+        setPending(true);
+        try {
+          const result = await disconnectWhatsApp();
+          if (result.ok) toast.success(t("whatsapp_disconnected"));
           else toast.error(t("errors.generic"));
         } finally {
           setPending(false);

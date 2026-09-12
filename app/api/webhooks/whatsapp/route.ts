@@ -1,8 +1,15 @@
+import { and, eq } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { env, integrations } from "@/lib/env";
+import { db } from "@/lib/db";
+import { integrations } from "@/lib/db/schema";
+import { env, integrations as integrationFlags } from "@/lib/env";
+import { ingestInboundWhatsApp } from "@/lib/inbox/ingest-whatsapp";
+import {
+  parseWhatsAppPayload,
+  verifyWhatsAppSignature,
+} from "@/lib/integrations/whatsapp/parse";
 
-/** WhatsApp Cloud API webhook stub — inbound handling lands in PHASE 7. */
 export async function GET(request: NextRequest) {
   const mode = request.nextUrl.searchParams.get("hub.mode");
   const token = request.nextUrl.searchParams.get("hub.verify_token");
@@ -17,9 +24,56 @@ export async function GET(request: NextRequest) {
   return new NextResponse("forbidden", { status: 403 });
 }
 
-export async function POST() {
-  if (!integrations.whatsapp()) {
-    return NextResponse.json({ ok: true, stub: true });
+export async function POST(request: NextRequest) {
+  const raw = await request.text();
+  if (
+    !verifyWhatsAppSignature(
+      raw,
+      request.headers.get("x-hub-signature-256"),
+      env().META_WHATSAPP_APP_SECRET,
+    )
+  ) {
+    return new NextResponse("forbidden", { status: 403 });
   }
-  return NextResponse.json({ ok: true, stub: true });
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(raw) as unknown;
+  } catch {
+    return NextResponse.json({ ok: true });
+  }
+
+  const inbound = parseWhatsAppPayload(payload);
+  for (const message of inbound) {
+    const where = [
+      eq(integrations.kind, "whatsapp"),
+      eq(integrations.status, "connected"),
+    ];
+    if (message.phoneNumberId) {
+      where.push(eq(integrations.externalId, message.phoneNumberId));
+    }
+    const [integration] = await db
+      .select({
+        id: integrations.id,
+        workspaceId: integrations.workspaceId,
+      })
+      .from(integrations)
+      .where(and(...where))
+      .limit(1);
+    if (!integration) continue;
+    await ingestInboundWhatsApp({
+      workspaceId: integration.workspaceId,
+      integrationId: integration.id,
+      from: message.from,
+      profileName: message.profileName,
+      body: message.body,
+      externalId: message.externalId,
+      sentAt: message.sentAt,
+    });
+  }
+
+  return NextResponse.json({
+    ok: true,
+    stub: !integrationFlags.whatsapp(),
+  });
 }

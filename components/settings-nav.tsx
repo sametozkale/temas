@@ -10,9 +10,9 @@ const items = [
   { key: "general", href: "/settings", enabled: true },
   { key: "members", href: "/settings/members", enabled: true },
   { key: "integrations", href: "/settings/integrations", enabled: true },
-  { key: "notifications", href: "/settings/notifications", enabled: false },
+  { key: "notifications", href: "/settings/notifications", enabled: true },
   { key: "ai", href: "/settings/ai", enabled: true },
-  { key: "templates", href: "/settings/templates", enabled: false },
+  { key: "templates", href: "/settings/templates", enabled: true },
 ] as const;
 
 /** Underline tabs used as secondary navigation inside Settings (docs/01 §6). */

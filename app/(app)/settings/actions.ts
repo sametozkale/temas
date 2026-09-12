@@ -123,3 +123,30 @@ export async function updateAiPreferences(
   revalidatePath("/", "layout");
   return actionOk();
 }
+
+const notificationSchema = z.object({
+  digestEnabled: z.enum(["true", "false"]),
+});
+
+export async function updateNotificationPreferences(
+  _prev: SettingsState | undefined,
+  formData: FormData,
+): Promise<SettingsState> {
+  const ctx = await getAppContext();
+  const parsed = notificationSchema.safeParse({
+    digestEnabled: formData.get("digestEnabled"),
+  });
+  if (!parsed.success) return actionError("invalid");
+
+  await withUserContext(ctx.user.id, async (tx) => {
+    await tx
+      .update(profiles)
+      .set({
+        reminderDigestEnabled: parsed.data.digestEnabled === "true",
+      })
+      .where(eq(profiles.id, ctx.user.id));
+  });
+
+  revalidatePath("/settings/notifications");
+  return actionOk();
+}

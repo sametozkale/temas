@@ -80,7 +80,14 @@
     "untitled_thread": "Untitled",
     "you": "You",
     "assistant": "Havn",
-    "sources": "Sources"
+    "sources": "Sources",
+    "attention": {
+      "title": "Needs attention",
+      "empty": "Nothing waiting right now. Refresh after a viewing or unanswered message.",
+      "refresh": "Refresh",
+      "dismiss": "Dismiss",
+      "scan_failed": "Could not scan reminders."
+    }
   },
   "inbox": {
     "title": "Inbox",
@@ -91,6 +98,8 @@
     "connect": "Connect an integration",
     "select_thread": "Select a conversation to read it.",
     "unknown_contact": "Unknown contact",
+    "channel_email": "Email",
+    "channel_whatsapp": "WhatsApp",
     "no_subject": "(no subject)",
     "unlinked_property": "Not linked to a property yet",
     "you": "You",
@@ -108,7 +117,7 @@
     "errors": {
       "body": "Write a message before sending.",
       "forbidden": "You don't have permission to reply.",
-      "no_recipient": "This conversation has no email address to reply to.",
+      "no_recipient": "This conversation has no email or phone number to reply to.",
       "send_failed": "The reply could not be sent. Try again."
     }
   },
@@ -117,7 +126,22 @@
     "description": "Viewings across all properties.",
     "empty_title": "No scheduled viewings",
     "empty_description": "Publish a property's viewing calendar and bookings will be listed here.",
-    "upcoming": "Upcoming"
+    "upcoming": "Upcoming",
+    "view_month": "Month",
+    "view_week": "Week",
+    "view_list": "List",
+    "prev": "Previous",
+    "next": "Next",
+    "filter_property": "Property",
+    "all_properties": "All properties",
+    "apply_filter": "Filter",
+    "weekday_mon": "Mon",
+    "weekday_tue": "Tue",
+    "weekday_wed": "Wed",
+    "weekday_thu": "Thu",
+    "weekday_fri": "Fri",
+    "weekday_sat": "Sat",
+    "weekday_sun": "Sun"
   },
   "properties": {
     "title": "Properties",
@@ -582,6 +606,7 @@
     "index_empty_title": "No properties yet",
     "index_empty_description": "Add a property first, then collect applications from its form.",
     "index_count": "{count, plural, =0 {No applicants} =1 {1 applicant} other {# applicants}}",
+    "create_contract": "Create contract",
     "form": {
       "title": "Application form",
       "hint": "Click a field to edit it. This is not drag-and-drop.",
@@ -633,7 +658,8 @@
       "attachments": "Attachments",
       "no_files": "No files uploaded.",
       "history": "History",
-      "no_history": "No history yet."
+      "no_history": "No history yet.",
+      "create_contract": "Create contract"
     },
     "owner": {
       "title": "Owner presentation",
@@ -781,6 +807,17 @@
       "whatsapp_title": "WhatsApp",
       "whatsapp_description": "Business Cloud API inbound and templates.",
       "whatsapp_stub": "WhatsApp connects in a later phase. Conversations will share this inbox.",
+      "whatsapp_empty": "Connect WhatsApp to collect Cloud API messages in this inbox. In development you can connect without Meta keys.",
+      "whatsapp_connected": "Inbound messages and replies share the Havn inbox.",
+      "whatsapp_connected_toast": "WhatsApp connected",
+      "whatsapp_disconnected": "WhatsApp disconnected",
+      "connect_whatsapp": "Connect WhatsApp",
+      "inject_wa_title": "Simulate inbound WhatsApp",
+      "inject_wa_description": "Drop a WhatsApp message into the inbox. Mention a property title to auto-link it.",
+      "inject_wa_submit": "Inject WhatsApp message",
+      "inject_wa_sent": "WhatsApp message added to the inbox",
+      "inject_wa_body_default": "Hi, is Kadıköy bright 2+1 still available this week?",
+      "from_phone": "From phone",
       "connect": "Connect Gmail",
       "connect_dev": "Connect in development",
       "disconnect": "Disconnect",
@@ -804,14 +841,75 @@
       "errors": {
         "generic": "Something went wrong. Try again.",
         "forbidden": "You don't have permission to do that.",
-        "not_connected": "Connect Gmail first.",
+        "not_connected": "Connect the integration first.",
         "gmail_oauth": "Google OAuth is not configured. Use Connect in development, or add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.",
         "gmail_denied": "Gmail access was not granted.",
         "from_name": "Enter a name.",
         "from_email": "Enter a valid email address.",
         "subject": "Enter a subject.",
-        "body": "Enter a message."
+        "body": "Enter a message.",
+        "from_phone": "Enter a phone number."
       }
+    },
+    "templates": {
+      "title": "Contract templates",
+      "description": "Markdown templates with placeholders used by contract mode.",
+      "list_title": "Templates",
+      "list_description": "Turkish-market starters you can edit.",
+      "new_title": "New template",
+      "editor_hint": "Use double-brace placeholders. Missing fields stay visible in the draft.",
+      "name": "Name",
+      "body": "Markdown",
+      "save": "Save template",
+      "saved": "Template saved",
+      "errors": {
+        "generic": "Could not save the template.",
+        "forbidden": "You don't have permission to manage templates.",
+        "name": "Name must be at least 2 characters.",
+        "body": "Add the template body."
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "description": "Daily digest for reminder cards on Home.",
+      "digest_title": "Reminder digest",
+      "digest_description": "Email a summary of open Needs attention items once a day.",
+      "digest_label": "Send daily digest",
+      "save": "Save",
+      "saved": "Saved"
+    }
+  },
+  "contracts": {
+    "create_title": "Create contract",
+    "create_description": "Pick a template and fill the rental parameters. The AI fills placeholders and writes a markdown draft.",
+    "back": "Back to applications",
+    "template": "Template",
+    "application": "Applicant",
+    "application_none": "No applicant",
+    "rent": "Monthly rent",
+    "deposit": "Deposit",
+    "start_date": "Start date",
+    "end_date": "End date",
+    "increase_rate": "Increase rate",
+    "special_clauses": "Special clauses",
+    "generate": "Generate draft",
+    "editor_title": "Contract draft",
+    "save": "Save version",
+    "saved": "Draft saved",
+    "disclaimer": "This draft is not legal advice; have it reviewed by a lawyer before use.",
+    "acknowledge": "I understand this is not legal advice",
+    "export_docx": "Export DOCX",
+    "export_pdf": "Export PDF",
+    "exported": "Exported to Files",
+    "preview": "Preview",
+    "versions": "Versions",
+    "files": "Files",
+    "errors": {
+      "generic": "Could not update the contract.",
+      "forbidden": "You don't have permission to manage contracts.",
+      "not_found": "Contract or template not found.",
+      "invalid": "Check the details.",
+      "disclaimer": "Tick the disclaimer before exporting."
     }
   },
   "common": {

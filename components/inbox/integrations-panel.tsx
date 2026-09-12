@@ -17,8 +17,11 @@ import type { WorkspaceRole } from "@/lib/roles";
 
 import {
   ConnectDevButton,
+  ConnectWhatsAppButton,
   DevInboundForm,
   DisconnectButton,
+  DisconnectWhatsAppButton,
+  WhatsAppInboundForm,
 } from "@/components/inbox/dev-inbound-form";
 
 type IntegrationRow = {
@@ -31,10 +34,12 @@ type IntegrationRow = {
 
 export async function IntegrationsPanel({
   gmail,
+  whatsapp,
   role,
   oauthError,
 }: {
   gmail: IntegrationRow | null;
+  whatsapp: IntegrationRow | null;
   role: WorkspaceRole;
   oauthError?: string | null;
 }) {
@@ -42,6 +47,7 @@ export async function IntegrationsPanel({
   const canManage = can(role, "integrations.manage");
   const oauthReady = integrationFlags.gmail();
   const connected = gmail?.status === "connected";
+  const waConnected = whatsapp?.status === "connected";
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -97,11 +103,26 @@ export async function IntegrationsPanel({
               <CardTitle>{t("whatsapp_title")}</CardTitle>
               <CardDescription>{t("whatsapp_description")}</CardDescription>
             </div>
-            <Badge variant="secondary">{t("status_soon")}</Badge>
+            <Badge variant={waConnected ? "success" : "secondary"}>
+              {waConnected ? t("status_connected") : t("status_disconnected")}
+            </Badge>
           </div>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">{t("whatsapp_stub")}</p>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {waConnected ? t("whatsapp_connected") : t("whatsapp_empty")}
+          </p>
+          {canManage ? (
+            <div className="flex flex-wrap gap-2">
+              {!waConnected ? (
+                <ConnectWhatsAppButton />
+              ) : (
+                <DisconnectWhatsAppButton />
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">{t("staff_only")}</p>
+          )}
         </CardContent>
       </Card>
 
@@ -113,6 +134,18 @@ export async function IntegrationsPanel({
           </CardHeader>
           <CardContent>
             <DevInboundForm />
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {canManage && waConnected ? (
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>{t("inject_wa_title")}</CardTitle>
+            <CardDescription>{t("inject_wa_description")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <WhatsAppInboundForm />
           </CardContent>
         </Card>
       ) : null}

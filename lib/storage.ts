@@ -99,6 +99,21 @@ export async function createSignedDownloads(
   return map;
 }
 
+export async function uploadBuffer(
+  bucket: StorageBucket,
+  path: string,
+  body: Buffer,
+  contentType: string,
+) {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.storage.from(bucket).upload(path, body, {
+    contentType,
+    upsert: false,
+  });
+  if (error) throw new Error(error.message);
+  return path;
+}
+
 export async function removeObjects(bucket: StorageBucket, paths: string[]) {
   if (paths.length === 0) return;
   const supabase = await createSupabaseServerClient();

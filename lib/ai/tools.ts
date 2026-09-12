@@ -274,8 +274,7 @@ export function createAskTools(workspaceId: string, timeZone: string) {
       },
     }),
     getReminders: tool({
-      description:
-        "Workspace reminders. Needs attention in a later phase; returns stored rows.",
+      description: "Workspace reminders for the Needs attention feed.",
       inputSchema: z.object({
         status: z.enum(["open", "delivered", "all"]).optional(),
       }),

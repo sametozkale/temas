@@ -7,6 +7,12 @@ export const inboundInjectSchema = z.object({
   body: z.string().trim().min(1).max(8000),
 });
 
+export const whatsappInjectSchema = z.object({
+  fromName: z.string().trim().min(2).max(120),
+  fromPhone: z.string().trim().min(7).max(32),
+  body: z.string().trim().min(1).max(8000),
+});
+
 export const replySchema = z.object({
   body: z.string().trim().min(1).max(8000),
 });

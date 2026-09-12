@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
 
 import type { DbOrTx } from "@/lib/db";
 import {
@@ -58,6 +58,39 @@ export async function listOpenSlots(
         gte(viewingSlots.startsAt, from),
       ),
     )
+    .orderBy(asc(viewingSlots.startsAt));
+}
+
+export async function listBookingsInRange(
+  tx: DbOrTx,
+  workspaceId: string,
+  from: Date,
+  to: Date,
+  propertyId?: string,
+) {
+  const where = [
+    eq(properties.workspaceId, workspaceId),
+    inArray(bookings.status, ["confirmed", "completed"]),
+    gte(viewingSlots.startsAt, from),
+    lte(viewingSlots.startsAt, to),
+  ];
+  if (propertyId) where.push(eq(properties.id, propertyId));
+  return tx
+    .select({
+      id: bookings.id,
+      status: bookings.status,
+      startsAt: viewingSlots.startsAt,
+      endsAt: viewingSlots.endsAt,
+      propertyId: properties.id,
+      propertyTitle: properties.title,
+      timezone: properties.timezone,
+      prospectName: contacts.fullName,
+    })
+    .from(bookings)
+    .innerJoin(viewingSlots, eq(viewingSlots.id, bookings.viewingSlotId))
+    .innerJoin(properties, eq(properties.id, bookings.propertyId))
+    .innerJoin(contacts, eq(contacts.id, bookings.contactId))
+    .where(and(...where))
     .orderBy(asc(viewingSlots.startsAt));
 }
 

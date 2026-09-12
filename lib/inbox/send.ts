@@ -18,6 +18,8 @@ import {
   gmailSend,
 } from "@/lib/integrations/gmail/client";
 import { asGmailCredentials } from "@/lib/integrations/gmail/sync";
+import { sendWhatsAppText } from "@/lib/integrations/whatsapp/client";
+import { digitsPhone } from "@/lib/integrations/whatsapp/parse";
 import { normalizeSubject } from "@/lib/inbox/match";
 
 function buildRfc822(input: {
@@ -53,6 +55,7 @@ export async function sendInboxReply(input: {
       conversation: conversations,
       contactEmail: contacts.email,
       contactName: contacts.fullName,
+      contactPhone: contacts.phone,
     })
     .from(conversations)
     .leftJoin(contacts, eq(contacts.id, conversations.contactId))
@@ -64,6 +67,12 @@ export async function sendInboxReply(input: {
     )
     .limit(1);
   if (!row) throw new Error("not_found");
+
+  if (row.conversation.channel === "whatsapp") {
+    await sendWhatsAppReply(input, row);
+    return;
+  }
+
   const to = row.contactEmail?.trim().toLowerCase();
   if (!to) throw new Error("no_recipient");
 
@@ -180,25 +189,73 @@ export async function sendInboxReply(input: {
     entityId: input.conversationId,
   });
 
-  if (input.draftId) {
-    const [draft] = await db
-      .select({ id: aiDrafts.id, body: aiDrafts.body })
-      .from(aiDrafts)
-      .where(
-        and(
-          eq(aiDrafts.id, input.draftId),
-          eq(aiDrafts.conversationId, input.conversationId),
-        ),
-      )
-      .limit(1);
-    if (draft) {
-      await db
-        .update(aiDrafts)
-        .set({
-          status: "sent",
-          acceptancePct: acceptancePct(draft.body, input.body),
-        })
-        .where(eq(aiDrafts.id, draft.id));
-    }
-  }
+  await markDraftSent(input.conversationId, input.draftId, input.body);
+}
+
+async function sendWhatsAppReply(
+  input: {
+    workspaceId: string;
+    actorId: string;
+    conversationId: string;
+    body: string;
+    draftId?: string | null;
+  },
+  row: {
+    conversation: typeof conversations.$inferSelect;
+    contactName: string | null;
+    contactPhone: string | null;
+  },
+) {
+  const to = row.contactPhone ? digitsPhone(row.contactPhone) : "";
+  if (to.length < 7) throw new Error("no_recipient");
+  const sent = await sendWhatsAppText({ to, body: input.body });
+  const sentAt = new Date();
+  await db.insert(messages).values({
+    conversationId: input.conversationId,
+    direction: "out",
+    body: input.body,
+    externalId: sent.externalId,
+    sentAt,
+    meta: { to, channel: "whatsapp", mode: sent.mode },
+  });
+  await db
+    .update(conversations)
+    .set({ lastMessageAt: sentAt, isRead: true })
+    .where(eq(conversations.id, input.conversationId));
+  await logActivity({
+    workspaceId: input.workspaceId,
+    actorId: input.actorId,
+    propertyId: row.conversation.propertyId,
+    action: "inbox.reply_sent",
+    entity: "conversation",
+    entityId: input.conversationId,
+    data: { channel: "whatsapp" },
+  });
+  await markDraftSent(input.conversationId, input.draftId, input.body);
+}
+
+async function markDraftSent(
+  conversationId: string,
+  draftId: string | null | undefined,
+  sentBody: string,
+) {
+  if (!draftId) return;
+  const [draft] = await db
+    .select({ id: aiDrafts.id, body: aiDrafts.body })
+    .from(aiDrafts)
+    .where(
+      and(
+        eq(aiDrafts.id, draftId),
+        eq(aiDrafts.conversationId, conversationId),
+      ),
+    )
+    .limit(1);
+  if (!draft) return;
+  await db
+    .update(aiDrafts)
+    .set({
+      status: "sent",
+      acceptancePct: acceptancePct(draft.body, sentBody),
+    })
+    .where(eq(aiDrafts.id, draft.id));
 }

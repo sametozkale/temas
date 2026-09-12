@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   pgPolicy,
   pgTable,
@@ -42,6 +43,10 @@ export const profiles = pgTable(
     aiSignature: text("ai_signature"),
     aiLanguage: text("ai_language").notNull().default("en"),
     aiTone: text("ai_tone").notNull().default("friendly"),
+    /** Settings > Notifications: daily reminder digest (docs/05 §4). */
+    reminderDigestEnabled: boolean("reminder_digest_enabled")
+      .notNull()
+      .default(true),
     ...timestamps,
   },
   (t) => [

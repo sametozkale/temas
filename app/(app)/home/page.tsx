@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { HomeAsk } from "@/components/home/home-ask";
+import { NeedsAttention } from "@/components/home/needs-attention";
 import { EmptyState } from "@/components/empty-state";
 import { EventChip } from "@/components/event-chip";
 import { Calendar03Icon } from "@/components/icons";
@@ -13,16 +14,18 @@ import { getAppContext } from "@/lib/auth";
 import { withUserContext } from "@/lib/db";
 import { formatDateTime, formatRelative } from "@/lib/format";
 import { listUpcomingBookings } from "@/lib/viewings/queries";
+import { listOpenReminders } from "@/lib/reminders/scan";
 
 export default async function HomePage() {
   const t = await getTranslations("home");
   const ctx = await getAppContext();
   const configured = isTextConfigured();
-  const { bookings, threads } = await withUserContext(
+  const { bookings, threads, reminders } = await withUserContext(
     ctx.user.id,
     async (tx) => ({
       bookings: await listUpcomingBookings(tx, ctx.workspace.id),
       threads: await listThreads(tx, ctx.workspace.id, ctx.user.id),
+      reminders: await listOpenReminders(tx, ctx.workspace.id),
     }),
   );
 
@@ -37,6 +40,7 @@ export default async function HomePage() {
           )
         }
       />
+      <NeedsAttention items={reminders} />
       {bookings.length === 0 ? (
         <EmptyState
           icon={Calendar03Icon}

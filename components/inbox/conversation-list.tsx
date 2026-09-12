@@ -7,6 +7,7 @@ import { formatRelative } from "@/lib/format";
 export type ConversationListItem = {
   id: string;
   subject: string | null;
+  channel: "email" | "whatsapp";
   isRead: boolean;
   lastMessageAt: Date | null;
   preview: string | null;
@@ -67,7 +68,9 @@ export async function ConversationList({
                 ) : null}
               </div>
               <p className="truncate text-xs text-muted-foreground">
-                {item.subject ?? t("no_subject")}
+                {item.channel === "whatsapp"
+                  ? t("channel_whatsapp")
+                  : `${t("channel_email")} · ${item.subject ?? t("no_subject")}`}
               </p>
               {item.preview ? (
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">

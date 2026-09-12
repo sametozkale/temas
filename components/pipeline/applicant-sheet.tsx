@@ -2,8 +2,10 @@
 
 import { useTranslations } from "next-intl";
 import * as React from "react";
+import Link from "next/link";
 
 import { loadApplicant } from "@/app/(app)/properties/[id]/applications/actions";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -73,6 +75,15 @@ export function ApplicantSheet({
           </SheetDescription>
         </SheetHeader>
         <div className="space-y-6 overflow-y-auto px-4 pb-6">
+          {applicationId ? (
+            <Button size="sm" variant="outline" asChild>
+              <Link
+                href={`/properties/${propertyId}/contracts/new?applicationId=${applicationId}`}
+              >
+                {t("create_contract")}
+              </Link>
+            </Button>
+          ) : null}
           {data?.score != null ? (
             <p className="text-sm">
               {t("score")}: <span className="font-medium">{data.score}</span>

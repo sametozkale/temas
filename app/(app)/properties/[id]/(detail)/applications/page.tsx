@@ -3,6 +3,8 @@ import { getTranslations } from "next-intl/server";
 import { FormBuilder } from "@/components/pipeline/form-builder";
 import { OwnerLinkCard } from "@/components/pipeline/owner-link-card";
 import { PipelineKanban } from "@/components/pipeline/kanban";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { withUserContext } from "@/lib/db";
 import { env } from "@/lib/env";
 import { can } from "@/lib/permissions";
@@ -56,7 +58,14 @@ export default async function ApplicationsPage({
             <h2 className="font-serif text-2xl tracking-tight">{t("title")}</h2>
             <p className="text-sm text-muted-foreground">{t("hint")}</p>
           </div>
-          <div className="w-full max-w-sm">
+          <div className="flex w-full max-w-sm flex-col gap-3">
+            {can(ctx.membership.role, "contracts.manage") ? (
+              <Button size="sm" variant="outline" asChild>
+                <Link href={`/properties/${id}/contracts/new`}>
+                  {t("create_contract")}
+                </Link>
+              </Button>
+            ) : null}
             <OwnerLinkCard
               propertyId={id}
               url={ownerUrl}
