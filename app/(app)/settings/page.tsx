@@ -1,19 +1,31 @@
-import { getTranslations } from "next-intl/server";
+import { eq } from "drizzle-orm";
 
-import { EmptyState } from "@/components/empty-state";
-import { Settings02Icon } from "@/components/icons";
-import { PageHeader } from "@/components/page-header";
+import { getAppContext } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { profiles } from "@/lib/db/schema";
+import { can } from "@/lib/permissions";
 
-export default async function SettingsPage() {
-  const t = await getTranslations("settings");
+import { ProfileForm, WorkspaceForm } from "./general-forms";
+
+export default async function SettingsGeneralPage() {
+  const ctx = await getAppContext();
+  const [profile] = await db
+    .select({ fullName: profiles.fullName, phone: profiles.phone })
+    .from(profiles)
+    .where(eq(profiles.id, ctx.user.id))
+    .limit(1);
 
   return (
-    <div className="space-y-8">
-      <PageHeader title={t("title")} description={t("description")} />
-      <EmptyState
-        icon={Settings02Icon}
-        title={t("empty_title")}
-        description={t("empty_description")}
+    <div className="grid gap-6 lg:grid-cols-2">
+      <WorkspaceForm
+        name={ctx.workspace.name}
+        timezone={ctx.workspace.timezone}
+        canEdit={can(ctx.membership.role, "workspace.update")}
+      />
+      <ProfileForm
+        fullName={profile?.fullName ?? ""}
+        phone={profile?.phone ?? ""}
+        email={ctx.user.email ?? ""}
       />
     </div>
   );

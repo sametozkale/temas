@@ -1,5 +1,6 @@
 import { boolean, pgTable, text, unique, uuid } from "drizzle-orm/pg-core";
 
+import { workspacePolicies } from "../rls";
 import { authUsers, baseColumns } from "./_shared";
 import { workspaces } from "./identity";
 
@@ -26,5 +27,6 @@ export const contacts = pgTable(
   (t) => [
     unique("contacts_workspace_email_unique").on(t.workspaceId, t.email),
     unique("contacts_workspace_phone_unique").on(t.workspaceId, t.phone),
+    ...workspacePolicies("contacts", t.workspaceId),
   ],
 ).enableRLS();

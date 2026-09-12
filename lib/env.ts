@@ -1,0 +1,69 @@
+import { z } from "zod";
+
+/**
+ * Validated server environment. Every external integration exposes an
+ * `isConfigured` flag so missing keys degrade to dev-mode instead of crashing
+ * (docs/02 §4, master plan "dış servis yokken çalışma stratejisi").
+ */
+const serverSchema = z.object({
+  NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
+  APP_URL: z.string().url().default("http://localhost:3000"),
+  DATABASE_URL: z.string().min(1),
+
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default("Havn <noreply@havn.local>"),
+  /** Dev fallback: Mailpit SMTP from the local Supabase stack. */
+  SMTP_HOST: z.string().default("127.0.0.1"),
+  SMTP_PORT: z.coerce.number().default(54325),
+
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+
+  META_WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+  META_WHATSAPP_ACCESS_TOKEN: z.string().optional(),
+  META_WHATSAPP_VERIFY_TOKEN: z.string().optional(),
+  META_WHATSAPP_APP_SECRET: z.string().optional(),
+
+  ANTHROPIC_API_KEY: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional(),
+
+  INNGEST_EVENT_KEY: z.string().optional(),
+  INNGEST_SIGNING_KEY: z.string().optional(),
+});
+
+export type ServerEnv = z.infer<typeof serverSchema>;
+
+let cached: ServerEnv | undefined;
+
+export function env(): ServerEnv {
+  if (cached) return cached;
+  const parsed = serverSchema.safeParse(process.env);
+  if (!parsed.success) {
+    const issues = parsed.error.issues
+      .map((i) => `${i.path.join(".")}: ${i.message}`)
+      .join("\n");
+    throw new Error(`Invalid environment variables:\n${issues}`);
+  }
+  cached = parsed.data;
+  return cached;
+}
+
+export const integrations = {
+  resend: () => Boolean(env().RESEND_API_KEY),
+  gmail: () => Boolean(env().GOOGLE_CLIENT_ID && env().GOOGLE_CLIENT_SECRET),
+  whatsapp: () =>
+    Boolean(
+      env().META_WHATSAPP_PHONE_NUMBER_ID && env().META_WHATSAPP_ACCESS_TOKEN,
+    ),
+  anthropic: () => Boolean(env().ANTHROPIC_API_KEY),
+  openai: () => Boolean(env().OPENAI_API_KEY),
+  inngestCloud: () => Boolean(env().INNGEST_EVENT_KEY),
+} as const;
+
+export const isProduction = () => env().NODE_ENV === "production";

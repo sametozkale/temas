@@ -4,6 +4,7 @@ import {
   integer,
   jsonb,
   numeric,
+  pgPolicy,
   pgTable,
   text,
   timestamp,
@@ -11,6 +12,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import { authUid, authenticatedRole, isMember } from "../rls";
 import { authUsers, baseColumns } from "./_shared";
 import { contacts } from "./contacts";
 import { workspaces } from "./identity";
@@ -181,19 +183,35 @@ export const propertyPeople = pgTable(
 ).enableRLS();
 
 /** Append-only audit log. Never updated or deleted (docs/03 header, rules/db). */
-export const activityLog = pgTable("activity_log", {
-  ...baseColumns,
-  workspaceId: uuid("workspace_id")
-    .notNull()
-    .references(() => workspaces.id, { onDelete: "cascade" }),
-  propertyId: uuid("property_id").references(() => properties.id, {
-    onDelete: "set null",
-  }),
-  actorId: uuid("actor_id").references(() => authUsers.id, {
-    onDelete: "set null",
-  }),
-  action: text("action").notNull(),
-  entity: text("entity"),
-  entityId: uuid("entity_id"),
-  data: jsonb("data").$type<Record<string, unknown>>(),
-}).enableRLS();
+export const activityLog = pgTable(
+  "activity_log",
+  {
+    ...baseColumns,
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    propertyId: uuid("property_id").references(() => properties.id, {
+      onDelete: "set null",
+    }),
+    actorId: uuid("actor_id").references(() => authUsers.id, {
+      onDelete: "set null",
+    }),
+    action: text("action").notNull(),
+    entity: text("entity"),
+    entityId: uuid("entity_id"),
+    data: jsonb("data").$type<Record<string, unknown>>(),
+  },
+  (t) => [
+    // Append-only: members can read and insert; no UPDATE/DELETE policy exists.
+    pgPolicy("activity_log_select_members", {
+      for: "select",
+      to: authenticatedRole,
+      using: isMember(t.workspaceId),
+    }),
+    pgPolicy("activity_log_insert_members", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`${isMember(t.workspaceId)} and (${t.actorId} is null or ${t.actorId} = ${authUid})`,
+    }),
+  ],
+).enableRLS();

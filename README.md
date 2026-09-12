@@ -29,3 +29,15 @@ npm run dev
 ```
 
 Quality gates: `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm run test`.
+
+### Local auth & email
+
+- Sign-in is magic link only. Locally, Supabase delivers auth emails to **Mailpit** at http://127.0.0.1:54324 — open the latest message and follow the link.
+- App emails (invites, later booking confirmations) use Resend when `RESEND_API_KEY` is set; otherwise they are sent to the same Mailpit over SMTP (`SMTP_PORT=54325`).
+- First sign-in lands on `/onboarding` to create a workspace; invited users land on `/invite/[token]`.
+
+### Data access rules
+
+- `db` (system context) is for bootstrap flows, webhooks and jobs; every request-scoped query runs through `withUserContext(userId, tx => …)` so Postgres RLS applies.
+- Every mutation calls `requireAbility()` (`lib/permissions.ts`) and writes to `activity_log` (`lib/activity.ts`).
+- `lib/db/rls.test.ts` exercises the policies against the local database; it self-skips without `DATABASE_URL`.

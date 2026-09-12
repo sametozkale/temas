@@ -6,23 +6,25 @@ import { useTranslations } from "next-intl";
 import * as React from "react";
 
 import { ArrowLeft01Icon, ArrowRight01Icon, Icon } from "@/components/icons";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { UserMenu, type UserMenuWorkspace } from "@/components/user-menu";
 import { primaryNav, type NavItem } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
-export type SidebarWorkspace = { name: string; initials: string };
+export type SidebarWorkspace = { id?: string; name: string; initials: string };
 export type SidebarUser = { name: string; email?: string; initials: string };
 export type SidebarShortcut = { id: string; title: string; href: string };
 
 type SidebarProps = {
   workspace?: SidebarWorkspace;
   user?: SidebarUser;
+  /** All memberships for the switcher. */
+  workspaces?: UserMenuWorkspace[];
   /** Most used properties (docs/01 §6 "Spaces"-like section). */
   shortcuts?: SidebarShortcut[];
   collapsed?: boolean;
@@ -43,6 +45,7 @@ function isActive(pathname: string, item: NavItem) {
 export function Sidebar({
   workspace,
   user,
+  workspaces,
   shortcuts = [],
   collapsed = false,
   onToggleCollapse,
@@ -157,31 +160,14 @@ export function Sidebar({
           </Button>
         ) : null}
 
-        {/* User */}
-        <div
-          className={cn(
-            "flex items-center gap-2 rounded-md px-1.5 py-1",
-            collapsed && "justify-center px-0",
-          )}
-        >
-          <Avatar className="size-7">
-            <AvatarFallback className="text-xs">
-              {user?.initials ?? "?"}
-            </AvatarFallback>
-          </Avatar>
-          {!collapsed ? (
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-medium">
-                {user?.name ?? "—"}
-              </p>
-              {user?.email ? (
-                <p className="truncate text-xs text-muted-foreground">
-                  {user.email}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
+        {user ? (
+          <UserMenu
+            user={user}
+            workspaces={workspaces}
+            activeWorkspaceId={workspace?.id}
+            collapsed={collapsed}
+          />
+        ) : null}
       </div>
     </nav>
   );

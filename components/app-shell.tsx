@@ -17,6 +17,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import type { UserMenuWorkspace } from "@/components/user-menu";
 import { cn } from "@/lib/utils";
 
 const COLLAPSE_KEY = "havn:sidebar-collapsed";
@@ -24,6 +25,7 @@ const COLLAPSE_KEY = "havn:sidebar-collapsed";
 type AppShellProps = {
   workspace?: SidebarWorkspace;
   user?: SidebarUser;
+  workspaces?: UserMenuWorkspace[];
   shortcuts?: SidebarShortcut[];
   children: React.ReactNode;
 };
@@ -35,6 +37,7 @@ type AppShellProps = {
 export function AppShell({
   workspace,
   user,
+  workspaces,
   shortcuts,
   children,
 }: AppShellProps) {
@@ -62,6 +65,8 @@ export function AppShell({
     });
   }
 
+  const sidebarProps = { workspace, user, workspaces, shortcuts };
+
   return (
     <div className="flex min-h-screen bg-background">
       {/* Desktop sidebar */}
@@ -72,9 +77,7 @@ export function AppShell({
         )}
       >
         <Sidebar
-          workspace={workspace}
-          user={user}
-          shortcuts={shortcuts}
+          {...sidebarProps}
           collapsed={collapsed}
           onToggleCollapse={toggleCollapse}
         />
@@ -100,9 +103,7 @@ export function AppShell({
             >
               <SheetTitle className="sr-only">{t("open_menu")}</SheetTitle>
               <Sidebar
-                workspace={workspace}
-                user={user}
-                shortcuts={shortcuts}
+                {...sidebarProps}
                 onNavigate={() => setMobileOpen(false)}
               />
             </SheetContent>

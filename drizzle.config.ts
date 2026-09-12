@@ -9,6 +9,8 @@ export default defineConfig({
   out: "./drizzle",
   // Only manage the public schema; `auth.users` is Supabase-owned and only referenced.
   schemaFilter: ["public"],
+  // Roles (anon/authenticated/service_role) are managed by Supabase, not by us.
+  entities: { roles: { provider: "supabase" } },
   dbCredentials: {
     url: process.env.DATABASE_URL ?? "",
   },

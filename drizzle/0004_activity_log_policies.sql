@@ -1,0 +1,2 @@
+CREATE POLICY "activity_log_select_members" ON "activity_log" AS PERMISSIVE FOR SELECT TO "authenticated" USING (public.is_workspace_member("activity_log"."workspace_id"));--> statement-breakpoint
+CREATE POLICY "activity_log_insert_members" ON "activity_log" AS PERMISSIVE FOR INSERT TO "authenticated" WITH CHECK (public.is_workspace_member("activity_log"."workspace_id") and ("activity_log"."actor_id" is null or "activity_log"."actor_id" = (select auth.uid())));
