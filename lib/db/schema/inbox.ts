@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  integer,
   jsonb,
   pgTable,
   text,
@@ -121,6 +122,8 @@ export const aiDrafts = pgTable(
     tone: text("tone"),
     status: text("status").notNull().default("pending"),
     model: text("model"),
+    /** 0–100 similarity vs the sent body (docs/05 §3). */
+    acceptancePct: integer("acceptance_pct"),
   },
   (t) => [...conversationChildPolicies("ai_drafts", t.conversationId)],
 ).enableRLS();

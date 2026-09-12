@@ -82,6 +82,17 @@ export const hasFormRole = (
 export const isConversationMember = (conversationId: AnyPgColumn): SQL =>
   sql`public.is_workspace_member((select c.workspace_id from public.conversations c where c.id = ${conversationId}))`;
 
+export const isAiThreadMember = (threadId: AnyPgColumn): SQL =>
+  sql`public.is_workspace_member((select t.workspace_id from public.ai_threads t where t.id = ${threadId}))`;
+
+export const hasAiThreadRole = (
+  threadId: AnyPgColumn,
+  roles: readonly string[],
+): SQL =>
+  sql`public.workspace_role((select t.workspace_id from public.ai_threads t where t.id = ${threadId})) in (${sql.raw(
+    roles.map((r) => `'${r.replace(/'/g, "''")}'`).join(", "),
+  )})`;
+
 export const hasConversationRole = (
   conversationId: AnyPgColumn,
   roles: readonly string[],

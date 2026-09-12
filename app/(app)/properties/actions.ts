@@ -20,6 +20,7 @@ import {
 } from "@/lib/db/schema";
 import { env } from "@/lib/env";
 import { requireAbility } from "@/lib/permissions";
+import { enqueueEmbedProperty } from "@/lib/ai/enqueue";
 import { getProperty } from "@/lib/properties/queries";
 import {
   documentMetaSchema,
@@ -133,6 +134,12 @@ export async function createProperty(
     return row!.id;
   });
 
+  try {
+    await enqueueEmbedProperty(id);
+  } catch {
+    // embeddings are best-effort
+  }
+
   revalidateProperty(id);
   redirect(`/properties/${id}/edit?created=1`);
 }
@@ -199,6 +206,11 @@ export async function updateProperty(
   });
 
   if (result === "not_found") return actionError("not_found");
+  try {
+    await enqueueEmbedProperty(id);
+  } catch {
+    // embeddings are best-effort
+  }
   revalidateProperty(id);
   return actionOk();
 }

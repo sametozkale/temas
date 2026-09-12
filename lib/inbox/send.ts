@@ -2,8 +2,10 @@ import { and, desc, eq } from "drizzle-orm";
 
 import { InboxReplyEmail } from "@/emails/inbox-reply";
 import { logActivity } from "@/lib/activity";
+import { acceptancePct } from "@/lib/ai/acceptance";
 import { db } from "@/lib/db";
 import {
+  aiDrafts,
   contacts,
   conversations,
   integrations,
@@ -44,6 +46,7 @@ export async function sendInboxReply(input: {
   actorId: string;
   conversationId: string;
   body: string;
+  draftId?: string | null;
 }) {
   const [row] = await db
     .select({
@@ -176,4 +179,26 @@ export async function sendInboxReply(input: {
     entity: "conversation",
     entityId: input.conversationId,
   });
+
+  if (input.draftId) {
+    const [draft] = await db
+      .select({ id: aiDrafts.id, body: aiDrafts.body })
+      .from(aiDrafts)
+      .where(
+        and(
+          eq(aiDrafts.id, input.draftId),
+          eq(aiDrafts.conversationId, input.conversationId),
+        ),
+      )
+      .limit(1);
+    if (draft) {
+      await db
+        .update(aiDrafts)
+        .set({
+          status: "sent",
+          acceptancePct: acceptancePct(draft.body, input.body),
+        })
+        .where(eq(aiDrafts.id, draft.id));
+    }
+  }
 }

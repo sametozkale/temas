@@ -4,13 +4,21 @@ import {
   check,
   index,
   jsonb,
+  pgPolicy,
   pgTable,
   text,
   timestamp,
   uuid,
   vector,
 } from "drizzle-orm/pg-core";
+import { authenticatedRole } from "drizzle-orm/supabase";
 
+import {
+  WRITE_ROLES_ALL,
+  hasAiThreadRole,
+  isAiThreadMember,
+  workspacePolicies,
+} from "../rls";
 import { authUsers, baseColumns } from "./_shared";
 import { applications } from "./forms";
 import { workspaces } from "./identity";
@@ -18,16 +26,20 @@ import { properties } from "./properties";
 
 // docs/03 §7 — AI
 
-export const aiThreads = pgTable("ai_threads", {
-  ...baseColumns,
-  workspaceId: uuid("workspace_id")
-    .notNull()
-    .references(() => workspaces.id, { onDelete: "cascade" }),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => authUsers.id, { onDelete: "cascade" }),
-  title: text("title"),
-}).enableRLS();
+export const aiThreads = pgTable(
+  "ai_threads",
+  {
+    ...baseColumns,
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    title: text("title"),
+  },
+  (t) => [...workspacePolicies("ai_threads", t.workspaceId)],
+).enableRLS();
 
 export const AI_MESSAGE_ROLES = ["user", "assistant", "tool"] as const;
 
@@ -47,6 +59,27 @@ export const aiMessages = pgTable(
       "ai_messages_role_check",
       sql`${t.role} in ('user','assistant','tool')`,
     ),
+    pgPolicy("ai_messages_select_members", {
+      for: "select",
+      to: authenticatedRole,
+      using: isAiThreadMember(t.threadId),
+    }),
+    pgPolicy("ai_messages_insert_roles", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: hasAiThreadRole(t.threadId, WRITE_ROLES_ALL),
+    }),
+    pgPolicy("ai_messages_update_roles", {
+      for: "update",
+      to: authenticatedRole,
+      using: hasAiThreadRole(t.threadId, WRITE_ROLES_ALL),
+      withCheck: hasAiThreadRole(t.threadId, WRITE_ROLES_ALL),
+    }),
+    pgPolicy("ai_messages_delete_roles", {
+      for: "delete",
+      to: authenticatedRole,
+      using: hasAiThreadRole(t.threadId, WRITE_ROLES_ALL),
+    }),
   ],
 ).enableRLS();
 
@@ -74,6 +107,7 @@ export const embeddings = pgTable(
       t.entity,
       t.entityId,
     ),
+    ...workspacePolicies("embeddings", t.workspaceId),
   ],
 ).enableRLS();
 

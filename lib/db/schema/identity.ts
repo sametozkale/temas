@@ -38,6 +38,10 @@ export const profiles = pgTable(
     phone: text("phone"),
     avatarUrl: text("avatar_url"),
     locale: text("locale").notNull().default("en"),
+    /** Settings > AI: signature appended to inbox drafts. */
+    aiSignature: text("ai_signature"),
+    aiLanguage: text("ai_language").notNull().default("en"),
+    aiTone: text("ai_tone").notNull().default("friendly"),
     ...timestamps,
   },
   (t) => [

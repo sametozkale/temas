@@ -11,7 +11,7 @@ const items = [
   { key: "members", href: "/settings/members", enabled: true },
   { key: "integrations", href: "/settings/integrations", enabled: true },
   { key: "notifications", href: "/settings/notifications", enabled: false },
-  { key: "ai", href: "/settings/ai", enabled: false },
+  { key: "ai", href: "/settings/ai", enabled: true },
   { key: "templates", href: "/settings/templates", enabled: false },
 ] as const;
 

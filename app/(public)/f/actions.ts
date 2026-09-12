@@ -17,6 +17,7 @@ import { ensurePipeline } from "@/lib/pipeline/ensure";
 import { getFormByPublicToken, listStages } from "@/lib/pipeline/queries";
 import { identitySchema } from "@/lib/pipeline/schema";
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { enqueueApplicantSummary } from "@/lib/ai/enqueue";
 import { buildObjectPath, uploadPublicDocument } from "@/lib/storage";
 import {
   getCalendarByProperty,
@@ -196,10 +197,16 @@ export async function submitPublicForm(
       tx,
     );
 
-    return { error: null, created: !current };
+    return { error: null, created: !current, applicationId: applicationId! };
   });
 
   if (result.error) return actionError(result.error);
+
+  try {
+    await enqueueApplicantSummary(result.applicationId);
+  } catch {
+    // summaries are best-effort
+  }
 
   const cookieStore = await cookies();
   cookieStore.set(formCompletionCookie(found.form.id), "1", {

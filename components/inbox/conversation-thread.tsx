@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 
 import { ReplyComposer } from "@/components/inbox/reply-composer";
 import { formatDateTime } from "@/lib/format";
+import type { DraftTone } from "@/lib/ai/types";
 import { cn } from "@/lib/utils";
 
 type ThreadMessage = {
@@ -22,6 +23,8 @@ export async function ConversationThread({
   propertyTitle,
   messages,
   canReply,
+  canDraft,
+  defaultTone,
 }: {
   conversationId: string;
   subject: string | null;
@@ -31,6 +34,8 @@ export async function ConversationThread({
   propertyTitle: string | null;
   messages: ThreadMessage[];
   canReply: boolean;
+  canDraft: boolean;
+  defaultTone: DraftTone;
 }) {
   const t = await getTranslations("inbox");
   const title = contactName ?? contactEmail ?? t("unknown_contact");
@@ -82,7 +87,11 @@ export async function ConversationThread({
         })}
       </ol>
       {canReply ? (
-        <ReplyComposer conversationId={conversationId} />
+        <ReplyComposer
+          conversationId={conversationId}
+          defaultTone={defaultTone}
+          canDraft={canDraft}
+        />
       ) : (
         <p className="border-t px-5 py-3 text-xs text-muted-foreground">
           {t("errors.forbidden")}

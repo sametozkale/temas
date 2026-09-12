@@ -68,10 +68,19 @@
   },
   "home": {
     "title": "Coming up",
-    "description": "Your upcoming viewings and AI summary will show up here.",
+    "description": "Your upcoming viewings and recent questions.",
     "empty_title": "No upcoming viewings yet",
     "empty_description": "Add your first property and publish its viewing calendar.",
-    "prompt_placeholder": "Ask anything about your portfolio…"
+    "prompt_placeholder": "Ask anything about your portfolio…",
+    "suggestion_viewings": "How many viewings this month?",
+    "not_configured": "AI not configured",
+    "quota_exhausted": "Monthly AI quota reached",
+    "ask_error": "The answer could not be generated. Try again.",
+    "threads_title": "Recent questions",
+    "untitled_thread": "Untitled",
+    "you": "You",
+    "assistant": "Havn",
+    "sources": "Sources"
   },
   "inbox": {
     "title": "Inbox",
@@ -88,6 +97,13 @@
     "send": "Send",
     "reply_placeholder": "Write a reply…",
     "reply_sent": "Reply sent",
+    "draft_ai": "Draft with AI",
+    "draft_pending": "Drafting…",
+    "draft_failed": "Could not generate a draft. Try again.",
+    "tone": "Tone",
+    "tone_formal": "Formal",
+    "tone_friendly": "Friendly",
+    "tone_short": "Short",
     "back": "All conversations",
     "errors": {
       "body": "Write a message before sending.",
@@ -611,7 +627,7 @@
       "loading": "Applicant",
       "score": "Score",
       "ai_title": "AI summary",
-      "ai_placeholder": "A summary will appear here in a later phase.",
+      "ai_placeholder": "A summary will appear after the applicant submits the form.",
       "answers": "Answers",
       "no_answers": "No answers recorded.",
       "attachments": "Attachments",
@@ -696,6 +712,26 @@
       "errors": {
         "name": "Name must be at least 2 characters.",
         "full_name": "Full name must be at least 2 characters."
+      }
+    },
+    "ai": {
+      "title": "AI preferences",
+      "description": "Signature, language and tone used when drafting replies.",
+      "signature": "Signature",
+      "signature_placeholder": "Best regards,\nSamet",
+      "signature_hint": "Appended to inbox drafts generated with AI.",
+      "language": "Language",
+      "language_en": "English",
+      "language_tr": "Turkish",
+      "tone": "Default tone",
+      "tone_formal": "Formal",
+      "tone_friendly": "Friendly",
+      "tone_short": "Short",
+      "quota_used": "{used} of {limit} AI messages this month",
+      "not_configured": "No AI provider key is configured. Drafts and answers use a local mock.",
+      "saved": "Saved",
+      "errors": {
+        "signature": "Signature must be 800 characters or fewer."
       }
     },
     "members": {

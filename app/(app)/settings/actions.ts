@@ -85,3 +85,41 @@ export async function updateProfile(
   revalidatePath("/", "layout");
   return actionOk();
 }
+
+const aiPreferencesSchema = z.object({
+  signature: z.string().max(800).optional().or(z.literal("")),
+  language: z.enum(["en", "tr"]),
+  tone: z.enum(["formal", "friendly", "short"]),
+});
+
+export async function updateAiPreferences(
+  _prev: SettingsState | undefined,
+  formData: FormData,
+): Promise<SettingsState> {
+  const ctx = await getAppContext();
+  requireAbility(ctx.membership, "ai.use");
+
+  const parsed = aiPreferencesSchema.safeParse({
+    signature: formData.get("signature") ?? "",
+    language: formData.get("language"),
+    tone: formData.get("tone"),
+  });
+  if (!parsed.success) {
+    return actionError("invalid", parsed.error.flatten().fieldErrors);
+  }
+
+  await withUserContext(ctx.user.id, async (tx) => {
+    await tx
+      .update(profiles)
+      .set({
+        aiSignature: parsed.data.signature || null,
+        aiLanguage: parsed.data.language,
+        aiTone: parsed.data.tone,
+      })
+      .where(eq(profiles.id, ctx.user.id));
+  });
+
+  revalidatePath("/settings/ai");
+  revalidatePath("/", "layout");
+  return actionOk();
+}
