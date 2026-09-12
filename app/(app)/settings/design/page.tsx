@@ -27,11 +27,11 @@ export default async function DesignSystemPage() {
         actions={
           <>
             <Button variant="pill" size="sm">
-              Davet et
+              Invite
             </Button>
             <Button size="sm">
               <Icon icon={PlusSignIcon} size={16} data-icon="inline-start" />
-              Yeni mülk
+              New property
             </Button>
           </>
         }
@@ -40,40 +40,40 @@ export default async function DesignSystemPage() {
       <section className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Yaklaşan görüşmeler</CardTitle>
+            <CardTitle>Upcoming viewings</CardTitle>
           </CardHeader>
           <CardContent className="divide-y">
             <EventChip
               tone="brand"
               time="10:30"
               title="Kadıköy 2+1 — Ahmet Yılmaz"
-              meta="Bugün · Onaylandı"
+              meta="Today · Confirmed"
             />
             <EventChip
               tone="tenant"
               time="17:00"
-              title="Moda ofis — kiracı müsaitlik penceresi"
-              meta="Salı / Perşembe"
+              title="Moda office — tenant availability window"
+              meta="Tue / Thu"
             />
             <EventChip
               tone="agent"
               time="14:00"
-              title="Bostancı depo — agent penceresi"
-              meta="Hafta içi"
+              title="Bostancı warehouse — agent window"
+              meta="Weekdays"
             />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Rozetler ve durumlar</CardTitle>
+            <CardTitle>Badges and states</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
-              <Badge variant="brand">Müsait slot</Badge>
-              <Badge variant="success">Onaylandı</Badge>
+              <Badge variant="brand">Available slot</Badge>
+              <Badge variant="success">Confirmed</Badge>
               <Badge variant="info">Shortlisted</Badge>
-              <Badge variant="warning">Hatırlatıcı gecikti</Badge>
+              <Badge variant="warning">Reminder overdue</Badge>
               <Badge variant="secondary">Draft</Badge>
               <Badge variant="outline">Archived</Badge>
             </div>
@@ -88,10 +88,10 @@ export default async function DesignSystemPage() {
                 Outline
               </Button>
               <Button variant="destructive" size="sm">
-                Sil
+                Delete
               </Button>
             </div>
-            <Input placeholder="Mülk ara…" />
+            <Input placeholder="Search properties…" />
             <div className="space-y-2">
               <Skeleton className="h-4 w-2/3" />
               <Skeleton className="h-4 w-1/2" />
@@ -111,11 +111,11 @@ export default async function DesignSystemPage() {
           <TabsContent value="overview" className="pt-6">
             <EmptyState
               icon={Building03Icon}
-              title="Henüz mülk yok"
-              description="İlk mülkünü ekleyerek başla."
+              title="No properties yet"
+              description="Start by adding your first property."
               action={
                 <Button variant="ghost" size="sm">
-                  Mülk ekle
+                  Add property
                 </Button>
               }
             />
@@ -124,19 +124,19 @@ export default async function DesignSystemPage() {
             value="inventory"
             className="pt-6 text-sm text-muted-foreground"
           >
-            Demirbaş listesi burada görünecek.
+            The inventory list will appear here.
           </TabsContent>
           <TabsContent
             value="people"
             className="pt-6 text-sm text-muted-foreground"
           >
-            Owner, kiracı ve adaylar burada görünecek.
+            Owner, tenant and applicants will appear here.
           </TabsContent>
           <TabsContent
             value="files"
             className="pt-6 text-sm text-muted-foreground"
           >
-            Dokümanlar burada görünecek.
+            Documents will appear here.
           </TabsContent>
         </Tabs>
       </section>
@@ -144,8 +144,8 @@ export default async function DesignSystemPage() {
       <div className="flex justify-center">
         <PromptBar
           suggestions={[
-            "Eylül'de kaç viewing var?",
-            "Depozitosu eksik mülkler",
+            "How many viewings in September?",
+            "Properties missing a deposit",
           ]}
         />
       </div>

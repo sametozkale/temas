@@ -3,7 +3,7 @@ import { z } from "zod";
 /**
  * Validated server environment. Every external integration exposes an
  * `isConfigured` flag so missing keys degrade to dev-mode instead of crashing
- * (docs/02 §4, master plan "dış servis yokken çalışma stratejisi").
+ * (docs/02 §4, master plan "working without external services").
  */
 const serverSchema = z.object({
   NODE_ENV: z

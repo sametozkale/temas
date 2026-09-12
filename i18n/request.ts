@@ -1,12 +1,12 @@
 import { getRequestConfig } from "next-intl/server";
 
-export const locales = ["tr", "en"] as const;
+export const locales = ["en"] as const;
 export type Locale = (typeof locales)[number];
-export const defaultLocale: Locale = "tr";
+export const defaultLocale: Locale = "en";
 
 /**
- * Single-locale v1 (docs/02 §6): no URL prefix, `tr` content only.
- * The locale will later come from `profiles.locale`.
+ * Single-locale v1 (docs/02 §6): English only, no URL prefix. Additional
+ * locales will be resolved from `profiles.locale` later.
  */
 export default getRequestConfig(async () => {
   const locale: Locale = defaultLocale;

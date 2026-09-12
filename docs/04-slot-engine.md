@@ -1,29 +1,29 @@
-# 04 — Slot Engine: Çok Paydaşlı Müsaitlik Kesişimi
+# 04 — Slot Engine: Multi-Party Availability Intersection
 
-> Ürünün en zor ve en fark yaratan parçası. `lib/slots/` altında **saf fonksiyon** olarak yazılır; IO yok, DB yok — girdi data structure, çıktı slot listesi. Bu sayede %100 unit-test edilebilir (Vitest). DB okuma/yazma Inngest fonksiyonunda.
+> The hardest and most differentiating part of the product. Written as **pure functions** under `lib/slots/`; no IO, no DB — input is a data structure, output is a slot list. This makes it 100% unit-testable (Vitest). DB reads/writes happen in the Inngest function.
 
-## 1. Kural Seti (iş tanımı)
+## 1. Rule Set (business definition)
 
-Kitaplanabilir slot = **katılımcı kümelerinin müsaitlik kesişimi**, ürün ayarlarına göre dilimlenmiş:
+Bookable slot = **the intersection of the participant sets' availability**, tiled according to the product settings:
 
-- Zorunlu kümeler: `agent` ve (eğer property'de current_tenant varsa) `current_tenant`. Owner `viewer_required` ise üçüncü küme.
-- Bir küme "müsait" sayılır = o kümedeki katılımcılardan **en az birinin** penceresi o aralığı kapsıyorsa (birden fazla tenant/agent olabilir → küme içi VE, değil VEYA).
-- Kesişim aralıkları, `slot_duration` + `buffer` ızgarasına döşenir; ızgaranın başlangıcı kesişim aralığının başlangıcıdır.
-- Filtreler: `min_notice_hours` (şimdi + X saatten öncesi elenir), `max_days_ahead` (ufuk), `availability_exceptions` (block günleri çıkar, override ekle).
-- Zaten `booked`/`blocked` slotlar tekrar üretilmez; status korunur.
+- Mandatory sets: `agent` and (if the property has a current_tenant) `current_tenant`. If the owner is `viewer_required`, a third set.
+- A set counts as "available" when **at least one** participant in that set has a window covering the interval (there may be several tenants/agents → OR inside a set, not AND).
+- Intersection intervals are tiled onto a `slot_duration` + `buffer` grid; the grid starts at the beginning of the intersection interval.
+- Filters: `min_notice_hours` (anything before now + X hours is dropped), `max_days_ahead` (horizon), `availability_exceptions` (remove blocked days, add overrides).
+- Slots that are already `booked`/`blocked` are not regenerated; their status is preserved.
 
 ## 2. API
 
 ```ts
 // lib/slots/types.ts
-export type Window = { startMin: number; endMin: number };           // gün-içi dakika ofsetleri
-export type DayWindows = { date: string; windows: Window[] };        // timezone'da çözülmüş gün
+export type Window = { startMin: number; endMin: number };           // minute offsets within the day
+export type DayWindows = { date: string; windows: Window[] };        // day resolved in the timezone
 
 export interface SlotEngineInput {
   timezone: string;                       // property.timezone
   horizonStart: Date; horizonEnd: Date;   // UTC
   slotDurationMin: number; bufferMin: number;
-  participantSets: DayWindows[][];        // [agentGünleri, tenantGünleri, ownerGünleri?]
+  participantSets: DayWindows[][];        // [agentDays, tenantDays, ownerDays?]
   existingBooked: { startsAt: Date; endsAt: Date }[];
   minNoticeHours: number;
   now: Date;
@@ -32,14 +32,14 @@ export function generateSlots(input: SlotEngineInput): { startsAt: Date; endsAt:
 ```
 
 ```ts
-// lib/slots/index.ts — iskelet
+// lib/slots/index.ts — skeleton
 export function generateSlots(i: SlotEngineInput) {
   const days = eachDay(i.horizonStart, i.horizonEnd, i.timezone);
   const out: Slot[] = [];
   for (const day of days) {
     const sets = i.participantSets.map(set => windowsForDay(set, day));
-    if (sets.some(s => s.length === 0)) continue;            // herhangi bir küme o gün boşsa → kesişim yok
-    for (const iv of intersectAll(sets)) {                   // aralık kesişimi
+    if (sets.some(s => s.length === 0)) continue;            // any empty set that day → no intersection
+    for (const iv of intersectAll(sets)) {                   // interval intersection
       for (const s of tile(iv, i.slotDurationMin + i.bufferMin, i.slotDurationMin)) {
         if (isTooSoon(s, i.now, i.minNoticeHours)) continue;
         if (overlapsAny(s, i.existingBooked)) continue;
@@ -51,47 +51,47 @@ export function generateSlots(i: SlotEngineInput) {
 }
 ```
 
-### İmza gereken yardımcılar (her biri ayrı saf fonksiyon)
-- `expandRRule(rrule, tz, from, to) → DayWindows[]` — rrule paketi; DST geçişlerinde **duvar saati** (wall-clock) korunur: "17:00" yaz saati değişse de 17:00'dir. Bunu sağlamak için önce gün bazında üret, sonra tz→UTC çevir.
+### Helpers that need a signature (each a separate pure function)
+- `expandRRule(rrule, tz, from, to) → DayWindows[]` — the rrule package; **wall-clock** time is preserved across DST transitions: "17:00" stays 17:00 even when daylight saving changes. To guarantee this, generate per day first, then convert tz→UTC.
 - `applyExceptions(windows, exceptions, day)`
-- `intersectAll(sets: Window[][][]) → Window[]` — önce küme içi union, sonra kümeler arası kesişim (sweep-line veya iki-pointer).
-- `tile(interval, stepMin, durMin) → Slot[]` — sığmayan son parça atılır.
-- `overlapsAny(slot, booked)` — buffer zaten step'e dahil; booked slotlarla çakışma kontrolü ayrıca yapılır (yeniden materyalizasyonda).
+- `intersectAll(sets: Window[][][]) → Window[]` — union inside each set first, then intersection across sets (sweep-line or two-pointer).
+- `tile(interval, stepMin, durMin) → Slot[]` — the trailing piece that does not fit is dropped.
+- `overlapsAny(slot, booked)` — the buffer is already part of the step; overlap with booked slots is checked separately (on re-materialization).
 
-## 3. Tetikleme & Materyalizasyon (Inngest)
+## 3. Triggers & Materialization (Inngest)
 
-| Olay | İş |
+| Event | Job |
 |---|---|
-| viewing_calendar yayınlandı / ayar değişti | `materialize-slots {calendarId}` kuyruğa |
-| availability_window/exception CRUD | aynı job (debounce 2 sn) |
-| Booking iptal | slot `open`'a döner |
-| Gece cron (04:00) | tüm aktif takvimler için ufuk ileri kaydır + süresi geçen open slotları düşür |
+| viewing_calendar published / settings changed | enqueue `materialize-slots {calendarId}` |
+| availability_window/exception CRUD | same job (debounce 2 s) |
+| Booking cancelled | slot returns to `open` |
+| Nightly cron (04:00) | for every active calendar: move the horizon forward + drop expired open slots |
 
-Job pseudo-kodu:
-1. Girdileri DB'den çek → `generateSlots()` → hedef liste.
-2. `viewing_slots` ile diff: yenileri INSERT (ON CONFLICT DO NOTHING), artık üretilmeyen ve hâlâ `open` olanları DELETE/`cancelled`.
-3. Kısa pencere: insert'lerde unique `(viewing_calendar_id, starts_at)` yarış koşulunu kapatır.
+Job pseudo-code:
+1. Load inputs from the DB → `generateSlots()` → target list.
+2. Diff against `viewing_slots`: INSERT new ones (ON CONFLICT DO NOTHING); slots that are no longer generated and still `open` → DELETE / `cancelled`.
+3. Short window: the unique `(viewing_calendar_id, starts_at)` constraint closes the race on inserts.
 
-## 4. Public Booking Akışı
+## 4. Public Booking Flow
 
-1. `GET /b/[token]` → calendar + property özeti + önümüzdeki N gün `open` slotlar (SSR, cache 60 sn).
-2. `require_form_first` ise önce form adımı; submission `contact` yaratır.
-3. Slot seç → ad/telefon/email → **email OTP** (6 hane, 10 dk) → booking INSERT + slot `booked` + confirmation email/WhatsApp + agent'e Inbox bildirimi + tenant'a bildirim.
-4. Onay sayfasında takvime ekle (.ics) ve `cancel_token` linkli iptal butonu; iptalde slot `open`, taraflara bildirim.
-5. Rate limit: IP başına 10 OTP/saat, token başına 5 booking/gün.
+1. `GET /b/[token]` → calendar + property summary + `open` slots for the next N days (SSR, 60 s cache).
+2. If `require_form_first`, the form step comes first; the submission creates a `contact`.
+3. Pick a slot → name/phone/email → **email OTP** (6 digits, 10 min) → booking INSERT + slot `booked` + confirmation email/WhatsApp + Inbox notification to the agent + notification to the tenant.
+4. Confirmation page: add to calendar (.ics) and a cancel button with the `cancel_token` link; on cancellation the slot becomes `open` and all parties are notified.
+5. Rate limits: 10 OTPs per IP per hour, 5 bookings per token per day.
 
-## 5. Test Senaryoları (Vitest — motor için zorunlu set)
+## 5. Test Scenarios (Vitest — mandatory set for the engine)
 
-- Basit kesişim: agent 09–17, tenant 17–20 → hiç slot yok (sınırda: 17:00 bitiş = 17:00 başlangıç sayılmaz mı? — karar: `[start, end)` yarı-açık aralık; dokümante et).
-- Tam bindirme, kısmi bindirme, kümede 2 katılımcı (biri sabahçı biri akşamcı → union).
-- Exceptions: block gün, override daraltma.
-- Buffer: 30 dk slot + 15 dk buffer → adım 45 dk; artakalan 20 dk'lık parça atılır.
-- DST: Europe/Istanbul kalıcı +3 (kolay); yine de 'America/New_York' ile geçiş haftası testi yaz (ileriye hazırlık).
-- min_notice: şimdi+3 saat içindeki slot üretilmez.
-- Re-materialization idempotent: iki kez çalıştır → aynı slot seti.
-- Booked slot, pencere daraltılırsa bile korunur (✗ silinmez, `blocked` yapılır ve agent'a uyarı).
+- Simple intersection: agent 09–17, tenant 17–20 → no slot at all (boundary: does a 17:00 end count as a 17:00 start? — decision: `[start, end)` half-open interval; document it).
+- Full overlap, partial overlap, 2 participants in a set (one mornings, one evenings → union).
+- Exceptions: blocked day, narrowing override.
+- Buffer: 30 min slot + 15 min buffer → 45 min step; a leftover 20 min piece is dropped.
+- DST: Europe/Istanbul is a permanent +3 (easy); still write a transition-week test with 'America/New_York' (future-proofing).
+- min_notice: no slot is generated within now+3 hours.
+- Re-materialization is idempotent: run twice → the same slot set.
+- A booked slot is preserved even if the window is narrowed (✗ not deleted; set to `blocked` with a warning to the agent).
 
-## 6. Bilinçli Basitleştirmeler (v1)
+## 6. Deliberate Simplifications (v1)
 
-- Slot'lar tek property takvimine ait; workspace-geneli çakışma kontrolü (agent'in başka viewing'i) v1'de **uyarı** olarak gösterilir, engellemez.
-- Multi-timezone gösterimi: public sayfa visitor timezone'unu algılar ama slotlar property timezone'unda etiketlenir (karışıklığı önlemek için her iki etiket birden gösterilir).
+- Slots belong to a single property calendar; workspace-wide conflict checking (the agent's other viewings) is shown as a **warning** in v1, not a block.
+- Multi-timezone display: the public page detects the visitor's timezone but slots are labelled in the property timezone (both labels are shown together to avoid confusion).

@@ -55,7 +55,7 @@ export function EmailLayout({
   children: React.ReactNode;
 }) {
   return (
-    <Html lang="tr">
+    <Html lang="en">
       <Head />
       <Preview>{preview}</Preview>
       <Body style={styles.body}>
@@ -64,8 +64,8 @@ export function EmailLayout({
           <Section>{children}</Section>
           <Hr style={styles.hr} />
           <Text style={styles.footer}>
-            Bu e-posta Havn üzerinden gönderildi. Beklemiyorsanız yok
-            sayabilirsiniz.
+            This email was sent via Havn. If you weren&apos;t expecting it, you
+            can safely ignore it.
           </Text>
         </Container>
       </Body>

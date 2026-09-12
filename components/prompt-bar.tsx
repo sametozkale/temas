@@ -19,7 +19,7 @@ type PromptBarProps = Omit<React.ComponentProps<"form">, "onSubmit"> & {
  * The only permitted shadow in the app: a 1px subtle one (docs/01 §4).
  */
 export function PromptBar({
-  placeholder = "Portföyün hakkında bir şey sor…",
+  placeholder = "Ask anything about your portfolio…",
   suggestions = [],
   onSubmit,
   disabled,
@@ -83,7 +83,7 @@ export function PromptBar({
         size="icon-sm"
         className="rounded-full"
         disabled={disabled || !value.trim()}
-        aria-label="Gönder"
+        aria-label="Send"
       >
         <Icon icon={ArrowUp01Icon} size={16} />
       </Button>

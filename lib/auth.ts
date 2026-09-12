@@ -95,7 +95,7 @@ export const getAppContext = cache(async (): Promise<AppContext> => {
 
   return {
     user,
-    profile: profile ?? { fullName: null, locale: "tr" },
+    profile: profile ?? { fullName: null, locale: "en" },
     workspace: {
       id: active.workspaceId,
       name: active.name,

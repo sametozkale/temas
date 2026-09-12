@@ -1,11 +1,11 @@
 ---
-description: Veritabanı kuralları
+description: Database rules
 globs: lib/db/**,drizzle/**
 alwaysApply: false
 ---
 
-- docs/03-database-schema.md tek kaynak; tablo eklerken önce oraya yaz, sonra schema'ya işle.
-- RLS her yeni tabloda zorunlu; public token erişimi SECURITY DEFINER fonksiyonlarla, geniş anon policy yasak.
-- Sorgular Drizzle ile; ham SQL sadece pgvector/RPC için.
-- N+1 yasak: liste sorgularında join/CTE; sayfalama cursor-based (keyset).
-- Soft delete: deleted_at set edilir; sorgularda default filtre. activity_log asla güncellenmez/silinmez.
+- docs/03-database-schema.md is the single source; when adding a table write it there first, then in the schema.
+- RLS is mandatory on every new table; public token access via SECURITY DEFINER functions, broad anon policies forbidden.
+- Queries go through Drizzle; raw SQL only for pgvector/RPC.
+- No N+1: joins/CTEs in list queries; pagination is cursor based (keyset).
+- Soft delete: set deleted_at; filter by default in queries. activity_log is never updated/deleted.

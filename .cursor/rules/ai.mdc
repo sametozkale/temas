@@ -1,12 +1,12 @@
 ---
-description: AI katmanı kuralları
+description: AI layer rules
 globs: lib/ai/**,app/api/ai/**
 alwaysApply: false
 ---
 
-- Prompt'lar koda gömülmez; lib/ai/prompts/*.md dosyalarından yüklenir.
-- AI yazma işlemi yapmaz (v1): tool set salt-okur. Draft/contract çıktıları insan onayı olmadan gönderilmez/export edilmez.
-- Her AI çağrısı: workspace scope filtresi zorunlu (RLS'e ek olarak uygulama katmanında da).
-- Structured çıktı gereken yerde generateObject + zod; serbest metinde streamText.
-- Model seçimi sadece lib/ai/models.ts üzerinden; endpoint'lere model adı hardcode edilmez.
-- Contract akışında disclaimer_acknowledged=false iken export butonu disabled kalır — UI'da ve server'da.
+- Prompts are not embedded in code; they are loaded from lib/ai/prompts/*.md.
+- The AI performs no writes (v1): the tool set is read-only. Draft/contract outputs are never sent/exported without human approval.
+- Every AI call: the workspace scope filter is mandatory (in the application layer in addition to RLS).
+- Where structured output is needed use generateObject + zod; free text uses streamText.
+- Model selection only through lib/ai/models.ts; model names are never hard-coded in endpoints.
+- In the contract flow the export button stays disabled while disclaimer_acknowledged=false — in the UI and on the server.

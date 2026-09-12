@@ -1,17 +1,17 @@
 ---
-description: UI/stil kuralları — component ve sayfa dosyalarında uygula
+description: UI/style rules — apply in component and page files
 globs: components/**,app/**
 alwaysApply: false
 ---
 
-Tasarım dili: docs/01-design-system.md (Granola benchmark). Altın kurallar:
-1. shadow-lg/md yasak; ayrım hairline border (`border`) ile. İzinli tek gölge: prompt-bar'daki 1px'lik subtle shadow.
-2. Emoji yasak — her zaman Hugeicons, `components/icons.ts` re-export'u üzerinden. Doğrudan @hugeicons importu yok.
-3. Sayfa başlıkları serif: `font-serif` (Newsreader). UI metni Inter. tracking-tight başlıklarda.
-4. Ekranda tek primary button; diğerleri variant="soft" | "ghost" | "outline". Üst sağ aksiyonlar pill.
-5. Renkler sadece CSS token'larından (bg-secondary, text-muted-foreground, bg-brand-soft vb.). Hex literal yasak.
-6. Boş durumlar <EmptyState>; yükleme <Skeleton>; toast sonner soft variant.
-7. Radius: token (kart 10px, dialog 16px, pill full). rounded-md/lg rastgele kullanılmaz.
-8. Liste/satır ayrımları divide-y; kart içi padding p-4/p-5; section aralığı space-y-6/8.
-9. Yeni UI bileşeni üretirken önce components/ui'da muadili var mı bak; varsa patch'leme, extend et.
-10. Responsive: mobilde sidebar sheet; tablolar yatay scroll-wrap; touch target ≥40px.
+Design language: docs/01-design-system.md (Granola benchmark). Golden rules:
+1. shadow-lg/md forbidden; separate with hairline borders (`border`). The only allowed shadow: the 1px subtle shadow on the prompt bar.
+2. Emoji forbidden — always Hugeicons through the `components/icons.tsx` re-export. No direct @hugeicons imports.
+3. Page titles serif: `font-serif` (Newsreader). UI text Inter. tracking-tight on headings.
+4. One primary button per screen; the others variant="soft" | "ghost" | "outline". Top-right actions are pills.
+5. Colours only from CSS tokens (bg-secondary, text-muted-foreground, bg-brand-soft etc.). Hex literals forbidden.
+6. Empty states <EmptyState>; loading <Skeleton>; toasts sonner soft variant.
+7. Radius: tokens (card 10px, dialog 16px, pill full). No arbitrary rounded-md/lg.
+8. List/row separation divide-y; card padding p-4/p-5; section spacing space-y-6/8.
+9. Before creating a new UI component, check components/ui for an equivalent; extend it instead of forking.
+10. Responsive: sidebar sheet on mobile; tables wrap in horizontal scroll; touch targets ≥40px.

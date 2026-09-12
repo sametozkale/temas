@@ -1,17 +1,17 @@
 ---
-description: Proje bağlamı — her zaman uygula
+description: Project context — always apply
 alwaysApply: true
 ---
 
-Bu repo "Havn": emlakçılar için AI-native property management platformu.
-Tek doğruluk kaynakları:
-- docs/00-prd.md (ürün), docs/01-design-system.md (UI), docs/02-architecture.md (stack & yapı),
-- docs/03-database-schema.md (DB), docs/04-slot-engine.md (takvim mantığı), docs/05-ai-features.md (AI).
+This repo is "Havn": an AI-native property management platform for real estate agents.
+Single sources of truth:
+- docs/00-prd.md (product), docs/01-design-system.md (UI), docs/02-architecture.md (stack & structure),
+- docs/03-database-schema.md (DB), docs/04-slot-engine.md (calendar logic), docs/05-ai-features.md (AI).
 
-Kurallar:
-- Yeni feature'a başlamadan ilgili docs md'sini oku; docs ile çelişen kod yazma. Gerekirse önce docs'u güncellemeyi öner.
-- Stack dışına çıkma: Next.js App Router, TypeScript strict, Tailwind v4, shadcn/ui (patch'li), Drizzle, Supabase, Inngest, Vercel AI SDK.
-- Server state: React Query YOK — Server Components + Server Actions. Client state: useState/zustand sadece gerektiğinde.
-- Her mutasyon Server Action'da zod ile valide edilir; `requireAbility()` yetki kontrolü atlanmaz.
-- Kod İngilizce; kullanıcıya görünen metinler Türkçe (i18n key'leri üzerinden).
-- Migration'lar asla editlenmez; şema değişikliği = yeni drizzle migration.
+Rules:
+- Read the relevant docs md before starting a feature; never write code that contradicts the docs. If needed, propose a docs update first.
+- Stay inside the stack: Next.js App Router, TypeScript strict, Tailwind v4, shadcn/ui (patched), Drizzle, Supabase, Inngest, Vercel AI SDK.
+- Server state: NO React Query — Server Components + Server Actions. Client state: useState/zustand only when needed.
+- Every mutation is validated with zod inside a Server Action; the `requireAbility()` permission check is never skipped.
+- Everything is in English: code, comments, docs and all user-facing text. UI strings go through i18n message keys (`messages/en.json`); no hard-coded copy in components.
+- Migrations are never edited; a schema change = a new drizzle migration.

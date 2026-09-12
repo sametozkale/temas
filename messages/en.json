@@ -1,1 +1,174 @@
-{}
+{
+  "app": {
+    "name": "Havn"
+  },
+  "nav": {
+    "home": "Home",
+    "inbox": "Inbox",
+    "calendar": "Calendar",
+    "properties": "Properties",
+    "settings": "Settings",
+    "properties_shortcuts": "Properties",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar",
+    "open_menu": "Open menu",
+    "workspace_placeholder": "Workspace",
+    "workspaces": "Workspaces",
+    "sign_out": "Sign out"
+  },
+  "roles": {
+    "owner": "Owner",
+    "agent": "Agent",
+    "assistant": "Assistant"
+  },
+  "auth": {
+    "title": "Sign in to Havn",
+    "description": "Enter your email and we'll send you a one-time sign-in link.",
+    "email_label": "Email",
+    "submit": "Send sign-in link",
+    "check_email_title": "Check your email",
+    "check_email_description": "We sent a sign-in link to {email}. It is valid for 1 hour.",
+    "dev_mailpit_hint": "Development: emails land in Mailpit →",
+    "errors": {
+      "invalid_email": "Enter a valid email address.",
+      "rate_limited": "Too many attempts. Try again in a moment.",
+      "send_failed": "We couldn't send the link. Try again.",
+      "link_invalid": "This link is invalid or has expired. Request a new one."
+    }
+  },
+  "onboarding": {
+    "title": "Create your workspace",
+    "description": "You're signed in as {email}. A few details to get started.",
+    "full_name": "Full name",
+    "workspace_name": "Workspace name",
+    "workspace_placeholder": "e.g. Yilmaz Real Estate",
+    "workspace_hint": "The name of your agency or team. You can change it later.",
+    "timezone": "Timezone",
+    "submit": "Get started",
+    "errors": {
+      "full_name": "Full name must be at least 2 characters.",
+      "workspace_name": "Workspace name must be at least 2 characters."
+    }
+  },
+  "invite": {
+    "title": "You're invited to {workspace}",
+    "description": "{email} has been invited as {role}.",
+    "full_name": "Full name",
+    "accept": "Accept invitation",
+    "sign_in_to_accept": "Sign in to accept",
+    "switch_account": "Sign in with a different account",
+    "invalid_title": "Invitation not found",
+    "invalid_description": "This invitation link is invalid, already used or expired. Ask the person who invited you for a new link.",
+    "errors": {
+      "not_found": "Invitation not found.",
+      "expired": "This invitation has expired.",
+      "email_mismatch": "This invitation was sent to a different email address. Sign in with the invited address."
+    }
+  },
+  "home": {
+    "title": "Coming up",
+    "description": "Your upcoming viewings and AI summary will show up here.",
+    "empty_title": "No upcoming viewings yet",
+    "empty_description": "Add your first property and publish its viewing calendar.",
+    "prompt_placeholder": "Ask anything about your portfolio…"
+  },
+  "inbox": {
+    "title": "Inbox",
+    "description": "Your email and WhatsApp conversations in one place.",
+    "empty_title": "No conversations yet",
+    "empty_description": "Connect Gmail or WhatsApp and messages will be collected here.",
+    "connect": "Connect an integration"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "description": "Viewings across all properties.",
+    "empty_title": "No scheduled viewings",
+    "empty_description": "Publish a property's viewing calendar and bookings will be listed here."
+  },
+  "properties": {
+    "title": "Properties",
+    "description": "Every property in your portfolio.",
+    "empty_title": "No properties yet",
+    "empty_description": "Start by adding your first property.",
+    "new": "New property"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Workspace, members, integrations and AI preferences.",
+    "design_title": "Design system",
+    "design_description": "Verification screen for docs/01-design-system.md (developer reference).",
+    "nav": {
+      "general": "General",
+      "members": "Members",
+      "integrations": "Integrations",
+      "notifications": "Notifications",
+      "ai": "AI",
+      "templates": "Templates"
+    },
+    "general": {
+      "workspace_title": "Workspace",
+      "workspace_description": "The name your team sees and the default timezone.",
+      "workspace_name": "Name",
+      "timezone": "Timezone",
+      "profile_title": "Profile",
+      "profile_description": "Your name appears in invitations and the activity history.",
+      "full_name": "Full name",
+      "email": "Email",
+      "phone": "Phone",
+      "save": "Save",
+      "saved": "Saved",
+      "owner_only": "Only the workspace owner can change these settings.",
+      "errors": {
+        "name": "Name must be at least 2 characters.",
+        "full_name": "Full name must be at least 2 characters."
+      }
+    },
+    "members": {
+      "members_title": "Members",
+      "members_count": "{count, plural, =1 {1 member} other {# members}}",
+      "pending_title": "Pending invitations",
+      "pending_description": "Unaccepted invitations expire after 7 days.",
+      "invite": "Invite",
+      "invite_title": "Invite a teammate",
+      "invite_description": "The invitation link is sent by email and is valid for 7 days.",
+      "invite_sent": "Invitation sent",
+      "send_invite": "Send invitation",
+      "cancel": "Cancel",
+      "email": "Email",
+      "role": "Role",
+      "role_hint": "Agents fully manage properties, calendar and inbox; assistants cannot send invitations or manage integrations.",
+      "col_member": "Member",
+      "col_role": "Role",
+      "expires": "Expires",
+      "expired": "Expired",
+      "actions": "Actions",
+      "change_role": "Change role",
+      "role_updated": "Role updated",
+      "remove": "Remove from workspace",
+      "removed": "Member removed",
+      "leave": "Leave workspace",
+      "left": "You left the workspace",
+      "revoke": "Revoke",
+      "revoked": "Invitation revoked",
+      "no_pending": "No pending invitations.",
+      "unnamed": "Unnamed user",
+      "you": "You",
+      "errors": {
+        "invalid": "Check the details.",
+        "invalid_email": "Enter a valid email address.",
+        "self_invite": "You can't invite yourself.",
+        "email_failed": "The invitation was saved but the email could not be sent. Try again.",
+        "forbidden": "You don't have permission to do that.",
+        "not_found": "Record not found.",
+        "last_owner": "A workspace needs at least one owner."
+      }
+    }
+  },
+  "common": {
+    "add_property": "Add property",
+    "invite": "Invite",
+    "send": "Send",
+    "close": "Close",
+    "error_generic": "Something went wrong. Try again."
+  }
+}

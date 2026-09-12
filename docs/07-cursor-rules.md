@@ -1,118 +1,118 @@
-# 07 — Cursor Rules Kurulum Rehberi
+# 07 — Cursor Rules Setup Guide
 
-> Bu dosyadaki içerikler `.cursor/rules/` altına aşağıdaki dosya adlarıyla bölüştürülerek kopyalanır.
-> Cursor bu kuralları her chat'te otomatik yükler (alwaysApply) ya da dosya desenine göre (globs).
+> The content of this file is split into `.cursor/rules/` under the file names below.
+> Cursor loads these rules automatically in every chat (alwaysApply) or by file pattern (globs).
 
 ---
 
-## DOSYA: `.cursor/rules/project.md`
+## FILE: `.cursor/rules/project.mdc`
 
 ```markdown
 ---
-description: Proje bağlamı — her zaman uygula
+description: Project context — always apply
 alwaysApply: true
 ---
 
-Bu repo "Havn": emlakçılar için AI-native property management platformu.
-Tek doğruluk kaynakları:
-- docs/00-prd.md (ürün), docs/01-design-system.md (UI), docs/02-architecture.md (stack & yapı),
-- docs/03-database-schema.md (DB), docs/04-slot-engine.md (takvim mantığı), docs/05-ai-features.md (AI).
+This repo is "Havn": an AI-native property management platform for real estate agents.
+Single sources of truth:
+- docs/00-prd.md (product), docs/01-design-system.md (UI), docs/02-architecture.md (stack & structure),
+- docs/03-database-schema.md (DB), docs/04-slot-engine.md (calendar logic), docs/05-ai-features.md (AI).
 
-Kurallar:
-- Yeni feature'a başlamadan ilgili docs md'sini oku; docs ile çelişen kod yazma. Gerekirse önce docs'u güncellemeyi öner.
-- Stack dışına çıkma: Next.js App Router, TypeScript strict, Tailwind v4, shadcn/ui (patch'li), Drizzle, Supabase, Inngest, Vercel AI SDK.
-- Server state: React Query YOK — Server Components + Server Actions. Client state: useState/zustand sadece gerektiğinde.
-- Her mutasyon Server Action'da zod ile valide edilir; `requireAbility()` yetki kontrolü atlanmaz.
-- Kod İngilizce; kullanıcıya görünen metinler Türkçe (i18n key'leri üzerinden).
-- Migration'lar asla editlenmez; şema değişikliği = yeni drizzle migration.
+Rules:
+- Read the relevant docs md before starting a feature; never write code that contradicts the docs. If needed, propose a docs update first.
+- Stay inside the stack: Next.js App Router, TypeScript strict, Tailwind v4, shadcn/ui (patched), Drizzle, Supabase, Inngest, Vercel AI SDK.
+- Server state: NO React Query — Server Components + Server Actions. Client state: useState/zustand only when needed.
+- Every mutation is validated with zod inside a Server Action; the `requireAbility()` permission check is never skipped.
+- Everything is in English: code, comments, docs and all user-facing text. UI strings go through i18n message keys (`messages/en.json`); no hard-coded copy in components.
+- Migrations are never edited; a schema change = a new drizzle migration.
 ```
 
 ---
 
-## DOSYA: `.cursor/rules/ui.md`
+## FILE: `.cursor/rules/ui.mdc`
 
 ```markdown
 ---
-description: UI/stil kuralları — component ve sayfa dosyalarında uygula
+description: UI/style rules — apply in component and page files
 globs: ["components/**", "app/**"]
 alwaysApply: false
 ---
 
-Tasarım dili: docs/01-design-system.md (Granola benchmark). Altın kurallar:
-1. shadow-lg/md yasak; ayrım hairline border (`border`) ile. İzinli tek gölge: prompt-bar'daki 1px'lik subtle shadow.
-2. Emoji yasak — her zaman Hugeicons, `components/icons.ts` re-export'u üzerinden. Doğrudan @hugeicons importu yok.
-3. Sayfa başlıkları serif: `font-serif` (Newsreader). UI metni Inter. tracking-tight başlıklarda.
-4. Ekranda tek primary button; diğerleri variant="soft" | "ghost" | "outline". Üst sağ aksiyonlar pill.
-5. Renkler sadece CSS token'larından (bg-secondary, text-muted-foreground, bg-brand-soft vb.). Hex literal yasak.
-6. Boş durumlar <EmptyState>; yükleme <Skeleton>; toast sonner soft variant.
-7. Radius: token (kart 10px, dialog 16px, pill full). rounded-md/lg rastgele kullanılmaz.
-8. Liste/satır ayrımları divide-y; kart içi padding p-4/p-5; section aralığı space-y-6/8.
-9. Yeni UI bileşeni üretirken önce components/ui'da muadili var mı bak; varsa patch'leme, extend et.
-10. Responsive: mobilde sidebar sheet; tablolar yatay scroll-wrap; touch target ≥40px.
+Design language: docs/01-design-system.md (Granola benchmark). Golden rules:
+1. shadow-lg/md forbidden; separate with hairline borders (`border`). The only allowed shadow: the 1px subtle shadow on the prompt bar.
+2. Emoji forbidden — always Hugeicons through the `components/icons.tsx` re-export. No direct @hugeicons imports.
+3. Page titles serif: `font-serif` (Newsreader). UI text Inter. tracking-tight on headings.
+4. One primary button per screen; the others variant="soft" | "ghost" | "outline". Top-right actions are pills.
+5. Colours only from CSS tokens (bg-secondary, text-muted-foreground, bg-brand-soft etc.). Hex literals forbidden.
+6. Empty states <EmptyState>; loading <Skeleton>; toasts sonner soft variant.
+7. Radius: tokens (card 10px, dialog 16px, pill full). No arbitrary rounded-md/lg.
+8. List/row separation divide-y; card padding p-4/p-5; section spacing space-y-6/8.
+9. Before creating a new UI component, check components/ui for an equivalent; extend it instead of forking.
+10. Responsive: sidebar sheet on mobile; tables wrap in horizontal scroll; touch targets ≥40px.
 ```
 
 ---
 
-## DOSYA: `.cursor/rules/slots.md`
+## FILE: `.cursor/rules/slots.mdc`
 
 ```markdown
 ---
-description: Slot engine kuralları — lib/slots ve takvim kodunda uygula
+description: Slot engine rules — apply in lib/slots and calendar code
 globs: ["lib/slots/**", "inngest/**", "app/(public)/b/**"]
 alwaysApply: false
 ---
 
-- lib/slots saf fonksiyonlardır: DB importu, fetch, Date.now() doğrudan çağrısı YASAK (now parametre olarak gelir).
-- Zaman: her zaman UTC sakla/hesapla; timezone çevirisi yalnızca sınırda (expandRRule çıkışı ve render).
-- Yarı-açık aralık konvansiyonu: [start, end). 17:00 bitişi 17:00 başlangıcını kapsamaz.
-- Değişiklik TDD: önce docs/04-slot-engine.md §5 senaryolarından test, sonra implementasyon.
-- Materyalizasyon idempotent olmalı: aynı input iki kez → aynı diff (boş ikinci diff).
-- booked/blocked slotlar asla silinmez; pencere küçülürse 'blocked' + agent uyarısı.
-- Bu klasöre dokunan her task sonunda: `npm run test -- lib/slots` çalıştır, sonucu raporla.
+- lib/slots contains pure functions: DB imports, fetch and direct Date.now() calls are FORBIDDEN (now arrives as a parameter).
+- Time: always store/compute in UTC; timezone conversion only at the boundary (expandRRule output and rendering).
+- Half-open interval convention: [start, end). A 17:00 end does not cover a 17:00 start.
+- Changes are TDD: first a test from docs/04-slot-engine.md §5 scenarios, then the implementation.
+- Materialization must be idempotent: the same input twice → the same diff (empty second diff).
+- booked/blocked slots are never deleted; if a window shrinks → 'blocked' + a warning to the agent.
+- At the end of every task touching this folder: run `npm run test -- lib/slots` and report the result.
 ```
 
 ---
 
-## DOSYA: `.cursor/rules/ai.md`
+## FILE: `.cursor/rules/ai.mdc`
 
 ```markdown
 ---
-description: AI katmanı kuralları
+description: AI layer rules
 globs: ["lib/ai/**", "app/api/ai/**"]
 alwaysApply: false
 ---
 
-- Prompt'lar koda gömülmez; lib/ai/prompts/*.md dosyalarından yüklenir.
-- AI yazma işlemi yapmaz (v1): tool set salt-okur. Draft/contract çıktıları insan onayı olmadan gönderilmez/export edilmez.
-- Her AI çağrısı: workspace scope filtresi zorunlu (RLS'e ek olarak uygulama katmanında da).
-- Structured çıktı gereken yerde generateObject + zod; serbest metinde streamText.
-- Model seçimi sadece lib/ai/models.ts üzerinden; endpoint'lere model adı hardcode edilmez.
-- Contract akışında disclaimer_acknowledged=false iken export butonu disabled kalır — UI'da ve server'da.
+- Prompts are not embedded in code; they are loaded from lib/ai/prompts/*.md.
+- The AI performs no writes (v1): the tool set is read-only. Draft/contract outputs are never sent/exported without human approval.
+- Every AI call: the workspace scope filter is mandatory (in the application layer in addition to RLS).
+- Where structured output is needed use generateObject + zod; free text uses streamText.
+- Model selection only through lib/ai/models.ts; model names are never hard-coded in endpoints.
+- In the contract flow the export button stays disabled while disclaimer_acknowledged=false — in the UI and on the server.
 ```
 
 ---
 
-## DOSYA: `.cursor/rules/db.md`
+## FILE: `.cursor/rules/db.mdc`
 
 ```markdown
 ---
-description: Veritabanı kuralları
+description: Database rules
 globs: ["lib/db/**", "drizzle/**"]
 alwaysApply: false
 ---
 
-- docs/03-database-schema.md tek kaynak; tablo eklerken önce oraya yaz, sonra schema'ya işle.
-- RLS her yeni tabloda zorunlu; public token erişimi SECURITY DEFINER fonksiyonlarla, geniş anon policy yasak.
-- Sorgular Drizzle ile; ham SQL sadece pgvector/RPC için.
-- N+1 yasak: liste sorgularında join/CTE; sayfalama cursor-based (keyset).
-- Soft delete: deleted_at set edilir; sorgularda default filtre. activity_log asla güncellenmez/silinmez.
+- docs/03-database-schema.md is the single source; when adding a table write it there first, then in the schema.
+- RLS is mandatory on every new table; public token access via SECURITY DEFINER functions, broad anon policies forbidden.
+- Queries go through Drizzle; raw SQL only for pgvector/RPC.
+- No N+1: joins/CTEs in list queries; pagination is cursor based (keyset).
+- Soft delete: set deleted_at; filter by default in queries. activity_log is never updated/deleted.
 ```
 
 ---
 
-## Kurulum Adımları (özet)
+## Setup Steps (summary)
 
-1. Yukarıdaki 5 dosyayı `.cursor/rules/` altına oluştur.
-2. Cursor Settings → Rules'ta dosyaların tanındığını doğrula.
-3. İlk chat: "rules/project.md kurallarını onayla ve docs/06-roadmap.md FAZ 0'a başla" — kuralların yüklendiğini burada test et (Cursor yanıtında token/kurallara atıf yapmalı).
-4. Rules değiştirirse: yeni chat açmadan önce kuralları yeniden yükletmek için chat'te "kuralları yeniden oku" de.
+1. Create the 5 files above under `.cursor/rules/`.
+2. Verify in Cursor Settings → Rules that the files are recognized.
+3. First chat: "Confirm the rules/project.mdc rules and start PHASE 0 of docs/06-roadmap.md" — test here that the rules are loaded (Cursor's answer should reference the tokens/rules).
+4. When rules change: say "re-read the rules" in the chat before opening a new one.

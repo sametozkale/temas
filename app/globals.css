@@ -79,13 +79,13 @@
 }
 
 :root {
-  --background: #fafaf7; /* kağıt */
+  --background: #fafaf7; /* paper */
   --foreground: #1c1b19;
   --card: #ffffff;
   --card-foreground: #1c1b19;
   --popover: #ffffff;
   --popover-foreground: #1c1b19;
-  --primary: #22211e; /* sıcak siyah */
+  --primary: #22211e; /* warm black */
   --primary-foreground: #fafaf7;
   --secondary: #f3f2ee;
   --secondary-foreground: #3a3936;

@@ -1,104 +1,104 @@
-# 06 — Cursor Build Roadmap (Faz Faz, Adım Adım)
+# 06 — Cursor Build Roadmap (Phase by Phase, Step by Step)
 
-> **Nasıl kullanılır:** Her faz = ayrı Cursor sohbeti (yeni chat). Sohbete başlarken context'e eklenecekler her fazın başında yazılı. Faz bitmeden sonraki faza geçme. Her faz sonunda "definition of done" kontrol listesini işaretle ve commit'le.
+> **How to use:** Each phase = a separate Cursor chat (new chat). What to add to context is listed at the start of each phase. Do not move to the next phase before the current one is done. At the end of each phase tick the "definition of done" checklist and commit.
 
-## Ön Hazırlık (tek sefer)
+## Preparation (once)
 
-1. `docs/` altına 00–07 md dosyalarını koy (bu dosyalar).
-2. `.cursor/rules/` kur (07-cursor-rules.md içeriğini oradaki dosya adlarına böl).
-3. Her yeni Cursor chat'inde ilk mesaj şablonu:
-   > "Bu projeyi docs/00-prd.md vizyonu ile geliştiriyoruz. Tasarım dili: docs/01-design-system.md. Şimdi docs/06-roadmap.md içinde FAZ X'i uygulayacağız. İlgili spec: docs/0Y-….md. Önce plan çıkar, onayımı bekle, sonra kodla."
+1. Put the 00–07 md files under `docs/` (these files).
+2. Set up `.cursor/rules/` (split the content of 07-cursor-rules.md into the file names listed there).
+3. First-message template for every new Cursor chat:
+   > "We are building this project according to the vision in docs/00-prd.md. Design language: docs/01-design-system.md. We will now implement PHASE X from docs/06-roadmap.md. Related spec: docs/0Y-….md. Produce a plan first, wait for my approval, then code."
 
 ---
 
-## FAZ 0 — Scaffold & Design Tokens (0.5 gün)
+## PHASE 0 — Scaffold & Design Tokens (0.5 day)
 **Context:** 01, 02, 07
-- create-next-app + shadcn init + bileşen add listesi (01-design-system.md §4)
-- globals.css token seti (light+dark), Inter + Newsreader `next/font` kurulumu, Tailwind v4 theme binding
-- Hugeicons kurulumu + `components/icons.ts`
-- ui/ patch'leri (button soft/xs/pill variant, card/input shadow-none, badge soft varyantlar)
-- `prompt-bar`, `page-header`, `empty-state`, `event-chip` iskeletleri
-- AppShell: sidebar + içerik layout, 5 nav item'lı (Home, Inbox, Calendar, Properties, Settings — içerik stub)
-**DoD:** `npm run dev` açılıyor; sidebar + örnek sayfa Granola token'larıyla render; tsc+eslint yeşil.
+- create-next-app + shadcn init + component add list (01-design-system.md §4)
+- globals.css token set (light+dark), Inter + Newsreader `next/font` setup, Tailwind v4 theme binding
+- Hugeicons setup + `components/icons.tsx`
+- ui/ patches (button soft/xs/pill variants, card/input shadow-none, badge soft variants)
+- `prompt-bar`, `page-header`, `empty-state`, `event-chip` skeletons
+- AppShell: sidebar + content layout with 5 nav items (Home, Inbox, Calendar, Properties, Settings — content stubbed)
+**DoD:** `npm run dev` runs; sidebar + sample page render with the Granola tokens; tsc+eslint green.
 
-## FAZ 1 — Auth & Workspace (1 gün)
+## PHASE 1 — Auth & Workspace (1 day)
 **Context:** 02, 03 (§1)
-- Supabase kurulumu (CLI lokal + proje), Drizzle schema: profiles, workspaces, workspace_members, invites
-- Auth: email magic link (Supabase), callback route, middleware ile (app) koruması
-- Onboarding: ilk login → workspace oluşturma akışı (ad, timezone)
-- Settings > Members: teammate davet (invite token + accept akışı)
+- Supabase setup (CLI local + project), Drizzle schema: profiles, workspaces, workspace_members, invites
+- Auth: email magic link (Supabase), callback route, (app) protection via middleware
+- Onboarding: first login → workspace creation flow (name, timezone)
+- Settings > Members: teammate invite (invite token + accept flow)
 - `lib/permissions.ts` + activity_log helper
-**DoD:** signup → workspace → ikinci kullanıcı davet kabulü uçtan uca çalışıyor; yetkisiz route redirect.
+**DoD:** signup → workspace → second user accepts an invite end to end; unauthorized routes redirect.
 
-## FAZ 2 — Properties CRUD + Detay (2 gün)
+## PHASE 2 — Properties CRUD + Detail (2 days)
 **Context:** 00 (§3.1), 01, 03 (§2–3)
 - Schema: properties, property_media, inventory_items, documents, property_people, contacts, activity_log
-- Properties listesi: grid/liste toggle, durum badge'leri, arama, tip filtresi
-- Create/edit: çok adımlı olmayan tek form (tip, başlık, adres, fiyat, detaylar) + foto upload (Supabase Storage, drag-drop, sıralama)
-- Detay sayfası sekmeleri: Overview / Inventory / People / Files / Viewings(stub) / Applications(stub) / Activity
-- People sekmesi: contact ekle (owner/tenant), davet linki üret (şimdilik sadece kopyala — magic link FAZ 3'te)
-- Files: upload/liste/indirme; Activity: append-only log görünümü
-**DoD:** Property yaratılıp tüm sekmelerde CRUD; audit log'a düşüyor; RLS test'leri (başka workspace göremiyor).
+- Properties list: grid/list toggle, status badges, search, type filter
+- Create/edit: a single (non-wizard) form (type, title, address, price, details) + photo upload (Supabase Storage, drag-drop, ordering)
+- Detail page tabs: Overview / Inventory / People / Files / Viewings(stub) / Applications(stub) / Activity
+- People tab: add contact (owner/tenant), generate invite link (copy only for now — magic link in PHASE 3)
+- Files: upload/list/download; Activity: append-only log view
+**DoD:** A property can be created and edited across all tabs; changes land in the audit log; RLS tests (another workspace cannot see it).
 
-## FAZ 3 — Takvim & Slot Motoru + Public Booking (3 gün) ★
+## PHASE 3 — Calendar & Slot Engine + Public Booking (3 days) ★
 **Context:** 04, 03 (§4), 00 (§3.2)
-- `lib/slots/` tamamen test-first: önce 05'teki test senaryolarını yazdır, sonra implement ettir (TDD bu fazda şart)
+- `lib/slots/` fully test-first: write the test scenarios from 04 first, then implement (TDD is mandatory in this phase)
 - Schema: viewing_calendars, availability_windows (+exceptions), viewing_slots, bookings
-- UI — Viewings sekmesi: takvim yayınla, slot ayarları, agent pencere editörü (haftalık ızgara), tenant daveti (magic link + 3 adımlı "müsaitliğini gir" wizard'ı)
-- Inngest: materialize-slots + gece cron
-- Public `/b/[token]`: gün listesi + slot chip'leri + OTP + onay + .ics + iptal (Granola diliyle: serif başlık, tek sütun, hairline)
-- Agent calendar sayfası: tüm property'lerin booking'leri (liste görünüm yeterli, ay görünümü faz 7'de)
-**DoD:** Uçtan uca: agent pencere gir → kiracı linkten pencere gir → kesişim slotlar public linkte → OTP ile booking → her iki tarafa onay emaili → iptal. Slot engine test coverage ≥90%.
+- UI — Viewings tab: publish calendar, slot settings, agent window editor (weekly grid), tenant invite (magic link + 3-step "enter your availability" wizard)
+- Inngest: materialize-slots + nightly cron
+- Public `/b/[token]`: day list + slot chips + OTP + confirmation + .ics + cancel (in the Granola language: serif heading, single column, hairline)
+- Agent calendar page: bookings across all properties (a list view is enough; month view in phase 7)
+**DoD:** End to end: agent enters windows → tenant enters windows via link → intersection slots on the public link → OTP booking → confirmation email to both sides → cancel. Slot engine test coverage ≥90%.
 
-## FAZ 4 — Forms & Pipeline + Owner Sunumu (2 gün)
+## PHASE 4 — Forms & Pipeline + Owner Presentation (2 days)
 **Context:** 00 (§3.3), 03 (§5), 01
 - Schema: forms, form_submissions, pipeline_stages, applications, owner_views
-- Form builder: alan listesi + özellik paneli (sayfa içi, modal değil); public `/f/[token]`
-- Booking'e form bağlama (`require_form_first`)
-- Pipeline sayfası: kanban (dnd-kit), stage ekle/rename, kart = aday özeti
-- Aday detayı (sheet): cevaplar, ekler, geçmiş, AI özeti alanı (FAZ 6'da dolar)
-- Owner sunumu `/o/[token]`: read-only, shortlist karşılaştırma kartları + approve/request-changes butonu → agent'a bildirim
-**DoD:** Form dolduran aday pipeline'a düşüyor; owner linkiyle onay akışı dönüyor.
+- Form builder: field list + property panel (in-page, not a modal); public `/f/[token]`
+- Attach a form to booking (`require_form_first`)
+- Pipeline page: kanban (dnd-kit), add/rename stages, card = applicant summary
+- Applicant detail (sheet): answers, attachments, history, AI summary field (filled in PHASE 6)
+- Owner presentation `/o/[token]`: read-only, shortlist comparison cards + approve/request-changes button → notification to the agent
+**DoD:** An applicant who fills the form lands in the pipeline; the owner approval flow works via the link.
 
-## FAZ 5 — Inbox: Gmail + Resend (2 gün)
-**Context:** 02, 03 (§6), 05 (§3 kısmen)
-- Settings > Integrations: Gmail OAuth connect/disconnect, durum badge
-- Inngest inbox-sync: history API ile delta çekme, webhook (Pub/Sub) prod'da
-- Resend outbound + react-email şablonları (davet, booking onay, hatırlatıcı)
-- Inbox UI: conversation listesi (sol) + thread (sağ), property/contact auto-link (telefon/email match), okunmadı rozeti
-- Reply composer (şimdilik AI'sız)
-**DoD:** Gmail bağla → inbound mesaj düşüyor → property'ye linkleniyor → inbox'tan reply gidiyor. (WhatsApp bu fazda stub; FAZ 7'de.)
+## PHASE 5 — Inbox: Gmail + Resend (2 days)
+**Context:** 02, 03 (§6), 05 (§3 partially)
+- Settings > Integrations: Gmail OAuth connect/disconnect, status badge
+- Inngest inbox-sync: delta fetch via the history API, webhook (Pub/Sub) in prod
+- Resend outbound + react-email templates (invite, booking confirmation, reminder)
+- Inbox UI: conversation list (left) + thread (right), property/contact auto-link (phone/email match), unread badge
+- Reply composer (without AI for now)
+**DoD:** Connect Gmail → inbound message arrives → linked to the property → reply is sent from the inbox. (WhatsApp is a stub in this phase; PHASE 7.)
 
-## FAZ 6 — AI Çekirdek: Ask + Draft + Summaries (2.5 gün)
+## PHASE 6 — AI Core: Ask + Draft + Summaries (2.5 days)
 **Context:** 05, 01 (prompt-bar)
-- Embeddings pipeline + tool set (6 tool) + Home ask ekranı (streaming, kaynak kartları)
-- Draft with AI (conversation inline) + ton seçici
+- Embeddings pipeline + tool set (6 tools) + Home ask screen (streaming, source cards)
+- Draft with AI (inline in the conversation) + tone picker
 - Applicant auto-summary + score
-- Settings > AI: imza, dil, ton default'ları, kota göstergesi
-- ai_threads geçmişi Home'da liste
-**DoD:** "Bu ay kaç viewing var?" doğru sayıyor; draft üretiliyor ve gönderim metriği yazıyor; yeni başvuruya özet düşüyor.
+- Settings > AI: signature, language, tone defaults, quota indicator
+- ai_threads history listed on Home
+**DoD:** "How many viewings this month?" counts correctly; drafts are generated and the send metric is recorded; a summary appears on new applications.
 
-## FAZ 7 — Contract Mode + WhatsApp + Hatırlatıcılar + Calendar Ay Görünümü (2.5 gün)
+## PHASE 7 — Contract Mode + WhatsApp + Reminders + Calendar Month View (2.5 days)
 **Context:** 05 (§4–5), 00 (§3.5)
-- Templates ayarı, contract wizard, markdown editor + versiyon, DOCX/PDF export, disclaimer akışı
-- WhatsApp Cloud API: template gönderim, inbound webhook, conversation'lara birleşme
-- Proaktif reminders cron + Home "Needs attention"
-- Calendar ay/hafta görünümü (property filtreli), event-chip'li
-**DoD:** Sözleşme taslağı üretilip export ediliyor; WhatsApp mesajı inbox'ta; hatırlatıcı kartları akıyor.
+- Templates settings, contract wizard, markdown editor + versions, DOCX/PDF export, disclaimer flow
+- WhatsApp Cloud API: template sending, inbound webhook, merging into conversations
+- Proactive reminders cron + Home "Needs attention"
+- Calendar month/week view (property filter), with event chips
+**DoD:** A contract draft is generated and exported; a WhatsApp message shows up in the inbox; reminder cards flow in.
 
-## FAZ 8 — Polish & Hardening (1.5 gün)
-- Playwright smoke suite, RLS audit, rate limit'ler, error boundaries, empty state'ler
-- Dark mode gözden geçirme, mobile responsive pass, PWA manifest
-- Seed script (demo workspace: 4 property, booking'ler, conversations) — demo/satış için
-- Performans: public sayfa Lighthouse 95+, N+1 taraması (drizzle query log)
+## PHASE 8 — Polish & Hardening (1.5 days)
+- Playwright smoke suite, RLS audit, rate limits, error boundaries, empty states
+- Dark mode review, mobile responsive pass, PWA manifest
+- Seed script (demo workspace: 4 properties, bookings, conversations) — for demos/sales
+- Performance: public page Lighthouse 95+, N+1 scan (drizzle query log)
 
 ---
 
-## Cursor'la Çalışma Taktikleri
+## Tactics for Working with Cursor
 
-- **Büyük fazları böl**: Tek prompt'ta "FAZ 3'ü yap" deme; "FAZ 3, adım 2: slot engine'i TDD ile yaz" gibi 30–60 dk'lık dilimler.
-- **Önce plan onayı**: Her dilimde Cursor'dan önce değişecek dosya listesi + yaklaşım; onaylamadan kodlatma.
-- **Şema değişikliği protokolü**: Drizzle migration üret → diff'i gözden geçir → uygula. Cursor'a "asla mevcut migration'ı editletme, yenisini üret" kuralı rules'ta.
-- **Regresyon alarmı**: Slot engine'e dokunan her prompt'ta "testleri çalıştır ve sonucu göster" zorunluluğu.
-- **Context hijyeni**: Chat uzayınca yeni chat aç; önceki chat'in "neyin bittiği" özetini (2-3 madde) yeni chate taşı.
-- **UI işlerinde**: Her UI promptunun sonuna ekle: "docs/01-design-system.md §9 altın kuralları ihlal etme; bittiğinde ihlal kontrolü yap."
+- **Split big phases**: Don't say "do PHASE 3" in one prompt; use 30–60 minute slices like "PHASE 3, step 2: write the slot engine with TDD".
+- **Plan approval first**: In every slice ask Cursor for the list of files to change + the approach before coding; don't let it code before approval.
+- **Schema change protocol**: Generate a Drizzle migration → review the diff → apply. The rule "never edit an existing migration, generate a new one" lives in the rules.
+- **Regression alarm**: Every prompt touching the slot engine must "run the tests and show the result".
+- **Context hygiene**: When a chat gets long, open a new one; carry a 2–3 bullet summary of "what is done" into the new chat.
+- **UI work**: End every UI prompt with: "Don't violate the golden rules in docs/01-design-system.md §9; run a violation check when done."

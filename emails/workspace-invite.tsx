@@ -11,8 +11,8 @@ export type WorkspaceInviteEmailProps = {
 };
 
 const roleLabel: Record<WorkspaceInviteEmailProps["role"], string> = {
-  agent: "Emlakçı",
-  assistant: "Asistan",
+  agent: "Agent",
+  assistant: "Assistant",
 };
 
 export function WorkspaceInviteEmail({
@@ -24,20 +24,21 @@ export function WorkspaceInviteEmail({
 }: WorkspaceInviteEmailProps) {
   return (
     <EmailLayout
-      preview={`${inviterName} seni ${workspaceName} çalışma alanına davet etti`}
+      preview={`${inviterName} invited you to the ${workspaceName} workspace`}
     >
       <Heading style={emailStyles.heading}>
-        {workspaceName} çalışma alanına davet
+        You&apos;re invited to {workspaceName}
       </Heading>
       <Text style={emailStyles.text}>
-        {inviterName}, seni <strong>{workspaceName}</strong> çalışma alanına{" "}
-        <strong>{roleLabel[role]}</strong> rolüyle davet etti.
+        {inviterName} invited you to join <strong>{workspaceName}</strong> as{" "}
+        <strong>{roleLabel[role]}</strong>.
       </Text>
       <Button href={acceptUrl} style={emailStyles.button}>
-        Daveti kabul et
+        Accept invitation
       </Button>
       <Text style={{ ...emailStyles.muted, marginTop: 16 }}>
-        Bağlantı {expiresInDays} gün geçerlidir. Buton çalışmazsa: {acceptUrl}
+        This link is valid for {expiresInDays} days. If the button doesn&apos;t
+        work, open: {acceptUrl}
       </Text>
     </EmailLayout>
   );

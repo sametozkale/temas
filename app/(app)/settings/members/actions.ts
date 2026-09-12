@@ -41,7 +41,7 @@ async function deliverInvite(params: {
   ).toString();
   await sendEmail({
     to: params.email,
-    subject: `${params.workspaceName} çalışma alanına davet`,
+    subject: `You're invited to ${params.workspaceName} on Havn`,
     react: WorkspaceInviteEmail({
       workspaceName: params.workspaceName,
       inviterName: params.inviterName,

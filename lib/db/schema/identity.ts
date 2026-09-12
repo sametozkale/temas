@@ -37,7 +37,7 @@ export const profiles = pgTable(
     fullName: text("full_name"),
     phone: text("phone"),
     avatarUrl: text("avatar_url"),
-    locale: text("locale").notNull().default("tr"),
+    locale: text("locale").notNull().default("en"),
     ...timestamps,
   },
   (t) => [

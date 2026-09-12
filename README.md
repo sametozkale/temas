@@ -12,10 +12,12 @@ AI-native property management platform for real estate agents. Rental-focused wo
 | 03 | [Database Schema](docs/03-database-schema.md) | Postgres / Supabase / Drizzle schema, RLS notes |
 | 04 | [Slot Engine](docs/04-slot-engine.md) | Multi-party availability intersection, materialization, public booking flow, mandatory tests |
 | 05 | [AI Features](docs/05-ai-features.md) | Home ask (RAG + tools), Draft with AI, reminders, contract mode, embeddings pipeline |
-| 06 | [Roadmap](docs/06-roadmap.md) | Phase-by-phase build plan (FAZ 0–8) with definition of done |
+| 06 | [Roadmap](docs/06-roadmap.md) | Phase-by-phase build plan (Phase 0–8) with definition of done |
 | 07 | [Cursor Rules](docs/07-cursor-rules.md) | Source of `.cursor/rules/*.mdc` |
 
 Read the relevant doc before starting a feature. Code must not contradict the docs; update the doc first if needed.
+
+Language: everything is English — code, docs and all user-facing copy. UI strings live in `messages/en.json` (next-intl, single locale, no URL prefix).
 
 ## Development
 
