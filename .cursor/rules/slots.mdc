@@ -1,0 +1,13 @@
+---
+description: Slot engine kuralları — lib/slots ve takvim kodunda uygula
+globs: lib/slots/**,inngest/**,app/(public)/b/**
+alwaysApply: false
+---
+
+- lib/slots saf fonksiyonlardır: DB importu, fetch, Date.now() doğrudan çağrısı YASAK (now parametre olarak gelir).
+- Zaman: her zaman UTC sakla/hesapla; timezone çevirisi yalnızca sınırda (expandRRule çıkışı ve render).
+- Yarı-açık aralık konvansiyonu: [start, end). 17:00 bitişi 17:00 başlangıcını kapsamaz.
+- Değişiklik TDD: önce docs/04-slot-engine.md §5 senaryolarından test, sonra implementasyon.
+- Materyalizasyon idempotent olmalı: aynı input iki kez → aynı diff (boş ikinci diff).
+- booked/blocked slotlar asla silinmez; pencere küçülürse 'blocked' + agent uyarısı.
+- Bu klasöre dokunan her task sonunda: `npm run test -- lib/slots` çalıştır, sonucu raporla.
