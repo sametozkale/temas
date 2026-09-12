@@ -1,0 +1,58 @@
+{
+  "app": {
+    "name": "Havn"
+  },
+  "nav": {
+    "home": "Ana sayfa",
+    "inbox": "Gelen kutusu",
+    "calendar": "Takvim",
+    "properties": "Mülkler",
+    "settings": "Ayarlar",
+    "properties_shortcuts": "Mülkler",
+    "collapse": "Menüyü daralt",
+    "expand": "Menüyü genişlet",
+    "open_menu": "Menüyü aç",
+    "workspace_placeholder": "Çalışma alanı"
+  },
+  "home": {
+    "title": "Coming up",
+    "description": "Yaklaşan görüşmeler ve AI özetin burada görünecek.",
+    "empty_title": "Henüz yaklaşan görüşme yok",
+    "empty_description": "İlk mülkünü ekleyip görüşme takvimini yayınla.",
+    "prompt_placeholder": "Portföyün hakkında bir şey sor…"
+  },
+  "inbox": {
+    "title": "Gelen kutusu",
+    "description": "Email ve WhatsApp konuşmaların tek yerde.",
+    "empty_title": "Henüz konuşma yok",
+    "empty_description": "Gmail veya WhatsApp bağlayınca mesajlar burada toplanır.",
+    "connect": "Entegrasyon bağla"
+  },
+  "calendar": {
+    "title": "Takvim",
+    "description": "Tüm mülklerdeki görüşmeler.",
+    "empty_title": "Planlanmış görüşme yok",
+    "empty_description": "Bir mülkün görüşme takvimini yayınlayınca randevular burada listelenir."
+  },
+  "properties": {
+    "title": "Mülkler",
+    "description": "Portföyündeki tüm mülkler.",
+    "empty_title": "Henüz mülk yok",
+    "empty_description": "İlk mülkünü ekleyerek başla.",
+    "new": "Yeni mülk"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "description": "Çalışma alanı, üyeler, entegrasyonlar ve AI tercihleri.",
+    "empty_title": "Ayarlar yakında",
+    "empty_description": "Genel, Üyeler, Entegrasyonlar, Bildirimler, AI ve Şablonlar burada olacak.",
+    "design_title": "Tasarım sistemi",
+    "design_description": "docs/01-design-system.md doğrulama ekranı (geliştirici referansı)."
+  },
+  "common": {
+    "add_property": "Mülk ekle",
+    "invite": "Davet et",
+    "send": "Gönder",
+    "close": "Kapat"
+  }
+}

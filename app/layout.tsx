@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Newsreader } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,16 +27,20 @@ export const metadata: Metadata = {
   description: "AI-native property management for real estate agents",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+
   return (
-    <html lang="tr" className={`${inter.variable} ${newsreader.variable}`}>
+    <html lang={locale} className={`${inter.variable} ${newsreader.variable}`}>
       <body>
-        <TooltipProvider>{children}</TooltipProvider>
-        <Toaster />
+        <NextIntlClientProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+          <Toaster />
+        </NextIntlClientProvider>
       </body>
     </html>
   );
