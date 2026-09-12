@@ -2,7 +2,6 @@
 
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 
 import { OwnerDecisionEmail } from "@/emails/owner-decision";
 import { actionError, actionOk, type ActionResult } from "@/lib/action-result";
@@ -17,17 +16,9 @@ import {
   listStages,
 } from "@/lib/pipeline/queries";
 import { ownerDecisionSchema } from "@/lib/pipeline/schema";
+import { clientIp } from "@/lib/http";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { listWorkspaceStaff } from "@/lib/viewings/queries";
-
-async function clientIp() {
-  const h = await headers();
-  return (
-    h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    h.get("x-real-ip") ||
-    "local"
-  );
-}
 
 export async function submitOwnerDecision(
   token: string,

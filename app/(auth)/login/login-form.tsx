@@ -83,7 +83,7 @@ export function LoginForm({
           required
           autoFocus
           defaultValue={defaultEmail}
-          placeholder="ad@ornek.com"
+          placeholder="you@agency.com"
         />
         {errorKey ? <FieldError>{t(`errors.${errorKey}`)}</FieldError> : null}
       </Field>

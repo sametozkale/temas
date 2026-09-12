@@ -2,7 +2,7 @@
 
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 
 import { ApplicationReceivedEmail } from "@/emails/application-received";
 import { actionError, actionOk, type ActionResult } from "@/lib/action-result";
@@ -16,6 +16,7 @@ import { STAGE_NEW, STAGE_RENTED } from "@/lib/pipeline/defaults";
 import { ensurePipeline } from "@/lib/pipeline/ensure";
 import { getFormByPublicToken, listStages } from "@/lib/pipeline/queries";
 import { identitySchema } from "@/lib/pipeline/schema";
+import { clientIp } from "@/lib/http";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { enqueueApplicantSummary } from "@/lib/ai/enqueue";
 import { buildObjectPath, uploadPublicDocument } from "@/lib/storage";
@@ -23,15 +24,6 @@ import {
   getCalendarByProperty,
   listWorkspaceStaff,
 } from "@/lib/viewings/queries";
-
-async function clientIp() {
-  const h = await headers();
-  return (
-    h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    h.get("x-real-ip") ||
-    "local"
-  );
-}
 
 export async function submitPublicForm(
   token: string,

@@ -262,4 +262,96 @@ describeDb("RLS via withUserContext", () => {
 
     await db.execute(sql`delete from auth.users where id = ${assistant}::uuid`);
   });
+
+  it("hides other workspaces' conversations, contracts and reminders", async () => {
+    const [prop] = await withUserContext(userA, (tx) =>
+      tx
+        .insert(schema.properties)
+        .values({
+          workspaceId: wsA,
+          type: "apartment",
+          title: "RLS contract loft",
+        })
+        .returning({ id: schema.properties.id }),
+    );
+
+    const [conversation] = await withUserContext(userA, (tx) =>
+      tx
+        .insert(schema.conversations)
+        .values({
+          workspaceId: wsA,
+          channel: "email",
+          subject: "Private thread",
+        })
+        .returning({ id: schema.conversations.id }),
+    );
+
+    const [contract] = await withUserContext(userA, (tx) =>
+      tx
+        .insert(schema.contracts)
+        .values({
+          propertyId: prop!.id,
+          bodyMd: "# Draft",
+        })
+        .returning({ id: schema.contracts.id }),
+    );
+
+    const [reminder] = await withUserContext(userA, (tx) =>
+      tx
+        .insert(schema.reminders)
+        .values({
+          workspaceId: wsA,
+          userId: userA,
+          kind: "unanswered_message",
+          message: "Follow up",
+          dueAt: new Date(),
+        })
+        .returning({ id: schema.reminders.id }),
+    );
+
+    const seenConv = await withUserContext(userB, (tx) =>
+      tx.select({ id: schema.conversations.id }).from(schema.conversations),
+    );
+    expect(seenConv.map((r) => r.id)).not.toContain(conversation!.id);
+
+    const seenContracts = await withUserContext(userB, (tx) =>
+      tx.select({ id: schema.contracts.id }).from(schema.contracts),
+    );
+    expect(seenContracts.map((r) => r.id)).not.toContain(contract!.id);
+
+    const seenReminders = await withUserContext(userB, (tx) =>
+      tx.select({ id: schema.reminders.id }).from(schema.reminders),
+    );
+    expect(seenReminders.map((r) => r.id)).not.toContain(reminder!.id);
+
+    await expectRlsViolation(
+      withUserContext(userB, (tx) =>
+        tx.insert(schema.conversations).values({
+          workspaceId: wsA,
+          channel: "email",
+          subject: "Foreign thread",
+        }),
+      ),
+    );
+
+    await expectRlsViolation(
+      withUserContext(userB, (tx) =>
+        tx.insert(schema.contracts).values({
+          propertyId: prop!.id,
+          bodyMd: "# Foreign",
+        }),
+      ),
+    );
+
+    await expectRlsViolation(
+      withUserContext(userB, (tx) =>
+        tx.insert(schema.reminders).values({
+          workspaceId: wsA,
+          kind: "booking_soon",
+          message: "Foreign reminder",
+          dueAt: new Date(),
+        }),
+      ),
+    );
+  });
 });

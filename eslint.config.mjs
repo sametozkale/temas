@@ -21,6 +21,9 @@ const eslintConfig = [
       "drizzle/**",
       "supabase/**",
       "coverage/**",
+      "playwright-report/**",
+      "test-results/**",
+      "e2e/.seed.json",
     ],
   },
   {

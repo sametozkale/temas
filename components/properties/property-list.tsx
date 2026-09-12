@@ -108,7 +108,7 @@ export async function PropertyGrid({ items }: { items: PropertyListItem[] }) {
 export async function PropertyTable({ items }: { items: PropertyListItem[] }) {
   const t = await getTranslations("properties");
   return (
-    <Card className="gap-0 overflow-hidden py-0">
+    <Card className="gap-0 overflow-x-auto py-0">
       <Table>
         <TableHeader>
           <TableRow>

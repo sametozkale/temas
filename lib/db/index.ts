@@ -22,7 +22,10 @@ function createClient() {
   }
   // prepare:false keeps the client compatible with Supabase's transaction pooler.
   const client = postgres(url, { prepare: false });
-  return drizzle(client, { schema });
+  return drizzle(client, {
+    schema,
+    logger: process.env.DRIZZLE_LOG === "1",
+  });
 }
 
 const globalForDb = globalThis as unknown as {

@@ -4,7 +4,6 @@ import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 
 import { actionError, actionOk, type ActionResult } from "@/lib/action-result";
 import { logActivity } from "@/lib/activity";
@@ -13,6 +12,7 @@ import { bookings, contacts, emailOtps, viewingSlots } from "@/lib/db/schema";
 import { env } from "@/lib/env";
 import { formatAddress, formatDateTime } from "@/lib/format";
 import { sendEmail } from "@/lib/integrations/resend";
+import { clientIp } from "@/lib/http";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { secureToken } from "@/lib/slug";
 import { enqueueMaterialize } from "@/lib/viewings/enqueue";
@@ -105,15 +105,6 @@ async function notifyWorkspaceParties(input: {
       });
     }
   }
-}
-
-async function clientIp() {
-  const h = await headers();
-  return (
-    h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    h.get("x-real-ip") ||
-    "local"
-  );
 }
 
 export async function requestBookingOtp(

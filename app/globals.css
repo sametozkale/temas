@@ -189,6 +189,10 @@
   html {
     @apply font-sans;
     font-feature-settings: "cv11", "ss01";
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
   }
   body {
     @apply bg-background text-foreground antialiased;

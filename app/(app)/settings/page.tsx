@@ -4,6 +4,7 @@ import { getAppContext } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
 import { can } from "@/lib/permissions";
+import { AppearanceForm } from "@/components/settings/appearance-form";
 
 import { ProfileForm, WorkspaceForm } from "./general-forms";
 
@@ -27,6 +28,7 @@ export default async function SettingsGeneralPage() {
         phone={profile?.phone ?? ""}
         email={ctx.user.email ?? ""}
       />
+      <AppearanceForm />
     </div>
   );
 }

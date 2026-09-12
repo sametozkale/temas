@@ -12,8 +12,21 @@ import { ingestInboundEmail } from "@/lib/inbox/ingest";
 import { ingestInboundWhatsApp } from "@/lib/inbox/ingest-whatsapp";
 import { inboundInjectSchema, whatsappInjectSchema } from "@/lib/inbox/schema";
 import { ForbiddenError, requireAbility } from "@/lib/permissions";
+import { clientIp } from "@/lib/http";
+import { consumeRateLimit } from "@/lib/rate-limit";
 
 export type IntegrationsState = ActionResult<{ conversationId?: string }>;
+
+async function consumeInjectLimit(workspaceId: string) {
+  const ip = await clientIp();
+  const wsLimit = await consumeRateLimit(
+    `inject:ws:${workspaceId}`,
+    20,
+    60 * 60 * 1000,
+  );
+  const ipLimit = await consumeRateLimit(`inject:ip:${ip}`, 30, 60 * 60 * 1000);
+  return wsLimit.ok && ipLimit.ok;
+}
 
 export async function connectGmailDev(): Promise<IntegrationsState> {
   const ctx = await getAppContext();
@@ -118,6 +131,9 @@ export async function injectInbound(
   });
   if (!parsed.success) {
     return actionError("invalid", parsed.error.flatten().fieldErrors);
+  }
+  if (!(await consumeInjectLimit(ctx.workspace.id))) {
+    return actionError("rate_limited");
   }
 
   const [gmail] = await db
@@ -249,6 +265,9 @@ export async function injectWhatsApp(
   });
   if (!parsed.success) {
     return actionError("invalid", parsed.error.flatten().fieldErrors);
+  }
+  if (!(await consumeInjectLimit(ctx.workspace.id))) {
+    return actionError("rate_limited");
   }
 
   const [whatsapp] = await db

@@ -4,6 +4,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { integrations } from "@/lib/db/schema";
 import { enqueueInboxSync } from "@/lib/inbox/enqueue";
+import { clientIpFromHeaders } from "@/lib/http";
+import { consumeRateLimit } from "@/lib/rate-limit";
 
 function decodePayload(data: string) {
   const json = Buffer.from(data, "base64url").toString("utf8");
@@ -16,6 +18,12 @@ function decodePayload(data: string) {
  * system client.
  */
 export async function POST(request: NextRequest) {
+  const ip = clientIpFromHeaders(request.headers);
+  const limit = await consumeRateLimit(`webhook:gmail:${ip}`, 120, 60 * 1000);
+  if (!limit.ok) {
+    return NextResponse.json({ ok: true });
+  }
+
   let body: { message?: { data?: string } };
   try {
     body = (await request.json()) as { message?: { data?: string } };

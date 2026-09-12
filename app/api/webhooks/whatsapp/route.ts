@@ -4,11 +4,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { integrations } from "@/lib/db/schema";
 import { env, integrations as integrationFlags } from "@/lib/env";
+import { clientIpFromHeaders } from "@/lib/http";
 import { ingestInboundWhatsApp } from "@/lib/inbox/ingest-whatsapp";
 import {
   parseWhatsAppPayload,
   verifyWhatsAppSignature,
 } from "@/lib/integrations/whatsapp/parse";
+import { consumeRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
   const mode = request.nextUrl.searchParams.get("hub.mode");
@@ -25,6 +27,16 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = clientIpFromHeaders(request.headers);
+  const limit = await consumeRateLimit(
+    `webhook:whatsapp:${ip}`,
+    120,
+    60 * 1000,
+  );
+  if (!limit.ok) {
+    return NextResponse.json({ ok: true, rate_limited: true });
+  }
+
   const raw = await request.text();
   if (
     !verifyWhatsAppSignature(

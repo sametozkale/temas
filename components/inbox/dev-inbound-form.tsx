@@ -45,6 +45,8 @@ export function DevInboundForm({
     else if (state.error === "forbidden") toast.error(t("errors.forbidden"));
     else if (state.error === "not_connected") {
       toast.error(t("errors.not_connected"));
+    } else if (state.error === "rate_limited") {
+      toast.error(t("errors.rate_limited"));
     } else if (state.error !== "invalid") toast.error(t("errors.generic"));
   }, [state, t]);
 
@@ -176,6 +178,8 @@ export function WhatsAppInboundForm() {
     else if (state.error === "forbidden") toast.error(t("errors.forbidden"));
     else if (state.error === "not_connected") {
       toast.error(t("errors.not_connected"));
+    } else if (state.error === "rate_limited") {
+      toast.error(t("errors.rate_limited"));
     } else if (state.error !== "invalid") toast.error(t("errors.generic"));
   }, [state, t]);
 

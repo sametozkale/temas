@@ -9,6 +9,8 @@ import {
   type ActionResult,
 } from "@/lib/action-result";
 import { env } from "@/lib/env";
+import { clientIp } from "@/lib/http";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const schema = z.object({
@@ -31,6 +33,17 @@ export async function sendMagicLink(
   }
 
   const next = safeNextPath(parsed.data.next);
+  const ip = await clientIp();
+  const emailLimit = await consumeRateLimit(
+    `login:email:${parsed.data.email}`,
+    5,
+    15 * 60 * 1000,
+  );
+  const ipLimit = await consumeRateLimit(`login:ip:${ip}`, 20, 15 * 60 * 1000);
+  if (!emailLimit.ok || !ipLimit.ok) {
+    return actionError("rate_limited");
+  }
+
   const redirectTo = new URL("/auth/callback", env().APP_URL);
   redirectTo.searchParams.set("next", next);
 

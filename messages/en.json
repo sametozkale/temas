@@ -37,6 +37,14 @@
       "link_invalid": "This link is invalid or has expired. Request a new one."
     }
   },
+  "errors": {
+    "title": "Something went wrong",
+    "description": "The page could not be loaded. Try again.",
+    "retry": "Try again",
+    "not_found_title": "Page not found",
+    "not_found_description": "That link does not exist or is no longer available.",
+    "go_home": "Back to Home"
+  },
   "onboarding": {
     "title": "Create your workspace",
     "description": "You're signed in as {email}. A few details to get started.",
@@ -722,6 +730,13 @@
       "ai": "AI",
       "templates": "Templates"
     },
+    "appearance": {
+      "title": "Appearance",
+      "description": "Light, dark or match the device. Saved on this browser.",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
     "general": {
       "workspace_title": "Workspace",
       "workspace_description": "The name your team sees and the default timezone.",
@@ -841,6 +856,7 @@
       "errors": {
         "generic": "Something went wrong. Try again.",
         "forbidden": "You don't have permission to do that.",
+        "rate_limited": "Too many attempts. Try again in a moment.",
         "not_connected": "Connect the integration first.",
         "gmail_oauth": "Google OAuth is not configured. Use Connect in development, or add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.",
         "gmail_denied": "Gmail access was not granted.",

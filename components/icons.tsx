@@ -121,4 +121,7 @@ export {
   ArrowReloadHorizontalIcon,
   Package01Icon,
   Tag01Icon,
+  Sun03Icon,
+  Moon02Icon,
+  ComputerIcon,
 } from "@hugeicons/core-free-icons";
