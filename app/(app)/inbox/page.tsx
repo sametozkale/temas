@@ -1,26 +1,30 @@
 import { getTranslations } from "next-intl/server";
 
-import { EmptyState } from "@/components/empty-state";
-import { InboxIcon } from "@/components/icons";
+import { InboxSplit } from "@/components/inbox/inbox-split";
 import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
+import { getAppContext } from "@/lib/auth";
+import { withUserContext } from "@/lib/db";
+import { listConversations } from "@/lib/inbox/queries";
 
 export default async function InboxPage() {
+  const ctx = await getAppContext();
   const t = await getTranslations("inbox");
+  const items = await withUserContext(ctx.user.id, (tx) =>
+    listConversations(tx, ctx.workspace.id),
+  );
 
   return (
-    <div className="space-y-8">
-      <PageHeader title={t("title")} description={t("description")} />
-      <EmptyState
-        icon={InboxIcon}
-        title={t("empty_title")}
-        description={t("empty_description")}
-        action={
-          <Button variant="ghost" size="sm" disabled>
-            {t("connect")}
-          </Button>
-        }
+    <div className="flex h-[calc(100dvh-6rem)] flex-col">
+      <PageHeader
+        className="pb-4"
+        title={t("title")}
+        description={t("description")}
       />
+      <InboxSplit items={items}>
+        <div className="flex h-full items-center justify-center px-6 text-center">
+          <p className="text-sm text-muted-foreground">{t("select_thread")}</p>
+        </div>
+      </InboxSplit>
     </div>
   );
 }

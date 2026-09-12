@@ -27,6 +27,7 @@ type AppShellProps = {
   user?: SidebarUser;
   workspaces?: UserMenuWorkspace[];
   shortcuts?: SidebarShortcut[];
+  inboxUnread?: number;
   children: React.ReactNode;
 };
 
@@ -39,6 +40,7 @@ export function AppShell({
   user,
   workspaces,
   shortcuts,
+  inboxUnread = 0,
   children,
 }: AppShellProps) {
   const t = useTranslations("nav");
@@ -65,7 +67,7 @@ export function AppShell({
     });
   }
 
-  const sidebarProps = { workspace, user, workspaces, shortcuts };
+  const sidebarProps = { workspace, user, workspaces, shortcuts, inboxUnread };
 
   return (
     <div className="flex min-h-screen bg-background">

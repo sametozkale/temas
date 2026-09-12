@@ -10,6 +10,11 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import {
+  WRITE_ROLES_STAFF,
+  conversationChildPolicies,
+  workspacePolicies,
+} from "../rls";
 import { baseColumns } from "./_shared";
 import { contacts } from "./contacts";
 import { workspaces } from "./identity";
@@ -40,6 +45,7 @@ export const integrations = pgTable(
       "integrations_kind_check",
       sql`${t.kind} in ('gmail','outlook','whatsapp')`,
     ),
+    ...workspacePolicies("integrations", t.workspaceId, WRITE_ROLES_STAFF),
   ],
 ).enableRLS();
 
@@ -74,6 +80,7 @@ export const conversations = pgTable(
       "conversations_channel_check",
       sql`${t.channel} in ('email','whatsapp')`,
     ),
+    ...workspacePolicies("conversations", t.workspaceId),
   ],
 ).enableRLS();
 
@@ -95,16 +102,25 @@ export const messages = pgTable(
   },
   (t) => [
     check("messages_direction_check", sql`${t.direction} in ('in','out')`),
+    unique("messages_conversation_external_unique").on(
+      t.conversationId,
+      t.externalId,
+    ),
+    ...conversationChildPolicies("messages", t.conversationId),
   ],
 ).enableRLS();
 
-export const aiDrafts = pgTable("ai_drafts", {
-  ...baseColumns,
-  conversationId: uuid("conversation_id")
-    .notNull()
-    .references(() => conversations.id, { onDelete: "cascade" }),
-  body: text("body").notNull(),
-  tone: text("tone"),
-  status: text("status").notNull().default("pending"),
-  model: text("model"),
-}).enableRLS();
+export const aiDrafts = pgTable(
+  "ai_drafts",
+  {
+    ...baseColumns,
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    tone: text("tone"),
+    status: text("status").notNull().default("pending"),
+    model: text("model"),
+  },
+  (t) => [...conversationChildPolicies("ai_drafts", t.conversationId)],
+).enableRLS();

@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/app-shell";
 import { getAppContext, initialsOf } from "@/lib/auth";
 import { withUserContext } from "@/lib/db";
+import { countUnread } from "@/lib/inbox/queries";
 import { recentProperties } from "@/lib/properties/queries";
 
 /**
@@ -14,8 +15,12 @@ export default async function AppLayout({
 }) {
   const ctx = await getAppContext();
   const displayName = ctx.profile.fullName ?? ctx.user.email ?? "—";
-  const shortcuts = await withUserContext(ctx.user.id, (tx) =>
-    recentProperties(tx, ctx.workspace.id),
+  const { shortcuts, inboxUnread } = await withUserContext(
+    ctx.user.id,
+    async (tx) => ({
+      shortcuts: await recentProperties(tx, ctx.workspace.id),
+      inboxUnread: await countUnread(tx, ctx.workspace.id),
+    }),
   );
 
   return (
@@ -40,6 +45,7 @@ export default async function AppLayout({
         title: p.title,
         href: `/properties/${p.id}`,
       }))}
+      inboxUnread={inboxUnread}
     >
       {children}
     </AppShell>

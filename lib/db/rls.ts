@@ -79,6 +79,48 @@ export const hasFormRole = (
     roles.map((r) => `'${r.replace(/'/g, "''")}'`).join(", "),
   )})`;
 
+export const isConversationMember = (conversationId: AnyPgColumn): SQL =>
+  sql`public.is_workspace_member((select c.workspace_id from public.conversations c where c.id = ${conversationId}))`;
+
+export const hasConversationRole = (
+  conversationId: AnyPgColumn,
+  roles: readonly string[],
+): SQL =>
+  sql`public.workspace_role((select c.workspace_id from public.conversations c where c.id = ${conversationId})) in (${sql.raw(
+    roles.map((r) => `'${r.replace(/'/g, "''")}'`).join(", "),
+  )})`;
+
+/** Policy set for tables keyed by `conversation_id` (messages, ai_drafts). */
+export function conversationChildPolicies(
+  table: string,
+  conversationId: AnyPgColumn,
+  writeRoles: readonly string[] = WRITE_ROLES_ALL,
+) {
+  return [
+    pgPolicy(`${table}_select_members`, {
+      for: "select",
+      to: authenticatedRole,
+      using: isConversationMember(conversationId),
+    }),
+    pgPolicy(`${table}_insert_roles`, {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: hasConversationRole(conversationId, writeRoles),
+    }),
+    pgPolicy(`${table}_update_roles`, {
+      for: "update",
+      to: authenticatedRole,
+      using: hasConversationRole(conversationId, writeRoles),
+      withCheck: hasConversationRole(conversationId, writeRoles),
+    }),
+    pgPolicy(`${table}_delete_roles`, {
+      for: "delete",
+      to: authenticatedRole,
+      using: hasConversationRole(conversationId, writeRoles),
+    }),
+  ];
+}
+
 /** Policy set for tables keyed by `form_id` (form_submissions). */
 export function formChildPolicies(
   table: string,

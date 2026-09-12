@@ -78,7 +78,23 @@
     "description": "Your email and WhatsApp conversations in one place.",
     "empty_title": "No conversations yet",
     "empty_description": "Connect Gmail or WhatsApp and messages will be collected here.",
-    "connect": "Connect an integration"
+    "empty_list": "No conversations yet.",
+    "connect": "Connect an integration",
+    "select_thread": "Select a conversation to read it.",
+    "unknown_contact": "Unknown contact",
+    "no_subject": "(no subject)",
+    "unlinked_property": "Not linked to a property yet",
+    "you": "You",
+    "send": "Send",
+    "reply_placeholder": "Write a reply…",
+    "reply_sent": "Reply sent",
+    "back": "All conversations",
+    "errors": {
+      "body": "Write a message before sending.",
+      "forbidden": "You don't have permission to reply.",
+      "no_recipient": "This conversation has no email address to reply to.",
+      "send_failed": "The reply could not be sent. Try again."
+    }
   },
   "calendar": {
     "title": "Calendar",
@@ -414,6 +430,14 @@
         "owner_view": {
           "created": "created an owner presentation link"
         },
+        "inbox": {
+          "message_received": "received an inbox message",
+          "reply_sent": "sent an inbox reply"
+        },
+        "integration": {
+          "connected": "connected {kind}",
+          "disconnected": "disconnected {kind}"
+        },
         "unknown": "{action}"
       }
     },
@@ -712,6 +736,45 @@
         "forbidden": "You don't have permission to do that.",
         "not_found": "Record not found.",
         "last_owner": "A workspace needs at least one owner."
+      }
+    },
+    "integrations": {
+      "gmail_title": "Gmail",
+      "gmail_description": "Sync inbound mail and send replies from the Havn inbox.",
+      "gmail_empty": "Connect Gmail to pull conversations into Havn. In development you can connect without Google OAuth.",
+      "whatsapp_title": "WhatsApp",
+      "whatsapp_description": "Business Cloud API inbound and templates.",
+      "whatsapp_stub": "WhatsApp connects in a later phase. Conversations will share this inbox.",
+      "connect": "Connect Gmail",
+      "connect_dev": "Connect in development",
+      "disconnect": "Disconnect",
+      "connected": "Gmail connected",
+      "disconnected": "Gmail disconnected",
+      "status_connected": "Connected",
+      "status_disconnected": "Not connected",
+      "status_soon": "Coming later",
+      "connected_as": "Connected as {email}",
+      "last_synced": "Last synced {when}",
+      "staff_only": "Only owners and agents can manage integrations.",
+      "inject_title": "Simulate inbound email",
+      "inject_description": "Drop a message into the inbox without Gmail. Mention a property title to auto-link it.",
+      "inject_submit": "Inject message",
+      "inject_sent": "Message added to the inbox",
+      "inject_body_default": "Hello, I would like to book a viewing for Kadıköy bright 2+1 this week.",
+      "from_name": "From name",
+      "from_email": "From email",
+      "subject": "Subject",
+      "body": "Body",
+      "errors": {
+        "generic": "Something went wrong. Try again.",
+        "forbidden": "You don't have permission to do that.",
+        "not_connected": "Connect Gmail first.",
+        "gmail_oauth": "Google OAuth is not configured. Use Connect in development, or add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.",
+        "gmail_denied": "Gmail access was not granted.",
+        "from_name": "Enter a name.",
+        "from_email": "Enter a valid email address.",
+        "subject": "Enter a subject.",
+        "body": "Enter a message."
       }
     }
   },

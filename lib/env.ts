@@ -24,6 +24,8 @@ const serverSchema = z.object({
 
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
+  /** Gmail users.watch Pub/Sub topic. Empty = poll-only (history.list / cron). */
+  GMAIL_PUBSUB_TOPIC: z.string().optional(),
 
   META_WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
   META_WHATSAPP_ACCESS_TOKEN: z.string().optional(),
@@ -57,6 +59,7 @@ export function env(): ServerEnv {
 export const integrations = {
   resend: () => Boolean(env().RESEND_API_KEY),
   gmail: () => Boolean(env().GOOGLE_CLIENT_ID && env().GOOGLE_CLIENT_SECRET),
+  gmailPubsub: () => Boolean(env().GMAIL_PUBSUB_TOPIC),
   whatsapp: () =>
     Boolean(
       env().META_WHATSAPP_PHONE_NUMBER_ID && env().META_WHATSAPP_ACCESS_TOKEN,

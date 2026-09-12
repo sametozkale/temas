@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const items = [
   { key: "general", href: "/settings", enabled: true },
   { key: "members", href: "/settings/members", enabled: true },
-  { key: "integrations", href: "/settings/integrations", enabled: false },
+  { key: "integrations", href: "/settings/integrations", enabled: true },
   { key: "notifications", href: "/settings/notifications", enabled: false },
   { key: "ai", href: "/settings/ai", enabled: false },
   { key: "templates", href: "/settings/templates", enabled: false },

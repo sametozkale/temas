@@ -32,6 +32,7 @@ type SidebarProps = {
   /** Called after navigation on mobile so the sheet can close. */
   onNavigate?: () => void;
   className?: string;
+  inboxUnread?: number;
 };
 
 function isActive(pathname: string, item: NavItem) {
@@ -51,6 +52,7 @@ export function Sidebar({
   onToggleCollapse,
   onNavigate,
   className,
+  inboxUnread = 0,
 }: SidebarProps) {
   const t = useTranslations("nav");
   const pathname = usePathname();
@@ -91,7 +93,7 @@ export function Sidebar({
               onClick={onNavigate}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex h-8 items-center gap-2.5 rounded-md px-2 text-[13px] font-medium transition-colors",
+                "relative flex h-8 items-center gap-2.5 rounded-md px-2 text-[13px] font-medium transition-colors",
                 active
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground",
@@ -101,6 +103,18 @@ export function Sidebar({
               <Icon icon={item.icon} size={18} className="shrink-0" />
               {!collapsed ? (
                 <span className="truncate">{t(item.key)}</span>
+              ) : null}
+              {item.key === "inbox" && inboxUnread > 0 ? (
+                collapsed ? (
+                  <span
+                    className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-primary"
+                    aria-hidden
+                  />
+                ) : (
+                  <span className="ml-auto rounded-full bg-primary px-1.5 text-[10px] font-medium text-primary-foreground">
+                    {inboxUnread > 99 ? "99+" : inboxUnread}
+                  </span>
+                )
               ) : null}
             </Link>
           );
