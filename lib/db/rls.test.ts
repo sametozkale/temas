@@ -157,4 +157,109 @@ describeDb("RLS via withUserContext", () => {
     );
     expect(deleted).toHaveLength(0);
   });
+
+  it("scopes properties to the caller's workspace", async () => {
+    const [own] = await withUserContext(userA, (tx) =>
+      tx
+        .insert(schema.properties)
+        .values({
+          workspaceId: wsA,
+          type: "apartment",
+          title: "A loft",
+        })
+        .returning({ id: schema.properties.id }),
+    );
+    expect(own?.id).toBeTruthy();
+
+    const seenByB = await withUserContext(userB, (tx) =>
+      tx.select({ id: schema.properties.id }).from(schema.properties),
+    );
+    expect(seenByB.map((r) => r.id)).not.toContain(own!.id);
+
+    await expectRlsViolation(
+      withUserContext(userB, (tx) =>
+        tx.insert(schema.properties).values({
+          workspaceId: wsA,
+          type: "house",
+          title: "Foreign insert",
+        }),
+      ),
+    );
+  });
+
+  it("lets a joined tenant read the property but not write inventory", async () => {
+    const [prop] = await db
+      .insert(schema.properties)
+      .values({
+        workspaceId: wsA,
+        type: "office",
+        title: "Shared office",
+      })
+      .returning({ id: schema.properties.id });
+
+    const [contact] = await db
+      .insert(schema.contacts)
+      .values({
+        workspaceId: wsA,
+        userId: userB,
+        fullName: "Tenant B",
+        email: "tenant-b@test.havn",
+      })
+      .returning({ id: schema.contacts.id });
+
+    await db.insert(schema.propertyPeople).values({
+      propertyId: prop!.id,
+      contactId: contact!.id,
+      relation: "current_tenant",
+      joinedAt: new Date(),
+    });
+
+    const seen = await withUserContext(userB, (tx) =>
+      tx
+        .select({ id: schema.properties.id, title: schema.properties.title })
+        .from(schema.properties)
+        .where(eq(schema.properties.id, prop!.id)),
+    );
+    expect(seen).toEqual([{ id: prop!.id, title: "Shared office" }]);
+
+    await expectRlsViolation(
+      withUserContext(userB, (tx) =>
+        tx.insert(schema.inventoryItems).values({
+          propertyId: prop!.id,
+          name: "Sneaky chair",
+        }),
+      ),
+    );
+  });
+
+  it("blocks assistant hard-deletes of properties", async () => {
+    const assistant = "cccccccc-0000-4000-8000-00000000000c";
+    await createAuthUser(assistant, "rls-c@test.havn");
+    await db.insert(schema.workspaceMembers).values({
+      workspaceId: wsA,
+      userId: assistant,
+      role: "assistant",
+    });
+
+    const [prop] = await withUserContext(userA, (tx) =>
+      tx
+        .insert(schema.properties)
+        .values({
+          workspaceId: wsA,
+          type: "shop",
+          title: "Assistant cannot delete",
+        })
+        .returning({ id: schema.properties.id }),
+    );
+
+    const deleted = await withUserContext(assistant, (tx) =>
+      tx
+        .delete(schema.properties)
+        .where(eq(schema.properties.id, prop!.id))
+        .returning({ id: schema.properties.id }),
+    );
+    expect(deleted).toHaveLength(0);
+
+    await db.execute(sql`delete from auth.users where id = ${assistant}::uuid`);
+  });
 });

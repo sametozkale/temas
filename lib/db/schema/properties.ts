@@ -12,7 +12,15 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { authUid, authenticatedRole, isMember } from "../rls";
+import {
+  WRITE_ROLES_STAFF,
+  authUid,
+  authenticatedRole,
+  hasRole,
+  isMember,
+  isPropertyPerson,
+  propertyChildPolicies,
+} from "../rls";
 import { authUsers, baseColumns } from "./_shared";
 import { contacts } from "./contacts";
 import { workspaces } from "./identity";
@@ -89,6 +97,29 @@ export const properties = pgTable(
       "properties_status_check",
       sql`${t.status} in ('draft','active','viewing_in_progress','application_review','contract_pending','rented','archived')`,
     ),
+    // Members see everything in their workspace; joined owners/tenants see their property.
+    pgPolicy("properties_select_members_or_people", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`(${isMember(t.workspaceId)} or ${isPropertyPerson(t.id)})`,
+    }),
+    pgPolicy("properties_insert_roles", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: isMember(t.workspaceId),
+    }),
+    pgPolicy("properties_update_roles", {
+      for: "update",
+      to: authenticatedRole,
+      using: isMember(t.workspaceId),
+      withCheck: isMember(t.workspaceId),
+    }),
+    // Hard delete is owner/agent only (assistants lack properties.delete).
+    pgPolicy("properties_delete_roles", {
+      for: "delete",
+      to: authenticatedRole,
+      using: hasRole(t.workspaceId, WRITE_ROLES_STAFF),
+    }),
   ],
 ).enableRLS();
 
@@ -110,6 +141,9 @@ export const propertyMedia = pgTable(
       "property_media_kind_check",
       sql`${t.kind} in ('photo','video','plan')`,
     ),
+    ...propertyChildPolicies("property_media", t.propertyId, {
+      peopleSelect: true,
+    }),
   ],
 ).enableRLS();
 
@@ -133,22 +167,51 @@ export const inventoryItems = pgTable(
       "inventory_items_condition_check",
       sql`${t.condition} in ('new','good','fair','poor')`,
     ),
+    ...propertyChildPolicies("inventory_items", t.propertyId, {
+      peopleSelect: true,
+    }),
   ],
 ).enableRLS();
 
-export const documents = pgTable("documents", {
-  ...baseColumns,
-  propertyId: uuid("property_id")
-    .notNull()
-    .references(() => properties.id, { onDelete: "cascade" }),
-  kind: text("kind").notNull(),
-  title: text("title").notNull(),
-  storagePath: text("storage_path").notNull(),
-  createdBy: uuid("created_by").references(() => authUsers.id, {
-    onDelete: "set null",
-  }),
-  meta: jsonb("meta").$type<Record<string, unknown>>().notNull().default({}),
-}).enableRLS();
+export const DOCUMENT_KINDS = [
+  "contract",
+  "deed",
+  "invoice",
+  "insurance",
+  "id",
+  "other",
+] as const;
+export type DocumentKind = (typeof DOCUMENT_KINDS)[number];
+
+export type DocumentMeta = {
+  /** Visible to joined owners/tenants (docs/03 §8 "shared kinds"). */
+  shared?: boolean;
+  size?: number;
+  contentType?: string;
+  originalName?: string;
+};
+
+export const documents = pgTable(
+  "documents",
+  {
+    ...baseColumns,
+    propertyId: uuid("property_id")
+      .notNull()
+      .references(() => properties.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    title: text("title").notNull(),
+    storagePath: text("storage_path").notNull(),
+    createdBy: uuid("created_by").references(() => authUsers.id, {
+      onDelete: "set null",
+    }),
+    meta: jsonb("meta").$type<DocumentMeta>().notNull().default({}),
+  },
+  (t) => [
+    ...propertyChildPolicies("documents", t.propertyId, {
+      peopleSelect: sql`coalesce((${t.meta}->>'shared')::boolean, false)`,
+    }),
+  ],
+).enableRLS();
 
 export const PROPERTY_RELATIONS = ["owner", "current_tenant"] as const;
 export type PropertyRelation = (typeof PROPERTY_RELATIONS)[number];
@@ -179,6 +242,9 @@ export const propertyPeople = pgTable(
       "property_people_relation_check",
       sql`${t.relation} in ('owner','current_tenant')`,
     ),
+    ...propertyChildPolicies("property_people", t.propertyId, {
+      peopleSelect: true,
+    }),
   ],
 ).enableRLS();
 

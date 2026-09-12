@@ -1,5 +1,7 @@
 import { AppShell } from "@/components/app-shell";
 import { getAppContext, initialsOf } from "@/lib/auth";
+import { withUserContext } from "@/lib/db";
+import { recentProperties } from "@/lib/properties/queries";
 
 /**
  * Protected workspace area. `getAppContext` redirects to /login when signed
@@ -12,6 +14,9 @@ export default async function AppLayout({
 }) {
   const ctx = await getAppContext();
   const displayName = ctx.profile.fullName ?? ctx.user.email ?? "—";
+  const shortcuts = await withUserContext(ctx.user.id, (tx) =>
+    recentProperties(tx, ctx.workspace.id),
+  );
 
   return (
     <AppShell
@@ -29,6 +34,11 @@ export default async function AppLayout({
         id: m.workspaceId,
         name: m.name,
         role: m.role,
+      }))}
+      shortcuts={shortcuts.map((p) => ({
+        id: p.id,
+        title: p.title,
+        href: `/properties/${p.id}`,
       }))}
     >
       {children}

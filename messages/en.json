@@ -14,7 +14,8 @@
     "open_menu": "Open menu",
     "workspace_placeholder": "Workspace",
     "workspaces": "Workspaces",
-    "sign_out": "Sign out"
+    "sign_out": "Sign out",
+    "all_properties": "All properties"
   },
   "roles": {
     "owner": "Owner",
@@ -90,7 +91,315 @@
     "description": "Every property in your portfolio.",
     "empty_title": "No properties yet",
     "empty_description": "Start by adding your first property.",
-    "new": "New property"
+    "no_results_title": "No matching properties",
+    "no_results_description": "Try a different search or clear the filters.",
+    "new": "New property",
+    "search_placeholder": "Search title, district or city…",
+    "count": "{count, plural, =1 {1 property} other {# properties}}",
+    "filter_type_all": "All types",
+    "filter_status_all": "All statuses",
+    "filter_status_listed": "On the market",
+    "view_grid": "Grid view",
+    "view_list": "List view",
+    "clear_filters": "Clear filters",
+    "col_property": "Property",
+    "col_type": "Type",
+    "col_status": "Status",
+    "col_rent": "Rent",
+    "col_updated": "Updated",
+    "no_address": "No address yet",
+    "no_rent": "—",
+    "types": {
+      "apartment": "Apartment",
+      "house": "House",
+      "office": "Office",
+      "shop": "Shop",
+      "warehouse": "Warehouse",
+      "land": "Land",
+      "other": "Other"
+    },
+    "status": {
+      "draft": "Draft",
+      "active": "Active",
+      "viewing_in_progress": "Viewings",
+      "application_review": "Reviewing applications",
+      "contract_pending": "Contract pending",
+      "rented": "Rented",
+      "archived": "Archived"
+    },
+    "features": {
+      "furnished": "Furnished",
+      "parking": "Parking",
+      "elevator": "Elevator",
+      "balcony": "Balcony",
+      "garden": "Garden",
+      "pets_allowed": "Pets allowed",
+      "air_conditioning": "Air conditioning",
+      "heating_central": "Central heating"
+    },
+    "form": {
+      "create_title": "New property",
+      "create_description": "Type, title and address are enough to start; you can fill in the rest later.",
+      "edit_title": "Edit property",
+      "edit_description": "Changes are saved to the activity log.",
+      "section_basics": "Basics",
+      "section_address": "Address",
+      "section_pricing": "Pricing",
+      "section_details": "Details",
+      "section_photos": "Photos",
+      "type": "Type",
+      "title": "Title",
+      "title_placeholder": "e.g. Bright 2+1 in Kadıköy",
+      "timezone": "Timezone",
+      "address_line": "Street address",
+      "district": "District",
+      "city": "City",
+      "country": "Country",
+      "rent": "Monthly rent",
+      "deposit": "Deposit",
+      "currency": "Currency",
+      "area": "Area (m²)",
+      "rooms": "Rooms",
+      "rooms_placeholder": "e.g. 2+1",
+      "floor": "Floor",
+      "features": "Features",
+      "description": "Description",
+      "description_placeholder": "Anything a prospect should know…",
+      "create": "Create property",
+      "save": "Save changes",
+      "cancel": "Cancel",
+      "saved": "Property saved",
+      "created": "Property created",
+      "photos_after_create": "Add photos after creating the property.",
+      "errors": {
+        "title": "Title must be between 2 and 120 characters.",
+        "invalid_number": "Enter a valid number.",
+        "timezone": "Pick a valid timezone.",
+        "generic": "Check the highlighted fields."
+      }
+    },
+    "detail": {
+      "tabs": {
+        "overview": "Overview",
+        "inventory": "Inventory",
+        "people": "People",
+        "files": "Files",
+        "viewings": "Viewings",
+        "applications": "Applications",
+        "activity": "Activity"
+      },
+      "edit": "Edit",
+      "more": "More actions",
+      "change_status": "Move to",
+      "delete": "Delete property",
+      "delete_title": "Delete this property?",
+      "delete_description": "It disappears from lists and the calendar; the activity log is kept. This cannot be undone from the UI.",
+      "delete_confirm": "Delete",
+      "status_updated": "Status updated",
+      "not_found_title": "Property not found",
+      "not_found_description": "It may have been deleted or belongs to another workspace.",
+      "back": "Back to properties",
+      "errors": {
+        "invalid_transition": "That status change is not allowed from the current status.",
+        "forbidden": "You don't have permission to do that.",
+        "not_found": "Property not found."
+      }
+    },
+    "overview": {
+      "photos": "Photos",
+      "no_photos": "No photos yet",
+      "add_photos": "Add photos",
+      "facts": "Key facts",
+      "rent": "Rent",
+      "deposit": "Deposit",
+      "area": "Area",
+      "rooms": "Rooms",
+      "floor": "Floor",
+      "type": "Type",
+      "timezone": "Timezone",
+      "per_month": "/ month",
+      "features": "Features",
+      "description": "Description",
+      "no_description": "No description yet.",
+      "status": "Status",
+      "lifecycle": "Lifecycle"
+    },
+    "media": {
+      "dropzone_title": "Drag photos here or click to upload",
+      "dropzone_hint": "JPEG, PNG, WebP or HEIC · up to 25 MB each",
+      "uploading": "Uploading {count}…",
+      "cover": "Cover",
+      "set_cover": "Set as cover",
+      "remove": "Remove photo",
+      "move_left": "Move left",
+      "move_right": "Move right",
+      "empty": "No photos yet. The first photo becomes the cover.",
+      "errors": {
+        "unsupported_type": "Only JPEG, PNG, WebP and HEIC images are supported.",
+        "too_large": "That file is larger than 25 MB.",
+        "upload_failed": "Upload failed. Try again."
+      }
+    },
+    "inventory": {
+      "title": "Inventory",
+      "description": "Fixtures and furniture handed over with the property.",
+      "add": "Add item",
+      "edit": "Edit item",
+      "add_title": "Add inventory item",
+      "edit_title": "Edit inventory item",
+      "name": "Item",
+      "quantity": "Quantity",
+      "condition": "Condition",
+      "note": "Note",
+      "note_placeholder": "Scratches, missing parts, serial number…",
+      "conditions": {
+        "new": "New",
+        "good": "Good",
+        "fair": "Fair",
+        "poor": "Poor",
+        "unset": "Not rated"
+      },
+      "save": "Save",
+      "saved": "Inventory saved",
+      "delete": "Delete",
+      "deleted": "Item deleted",
+      "cancel": "Cancel",
+      "empty_title": "No inventory yet",
+      "empty_description": "List what stays in the property: appliances, furniture, keys.",
+      "errors": {
+        "name": "Enter an item name.",
+        "quantity": "Quantity must be at least 1."
+      }
+    },
+    "people": {
+      "title": "People",
+      "description": "The owner and the current tenant. Prospects arrive through the pipeline.",
+      "add": "Add person",
+      "add_title": "Link a person",
+      "add_description": "An existing contact with the same email or phone is reused.",
+      "relation": "Role",
+      "relations": {
+        "owner": "Owner",
+        "current_tenant": "Current tenant"
+      },
+      "full_name": "Full name",
+      "email": "Email",
+      "phone": "Phone",
+      "save": "Add",
+      "saved": "Person linked",
+      "cancel": "Cancel",
+      "invite_link": "Invite link",
+      "generate_link": "Create invite link",
+      "regenerate_link": "New invite link",
+      "copy_link": "Copy link",
+      "copied": "Link copied",
+      "link_expires": "Expires {date}",
+      "joined": "Joined",
+      "pending": "Not joined yet",
+      "no_account": "No account yet",
+      "remove": "Unlink",
+      "removed": "Person unlinked",
+      "magic_link_note": "The link opens the sign-in flow in the next phase; for now copy it and send it manually.",
+      "empty_title": "Nobody linked yet",
+      "empty_description": "Add the owner and, if occupied, the current tenant so they can enter their availability.",
+      "errors": {
+        "full_name": "Enter a full name.",
+        "email": "Enter a valid email address.",
+        "phone": "Enter a valid phone number.",
+        "contact_required": "Add an email or a phone number.",
+        "duplicate": "This person is already linked with that role."
+      }
+    },
+    "files": {
+      "title": "Files",
+      "description": "Contracts, deeds, invoices and other documents. Private by default.",
+      "upload": "Upload file",
+      "upload_title": "Upload a document",
+      "kind": "Kind",
+      "doc_title": "Title",
+      "shared": "Share with owner / tenant",
+      "shared_hint": "Shared files become visible to linked people once they sign in.",
+      "kinds": {
+        "contract": "Contract",
+        "deed": "Deed",
+        "invoice": "Invoice",
+        "insurance": "Insurance",
+        "id": "ID document",
+        "other": "Other"
+      },
+      "file": "File",
+      "choose_file": "Choose a file",
+      "max_size": "Up to 50 MB",
+      "save": "Upload",
+      "uploaded": "Document uploaded",
+      "cancel": "Cancel",
+      "download": "Download",
+      "delete": "Delete",
+      "deleted": "Document deleted",
+      "share": "Share",
+      "unshare": "Stop sharing",
+      "shared_badge": "Shared",
+      "private_badge": "Private",
+      "col_title": "Title",
+      "col_kind": "Kind",
+      "col_uploaded": "Uploaded",
+      "col_by": "By",
+      "col_size": "Size",
+      "empty_title": "No files yet",
+      "empty_description": "Upload the contract, deed or insurance documents for this property.",
+      "errors": {
+        "title": "Enter a title.",
+        "too_large": "That file is larger than 50 MB.",
+        "upload_failed": "Upload failed. Try again.",
+        "file_required": "Choose a file."
+      }
+    },
+    "activity": {
+      "title": "Activity",
+      "description": "Everything that happened to this property, newest first.",
+      "empty_title": "No activity yet",
+      "by": "by {name}",
+      "system": "System",
+      "actions": {
+        "property": {
+          "created": "created the property",
+          "updated": "updated the property",
+          "status_changed": "moved the property from {from} to {to}",
+          "deleted": "deleted the property"
+        },
+        "media": {
+          "added": "added a photo",
+          "removed": "removed a photo"
+        },
+        "inventory": {
+          "added": "added inventory item “{name}”",
+          "updated": "updated inventory item “{name}”",
+          "removed": "removed inventory item “{name}”"
+        },
+        "person": {
+          "linked": "linked {fullName} as {relation}",
+          "unlinked": "unlinked a {relation}",
+          "invite_link_created": "created an invite link for the {relation}"
+        },
+        "document": {
+          "uploaded": "uploaded “{title}”",
+          "shared": "shared “{title}”",
+          "unshared": "stopped sharing “{title}”",
+          "deleted": "deleted “{title}”"
+        },
+        "unknown": "{action}"
+      }
+    },
+    "viewings": {
+      "title": "Viewings",
+      "empty_title": "Viewing calendar coming soon",
+      "empty_description": "Publish a booking link and manage availability here in the next phase."
+    },
+    "applications": {
+      "title": "Applications",
+      "empty_title": "Pipeline coming soon",
+      "empty_description": "Applicants who fill in the property form will appear here."
+    }
   },
   "settings": {
     "title": "Settings",
@@ -169,6 +478,13 @@
     "invite": "Invite",
     "send": "Send",
     "close": "Close",
-    "error_generic": "Something went wrong. Try again."
+    "error_generic": "Something went wrong. Try again.",
+    "loading": "Loading…",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "copy": "Copy",
+    "optional": "Optional",
+    "permission_denied": "You don't have permission to do that."
   }
 }
