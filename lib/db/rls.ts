@@ -46,6 +46,38 @@ export const hasPropertyRole = (
 export const isPropertyPerson = (propertyId: AnyPgColumn): SQL =>
   sql`public.is_property_person(${propertyId})`;
 
+/** Viewing calendar → property / workspace (drizzle/0008). */
+export const calendarProperty = (calendarId: AnyPgColumn): SQL =>
+  sql`public.calendar_property(${calendarId})`;
+
+export const isCalendarMember = (calendarId: AnyPgColumn): SQL =>
+  sql`public.is_workspace_member(public.property_workspace(public.calendar_property(${calendarId})))`;
+
+export const hasCalendarRole = (
+  calendarId: AnyPgColumn,
+  roles: readonly string[],
+): SQL =>
+  sql`public.workspace_role(public.property_workspace(public.calendar_property(${calendarId}))) in (${sql.raw(
+    roles.map((r) => `'${r.replace(/'/g, "''")}'`).join(", "),
+  )})`;
+
+export const isCalendarPerson = (calendarId: AnyPgColumn): SQL =>
+  sql`public.is_property_person(public.calendar_property(${calendarId}))`;
+
+export const windowCalendar = (windowId: AnyPgColumn): SQL =>
+  sql`public.window_calendar(${windowId})`;
+
+export const isWindowMember = (windowId: AnyPgColumn): SQL =>
+  sql`public.is_workspace_member(public.property_workspace(public.calendar_property(public.window_calendar(${windowId}))))`;
+
+export const hasWindowRole = (
+  windowId: AnyPgColumn,
+  roles: readonly string[],
+): SQL =>
+  sql`public.workspace_role(public.property_workspace(public.calendar_property(public.window_calendar(${windowId})))) in (${sql.raw(
+    roles.map((r) => `'${r.replace(/'/g, "''")}'`).join(", "),
+  )})`;
+
 /**
  * Policy set for a property child table (property_media, inventory_items, …):
  * - workspace members can SELECT; linked people get a restricted SELECT when

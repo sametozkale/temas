@@ -84,7 +84,8 @@
     "title": "Calendar",
     "description": "Viewings across all properties.",
     "empty_title": "No scheduled viewings",
-    "empty_description": "Publish a property's viewing calendar and bookings will be listed here."
+    "empty_description": "Publish a property's viewing calendar and bookings will be listed here.",
+    "upcoming": "Upcoming"
   },
   "properties": {
     "title": "Properties",
@@ -299,7 +300,7 @@
       "no_account": "No account yet",
       "remove": "Unlink",
       "removed": "Person unlinked",
-      "magic_link_note": "The link opens the sign-in flow in the next phase; for now copy it and send it manually.",
+      "magic_link_note": "Copy the link and send it. Tenants use it to enter their availability; no password required.",
       "empty_title": "Nobody linked yet",
       "empty_description": "Add the owner and, if occupied, the current tenant so they can enter their availability.",
       "errors": {
@@ -387,6 +388,18 @@
           "unshared": "stopped sharing “{title}”",
           "deleted": "deleted “{title}”"
         },
+        "calendar": {
+          "created": "created the viewing calendar",
+          "published": "published the booking link",
+          "updated": "updated calendar settings"
+        },
+        "availability": {
+          "updated": "updated availability"
+        },
+        "booking": {
+          "created": "booked a viewing",
+          "cancelled": "cancelled a viewing"
+        },
         "unknown": "{action}"
       }
     },
@@ -399,6 +412,106 @@
       "title": "Applications",
       "empty_title": "Pipeline coming soon",
       "empty_description": "Applicants who fill in the property form will appear here."
+    }
+  },
+  "viewings": {
+    "setup_title": "Viewing calendar",
+    "setup_description": "Create a calendar, set your weekly windows, then publish a booking link. If a tenant is linked, their windows are intersected with yours.",
+    "setup": "Create calendar",
+    "created": "Calendar created",
+    "saved": "Settings saved",
+    "windows_saved": "Availability saved",
+    "link_title": "Public booking link",
+    "copy_link": "Copy link",
+    "copied": "Link copied",
+    "published": "Published",
+    "published_hint": "Prospects can book only while this is on.",
+    "settings_title": "Slot settings",
+    "duration": "Slot length (minutes)",
+    "buffer": "Buffer (minutes)",
+    "min_notice": "Minimum notice (hours)",
+    "horizon": "Days ahead",
+    "save_settings": "Save settings",
+    "agent_windows": "Your availability",
+    "agent_windows_hint": "Toggle the days you can host viewings, then save.",
+    "save_windows": "Save windows",
+    "upcoming": "Open slots",
+    "upcoming_hint": "Intersection of everyone who must be present.",
+    "no_slots": "No open slots in the horizon yet. Save your windows and, if needed, wait for the tenant.",
+    "people_title": "People on this calendar",
+    "people_hint": "Copy the invite so the tenant can enter their own windows.",
+    "no_people": "No owner or tenant linked yet.",
+    "copy_invite": "Copy invite",
+    "relations": {
+      "owner": "Owner",
+      "current_tenant": "Current tenant"
+    },
+    "weekdays": {
+      "MO": "Mon",
+      "TU": "Tue",
+      "WE": "Wed",
+      "TH": "Thu",
+      "FR": "Fri",
+      "SA": "Sat",
+      "SU": "Sun"
+    },
+    "errors": {
+      "generic": "Could not save. Try again."
+    }
+  },
+  "booking": {
+    "kicker": "Book a viewing",
+    "timezone_note": "Times are shown in {timezone}.",
+    "empty_title": "No times available",
+    "empty_description": "The agent has not published overlapping windows yet. Check back soon.",
+    "details_title": "Your details",
+    "full_name": "Full name",
+    "email": "Email",
+    "phone": "Phone",
+    "send_code": "Send confirmation code",
+    "otp_title": "Enter the code we emailed you",
+    "otp_hint": "It expires in 10 minutes.",
+    "otp_sent": "Code sent",
+    "code": "6-digit code",
+    "confirm": "Confirm viewing",
+    "back": "Back to times",
+    "not_found_title": "Link not found",
+    "not_found_description": "This booking page is unpublished, expired or invalid.",
+    "confirmed_kicker": "You're booked",
+    "confirmed_title": "Viewing confirmed",
+    "cancelled_kicker": "Cancelled",
+    "cancelled_title": "This viewing was cancelled",
+    "cancelled_toast": "Viewing cancelled",
+    "add_to_calendar": "Add to calendar",
+    "cancel": "Cancel viewing",
+    "book_again": "Pick another time",
+    "errors": {
+      "invalid": "Check the highlighted fields.",
+      "rate_limited": "Too many attempts. Try again later.",
+      "not_found": "This link is no longer valid.",
+      "slot_taken": "That time was just booked. Pick another.",
+      "otp_expired": "The code expired. Request a new one.",
+      "otp_invalid": "That code is incorrect.",
+      "generic": "Something went wrong. Try again."
+    }
+  },
+  "tenant": {
+    "kicker": "Your availability",
+    "title": "When can visitors come?",
+    "description": "Hi {name}. Mark the times you are home at {property}. We only offer viewings that also work for the agent.",
+    "step1_body": "Three steps: confirm it's you, pick weekly windows, done. No account required.",
+    "continue": "Continue",
+    "back": "Back",
+    "step2_title": "Weekly windows",
+    "step2_body": "Toggle the days you are usually home. You can change this later with the same link.",
+    "save": "Save availability",
+    "saved": "Availability saved",
+    "done_title": "Thank you",
+    "done_body": "The agent will only offer times that work for both of you.",
+    "not_found_title": "Invite not found",
+    "not_found_description": "This invite link is invalid or has expired. Ask the agent for a new one.",
+    "errors": {
+      "generic": "Could not save. Try again."
     }
   },
   "settings": {

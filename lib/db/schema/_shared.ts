@@ -1,4 +1,4 @@
-import { pgSchema, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgSchema, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 /**
  * Supabase-managed `auth.users`. Declared only so FKs can reference it;
@@ -7,6 +7,7 @@ import { pgSchema, timestamp, uuid } from "drizzle-orm/pg-core";
 export const authSchema = pgSchema("auth");
 export const authUsers = authSchema.table("users", {
   id: uuid("id").primaryKey(),
+  email: text("email"),
 });
 
 /** Shared columns present on every table (docs/03 header). */
