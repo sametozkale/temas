@@ -400,6 +400,20 @@
           "created": "booked a viewing",
           "cancelled": "cancelled a viewing"
         },
+        "form": {
+          "published": "published the application form",
+          "updated": "updated the application form"
+        },
+        "application": {
+          "created": "received an application",
+          "updated": "updated an application",
+          "stage_changed": "moved an applicant to {to}",
+          "owner_approved": "recorded the owner’s approval",
+          "owner_changes_requested": "recorded the owner’s change request"
+        },
+        "owner_view": {
+          "created": "created an owner presentation link"
+        },
         "unknown": "{action}"
       }
     },
@@ -410,8 +424,8 @@
     },
     "applications": {
       "title": "Applications",
-      "empty_title": "Pipeline coming soon",
-      "empty_description": "Applicants who fill in the property form will appear here."
+      "empty_title": "No applicants yet",
+      "empty_description": "Publish the form and share the link. Submissions land here."
     }
   },
   "viewings": {
@@ -432,6 +446,9 @@
     "min_notice": "Minimum notice (hours)",
     "horizon": "Days ahead",
     "save_settings": "Save settings",
+    "require_form": "Require the form first",
+    "require_form_hint": "Prospects fill the application before they can pick a time.",
+    "require_form_missing": "Create and publish a form on the Applications tab first.",
     "agent_windows": "Your availability",
     "agent_windows_hint": "Toggle the days you can host viewings, then save.",
     "save_windows": "Save windows",
@@ -462,6 +479,8 @@
   "booking": {
     "kicker": "Book a viewing",
     "timezone_note": "Times are shown in {timezone}.",
+    "form_first_title": "Application first",
+    "form_first_body": "Fill in the form before you pick a viewing time.",
     "empty_title": "No times available",
     "empty_description": "The agent has not published overlapping windows yet. Check back soon.",
     "details_title": "Your details",
@@ -512,6 +531,116 @@
     "not_found_description": "This invite link is invalid or has expired. Ask the agent for a new one.",
     "errors": {
       "generic": "Could not save. Try again."
+    }
+  },
+  "pipeline": {
+    "title": "Pipeline",
+    "hint": "Drag applicants between stages. Open a card for answers and files.",
+    "copied": "Link copied",
+    "index_title": "Applications",
+    "index_hint": "Open a property to manage its form and pipeline.",
+    "index_empty_title": "No properties yet",
+    "index_empty_description": "Add a property first, then collect applications from its form.",
+    "index_count": "{count, plural, =0 {No applicants} =1 {1 applicant} other {# applicants}}",
+    "form": {
+      "title": "Application form",
+      "hint": "Click a field to edit it. This is not drag-and-drop.",
+      "form_title": "Form title",
+      "published": "Published",
+      "copy_link": "Copy public link",
+      "copied": "Link copied",
+      "saved": "Form saved",
+      "add_field": "Add question",
+      "save": "Save form",
+      "label": "Label",
+      "type": "Type",
+      "options": "Options (one per line)",
+      "help": "Help text",
+      "required": "Required",
+      "select_field": "Select a field to edit.",
+      "new_question": "New question",
+      "types": {
+        "text": "Short text",
+        "textarea": "Long text",
+        "number": "Number",
+        "email": "Email",
+        "phone": "Phone",
+        "date": "Date",
+        "select": "Single choice",
+        "multiselect": "Multiple choice",
+        "boolean": "Yes / no",
+        "file": "File upload"
+      },
+      "errors": {
+        "generic": "Could not save the form."
+      }
+    },
+    "kanban": {
+      "add_stage": "Add stage",
+      "stage_added": "Stage added",
+      "count": "{count, plural, =0 {Empty} =1 {1} other {#}}",
+      "errors": {
+        "generic": "Could not update the pipeline."
+      }
+    },
+    "sheet": {
+      "loading": "Applicant",
+      "score": "Score",
+      "ai_title": "AI summary",
+      "ai_placeholder": "A summary will appear here in a later phase.",
+      "answers": "Answers",
+      "no_answers": "No answers recorded.",
+      "attachments": "Attachments",
+      "no_files": "No files uploaded.",
+      "history": "History",
+      "no_history": "No history yet."
+    },
+    "owner": {
+      "title": "Owner presentation",
+      "hint": "Share this read-only link so the owner can compare the shortlist.",
+      "copy_link": "Copy link",
+      "rotate": "New link",
+      "rotated": "New link created",
+      "errors": {
+        "generic": "Could not update the owner link."
+      }
+    }
+  },
+  "public_form": {
+    "kicker": "Application",
+    "full_name": "Full name",
+    "email": "Email",
+    "phone": "Phone",
+    "submit": "Submit application",
+    "submitted": "Application received",
+    "thanks_title": "Thank you",
+    "thanks_body": "The agent has your application and will be in touch.",
+    "thanks_embedded": "Application received. You can book a viewing next.",
+    "book_viewing": "Book a viewing",
+    "not_found_title": "Form not found",
+    "not_found_description": "This form is unpublished, expired or invalid.",
+    "errors": {
+      "invalid": "Check the highlighted fields.",
+      "rate_limited": "Too many attempts. Try again later.",
+      "not_found": "This link is no longer valid.",
+      "generic": "Something went wrong. Try again."
+    }
+  },
+  "owner_view": {
+    "kicker": "Owner review",
+    "hint": "Compare shortlisted applicants, then approve or request changes.",
+    "empty": "No applicants are on the shortlist yet.",
+    "no_summary": "No summary yet.",
+    "score": "Score",
+    "approve": "Approve",
+    "request_changes": "Request changes",
+    "approved": "Applicant approved",
+    "changes_requested": "Changes requested",
+    "not_found_title": "Link not found",
+    "not_found_description": "This presentation link is invalid or has expired.",
+    "errors": {
+      "rate_limited": "Too many attempts. Try again later.",
+      "generic": "Something went wrong. Try again."
     }
   },
   "settings": {

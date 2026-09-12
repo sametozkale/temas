@@ -8,7 +8,7 @@ export default function PublicLayout({
   return (
     <div className="min-h-svh bg-background">
       <header className="border-b">
-        <div className="mx-auto flex h-14 max-w-xl items-center px-6">
+        <div className="mx-auto flex h-14 max-w-5xl items-center px-6">
           <Link
             href="/"
             className="font-serif text-lg tracking-tight text-foreground"
@@ -17,7 +17,7 @@ export default function PublicLayout({
           </Link>
         </div>
       </header>
-      <main className="mx-auto max-w-xl px-6 py-10">{children}</main>
+      <main className="mx-auto w-full px-6 py-10">{children}</main>
     </div>
   );
 }

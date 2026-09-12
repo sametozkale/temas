@@ -26,6 +26,7 @@ export function ViewingsPanel({
   week,
   publicUrl,
   canManage,
+  form,
 }: {
   propertyId: string;
   calendar: {
@@ -35,10 +36,13 @@ export function ViewingsPanel({
     minNoticeHours: number;
     maxDaysAhead: number;
     isPublished: boolean;
+    requireFormFirst: boolean;
+    formId: string | null;
   } | null;
   week: WeekCell[];
   publicUrl: string | null;
   canManage: boolean;
+  form: { id: string; title: string; isPublished: boolean } | null;
 }) {
   const t = useTranslations("viewings");
   const router = useRouter();
@@ -50,6 +54,8 @@ export function ViewingsPanel({
     minNoticeHours: calendar?.minNoticeHours ?? 4,
     maxDaysAhead: calendar?.maxDaysAhead ?? 21,
     isPublished: calendar?.isPublished ?? false,
+    requireFormFirst: calendar?.requireFormFirst ?? false,
+    formId: calendar?.formId ?? form?.id ?? null,
   });
 
   React.useEffect(() => {
@@ -152,6 +158,30 @@ export function ViewingsPanel({
               {publicUrl}
             </p>
           ) : null}
+          <label className="flex items-center justify-between gap-4 text-sm">
+            <span>
+              {t("require_form")}
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {form ? t("require_form_hint") : t("require_form_missing")}
+              </span>
+            </span>
+            <Switch
+              checked={settings.requireFormFirst}
+              disabled={!canManage || pending || !form}
+              onCheckedChange={(v) => {
+                const next = {
+                  ...settings,
+                  requireFormFirst: v === true,
+                  formId: form?.id ?? null,
+                };
+                setSettings(next);
+                startTransition(async () => {
+                  await updateCalendarSettings(propertyId, next);
+                  router.refresh();
+                });
+              }}
+            />
+          </label>
         </CardContent>
       </Card>
 

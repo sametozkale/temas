@@ -15,6 +15,7 @@ import {
   listPropertyPeopleForCalendar,
   listWindows,
 } from "@/lib/viewings/queries";
+import { getFormByProperty } from "@/lib/pipeline/queries";
 import {
   emptyWeek,
   weekdayFromRRule,
@@ -55,19 +56,20 @@ export default async function ViewingsPage({
   const t = await getTranslations("viewings");
   const canManage = can(ctx.membership.role, "calendar.manage");
 
-  const { calendar, windows, slots, people } = await withUserContext(
+  const { calendar, windows, slots, people, form } = await withUserContext(
     ctx.user.id,
     async (tx) => {
       const calendar = await getCalendarByProperty(tx, id);
       const people = await listPropertyPeopleForCalendar(tx, id);
+      const form = await getFormByProperty(tx, id);
       if (!calendar) {
-        return { calendar: null, windows: [], slots: [], people };
+        return { calendar: null, windows: [], slots: [], people, form };
       }
       const [windows, slots] = await Promise.all([
         listWindows(tx, calendar.id),
         listOpenSlots(tx, calendar.id, new Date()),
       ]);
-      return { calendar, windows, slots, people };
+      return { calendar, windows, slots, people, form };
     },
   );
 
@@ -96,12 +98,23 @@ export default async function ViewingsPage({
                 minNoticeHours: calendar.minNoticeHours,
                 maxDaysAhead: calendar.maxDaysAhead,
                 isPublished: calendar.isPublished,
+                requireFormFirst: calendar.requireFormFirst,
+                formId: calendar.formId,
               }
             : null
         }
         week={weekFromWindows(windows)}
         publicUrl={publicUrl}
         canManage={canManage}
+        form={
+          form
+            ? {
+                id: form.id,
+                title: form.title,
+                isPublished: form.isPublished,
+              }
+            : null
+        }
       />
       <div className="space-y-6">
         <section className="rounded-lg border">

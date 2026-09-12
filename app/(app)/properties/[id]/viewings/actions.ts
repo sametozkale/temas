@@ -112,6 +112,12 @@ export async function updateCalendarSettings(
         minNoticeHours: parsed.data.minNoticeHours,
         maxDaysAhead: parsed.data.maxDaysAhead,
         isPublished: parsed.data.isPublished ?? current.isPublished,
+        requireFormFirst:
+          parsed.data.requireFormFirst ?? current.requireFormFirst,
+        formId:
+          parsed.data.formId === undefined
+            ? current.formId
+            : parsed.data.formId,
       })
       .where(eq(viewingCalendars.id, current.id));
     await logActivity(

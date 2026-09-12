@@ -130,9 +130,11 @@ form_submissions (
 pipeline_stages ( property_id uuid, name text, position int, color text, is_terminal bool default false )
 applications (
   property_id uuid, contact_id uuid, submission_id uuid references form_submissions,
-  stage_id uuid references pipeline_stages, score int, ai_summary text, decided_at timestamptz
+  stage_id uuid references pipeline_stages, score int, ai_summary text, decided_at timestamptz,
+  unique (property_id, contact_id)
 )
 owner_views ( property_id uuid, public_token text unique, show_stages uuid[] , expires_at timestamptz )  -- owner presentation link
+-- Owner Approve / Request changes (docs/00 §3.3) writes activity_log + moves stage; no extra columns.
 ```
 
 ## 6. Inbox

@@ -2,7 +2,12 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 
-import { type StorageBucket } from "@/lib/storage-constants";
+import {
+  DOCUMENT_MAX_BYTES,
+  STORAGE_BUCKETS,
+  type StorageBucket,
+} from "@/lib/storage-constants";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -102,4 +107,26 @@ export async function removeObjects(bucket: StorageBucket, paths: string[]) {
     // Orphaned objects are not fatal; the DB row is the source of truth.
     console.error("[storage] remove failed", error.message);
   }
+}
+
+/**
+ * Public form uploads have no user session. Uses the service role when
+ * configured; returns null so the submission can still store the filename.
+ */
+export async function uploadPublicDocument(path: string, file: File) {
+  const admin = createSupabaseAdminClient();
+  if (!admin) return null;
+  if (file.size > DOCUMENT_MAX_BYTES) return null;
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const { error } = await admin.storage
+    .from(STORAGE_BUCKETS.documents)
+    .upload(path, buffer, {
+      contentType: file.type || "application/octet-stream",
+      upsert: false,
+    });
+  if (error) {
+    console.error("[storage] public upload failed", error.message);
+    return null;
+  }
+  return path;
 }

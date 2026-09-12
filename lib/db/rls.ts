@@ -67,6 +67,49 @@ export const isCalendarPerson = (calendarId: AnyPgColumn): SQL =>
 export const windowCalendar = (windowId: AnyPgColumn): SQL =>
   sql`public.window_calendar(${windowId})`;
 
+/** form_submissions.form_id → forms.property_id (subquery, no extra helper). */
+export const isFormMember = (formId: AnyPgColumn): SQL =>
+  sql`public.is_workspace_member(public.property_workspace((select f.property_id from public.forms f where f.id = ${formId})))`;
+
+export const hasFormRole = (
+  formId: AnyPgColumn,
+  roles: readonly string[],
+): SQL =>
+  sql`public.workspace_role(public.property_workspace((select f.property_id from public.forms f where f.id = ${formId}))) in (${sql.raw(
+    roles.map((r) => `'${r.replace(/'/g, "''")}'`).join(", "),
+  )})`;
+
+/** Policy set for tables keyed by `form_id` (form_submissions). */
+export function formChildPolicies(
+  table: string,
+  formId: AnyPgColumn,
+  writeRoles: readonly string[] = WRITE_ROLES_ALL,
+) {
+  return [
+    pgPolicy(`${table}_select_members`, {
+      for: "select",
+      to: authenticatedRole,
+      using: isFormMember(formId),
+    }),
+    pgPolicy(`${table}_insert_roles`, {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: hasFormRole(formId, writeRoles),
+    }),
+    pgPolicy(`${table}_update_roles`, {
+      for: "update",
+      to: authenticatedRole,
+      using: hasFormRole(formId, writeRoles),
+      withCheck: hasFormRole(formId, writeRoles),
+    }),
+    pgPolicy(`${table}_delete_roles`, {
+      for: "delete",
+      to: authenticatedRole,
+      using: hasFormRole(formId, writeRoles),
+    }),
+  ];
+}
+
 export const isWindowMember = (windowId: AnyPgColumn): SQL =>
   sql`public.is_workspace_member(public.property_workspace(public.calendar_property(public.window_calendar(${windowId}))))`;
 

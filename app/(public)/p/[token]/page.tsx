@@ -41,7 +41,7 @@ export default async function TenantInvitePage({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-xl space-y-8">
       <header className="space-y-2 border-b pb-6">
         <p className="text-xs tracking-[0.14em] text-muted-foreground uppercase">
           {t("kicker")}

@@ -8,6 +8,8 @@ export const calendarSettingsSchema = z.object({
   minNoticeHours: z.coerce.number().int().min(0).max(72),
   maxDaysAhead: z.coerce.number().int().min(1).max(90),
   isPublished: z.boolean().optional(),
+  requireFormFirst: z.boolean().optional(),
+  formId: z.string().uuid().nullable().optional(),
 });
 
 export const weekCellSchema = z.object({

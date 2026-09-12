@@ -71,6 +71,13 @@
       "when": 1789216033078,
       "tag": "0009_scheduling_rls_and_otp",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789218724007,
+      "tag": "0010_warm_kingpin",
+      "breakpoints": true
     }
   ]
 }

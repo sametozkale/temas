@@ -1,11 +1,15 @@
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { BookingFlow } from "@/components/viewings/booking-flow";
+import { PublicForm } from "@/components/pipeline/public-form";
 import { EmptyState } from "@/components/empty-state";
 import { Calendar03Icon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { formatAddress } from "@/lib/format";
+import { formCompletionCookie } from "@/lib/pipeline/answers";
+import { getFormByProperty } from "@/lib/pipeline/queries";
 import {
   getCalendarByPublicToken,
   listOpenSlots,
@@ -27,9 +31,20 @@ export default async function PublicBookingPage({
 
   const slots = await listOpenSlots(db, found.calendar.id, new Date());
   const address = formatAddress(found.property.address);
+  const form = found.calendar.formId
+    ? await getFormByProperty(db, found.property.id)
+    : null;
+  const cookieStore = await cookies();
+  const formCompleted = Boolean(
+    form && cookieStore.get(formCompletionCookie(form.id))?.value,
+  );
+  const needForm =
+    found.calendar.requireFormFirst &&
+    Boolean(form?.isPublished && form.publicToken) &&
+    !formCompleted;
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-xl space-y-8">
       <header className="space-y-2 border-b pb-6">
         <p className="text-xs tracking-[0.14em] text-muted-foreground uppercase">
           {t("kicker")}
@@ -44,7 +59,19 @@ export default async function PublicBookingPage({
           {t("timezone_note", { timezone: found.property.timezone })}
         </p>
       </header>
-      {slots.length === 0 ? (
+      {needForm && form?.publicToken ? (
+        <div className="space-y-4">
+          <div>
+            <h2 className="font-serif text-2xl tracking-tight">
+              {t("form_first_title")}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {t("form_first_body")}
+            </p>
+          </div>
+          <PublicForm token={form.publicToken} fields={form.schema} embedded />
+        </div>
+      ) : slots.length === 0 ? (
         <EmptyState
           icon={Calendar03Icon}
           title={t("empty_title")}
