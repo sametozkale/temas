@@ -28,17 +28,32 @@ function createClient() {
   });
 }
 
+type DbClient = ReturnType<typeof createClient>;
+
 const globalForDb = globalThis as unknown as {
-  __temasDb?: ReturnType<typeof createClient>;
+  __temasDb?: DbClient;
 };
 
-export const db = globalForDb.__temasDb ?? createClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForDb.__temasDb = db;
+function getClient(): DbClient {
+  if (!globalForDb.__temasDb) {
+    globalForDb.__temasDb = createClient();
+  }
+  return globalForDb.__temasDb;
 }
 
-export type Db = typeof db;
+/**
+ * Lazy so `next build` can collect page data without opening Postgres.
+ * Sensitive Vercel secrets are also unavailable at compile time.
+ */
+export const db: DbClient = new Proxy({} as DbClient, {
+  get(_target, prop, _receiver) {
+    const client = getClient();
+    const value = Reflect.get(client, prop, client);
+    return typeof value === "function" ? value.bind(client) : value;
+  },
+});
+
+export type Db = DbClient;
 export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 export type DbOrTx = Db | Tx;
 

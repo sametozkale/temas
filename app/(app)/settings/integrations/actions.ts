@@ -8,11 +8,13 @@ import { logActivity } from "@/lib/activity";
 import { getAppContext } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { integrations } from "@/lib/db/schema";
+import { clientIp } from "@/lib/http";
 import { ingestInboundEmail } from "@/lib/inbox/ingest";
 import { ingestInboundWhatsApp } from "@/lib/inbox/ingest-whatsapp";
 import { inboundInjectSchema, whatsappInjectSchema } from "@/lib/inbox/schema";
 import { ForbiddenError, requireAbility } from "@/lib/permissions";
 import { upsertWhatsAppConnection } from "@/lib/integrations/whatsapp/connect";
+import { consumeRateLimit } from "@/lib/rate-limit";
 
 export type IntegrationsState = ActionResult<{ conversationId?: string }>;
 

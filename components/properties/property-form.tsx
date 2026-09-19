@@ -217,8 +217,8 @@ export function PropertyForm({
               <Input id="addressLine" {...form.register("addressLine")} />
             </Field>
             <CountryCityDistrictFields
-              country={form.watch("country")}
-              city={form.watch("city")}
+              country={form.watch("country") ?? ""}
+              city={form.watch("city") ?? ""}
               onCountryChange={(value) => form.setValue("country", value)}
               onCityChange={(value) => form.setValue("city", value)}
               district={form.register("district")}

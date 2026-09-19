@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { formatAddress } from "@/lib/format";
 import { buildViewingIcs } from "@/lib/ics";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ token: string }> },

@@ -45,9 +45,19 @@ export type ServerEnv = z.infer<typeof serverSchema>;
 
 let cached: ServerEnv | undefined;
 
+function duringNextBuild() {
+  return process.env.NEXT_PHASE === "phase-production-build";
+}
+
 export function env(): ServerEnv {
   if (cached && process.env.NODE_ENV === "production") return cached;
-  const parsed = serverSchema.safeParse(process.env);
+  const parsed = serverSchema.safeParse({
+    ...process.env,
+    // Collecting page data must not require a live database.
+    ...(duringNextBuild() && !process.env.DATABASE_URL
+      ? { DATABASE_URL: "postgresql://127.0.0.1/temas-build" }
+      : null),
+  });
   if (!parsed.success) {
     const issues = parsed.error.issues
       .map((i) => `${i.path.join(".")}: ${i.message}`)
@@ -71,4 +81,4 @@ export const integrations = {
   inngestCloud: () => Boolean(env().INNGEST_EVENT_KEY),
 } as const;
 
-export const isProduction = () => env().NODE_ENV === "production";
+export const isProduction = () => process.env.NODE_ENV === "production";
