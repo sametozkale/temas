@@ -83,11 +83,11 @@ export function LoginForm({
           required
           autoFocus
           defaultValue={defaultEmail}
-          placeholder="you@agency.com"
+          placeholder={t("email_placeholder")}
         />
         {errorKey ? <FieldError>{t(`errors.${errorKey}`)}</FieldError> : null}
       </Field>
-      <Button type="submit" className="w-full" disabled={pending}>
+      <Button type="submit" size="lg" className="w-full" disabled={pending}>
         {pending ? (
           <Icon
             icon={Loading03Icon}

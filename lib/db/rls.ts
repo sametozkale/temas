@@ -79,8 +79,9 @@ export const hasFormRole = (
     roles.map((r) => `'${r.replace(/'/g, "''")}'`).join(", "),
   )})`;
 
+/** Mailbox owner + still a member of the conversation's workspace (docs/03 §8). */
 export const isConversationMember = (conversationId: AnyPgColumn): SQL =>
-  sql`public.is_workspace_member((select c.workspace_id from public.conversations c where c.id = ${conversationId}))`;
+  sql`(select c.user_id from public.conversations c where c.id = ${conversationId}) = ${authUid} and public.is_workspace_member((select c.workspace_id from public.conversations c where c.id = ${conversationId}))`;
 
 export const isAiThreadMember = (threadId: AnyPgColumn): SQL =>
   sql`public.is_workspace_member((select t.workspace_id from public.ai_threads t where t.id = ${threadId}))`;
@@ -97,7 +98,7 @@ export const hasConversationRole = (
   conversationId: AnyPgColumn,
   roles: readonly string[],
 ): SQL =>
-  sql`public.workspace_role((select c.workspace_id from public.conversations c where c.id = ${conversationId})) in (${sql.raw(
+  sql`(select c.user_id from public.conversations c where c.id = ${conversationId}) = ${authUid} and public.workspace_role((select c.workspace_id from public.conversations c where c.id = ${conversationId})) in (${sql.raw(
     roles.map((r) => `'${r.replace(/'/g, "''")}'`).join(", "),
   )})`;
 
@@ -221,6 +222,81 @@ export function propertyChildPolicies(
       for: "delete",
       to: authenticatedRole,
       using: hasPropertyRole(propertyId, writeRoles),
+    }),
+  ];
+}
+
+/**
+ * Account-owned mailbox table (`integrations`):
+ * - SELECT/UPDATE/DELETE only the caller's rows
+ * - INSERT requires `user_id = auth.uid()` and membership in `workspace_id`
+ */
+export function mailboxOwnerPolicies(
+  table: string,
+  userId: AnyPgColumn,
+  workspaceId: AnyPgColumn,
+  writeRoles: readonly string[] = WRITE_ROLES_STAFF,
+) {
+  const owns = sql`${userId} = ${authUid}`;
+  const insertCheck = sql`${owns} and ${isMember(workspaceId)} and ${hasRole(workspaceId, writeRoles)}`;
+  const writeCheck = sql`${owns} and ${hasRole(workspaceId, writeRoles)}`;
+  return [
+    pgPolicy(`${table}_select_owner`, {
+      for: "select",
+      to: authenticatedRole,
+      using: owns,
+    }),
+    pgPolicy(`${table}_insert_owner`, {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: insertCheck,
+    }),
+    pgPolicy(`${table}_update_owner`, {
+      for: "update",
+      to: authenticatedRole,
+      using: writeCheck,
+      withCheck: writeCheck,
+    }),
+    pgPolicy(`${table}_delete_owner`, {
+      for: "delete",
+      to: authenticatedRole,
+      using: writeCheck,
+    }),
+  ];
+}
+
+/**
+ * Conversations: mailbox owner who is still a workspace member.
+ */
+export function conversationOwnerPolicies(
+  table: string,
+  userId: AnyPgColumn,
+  workspaceId: AnyPgColumn,
+  writeRoles: readonly string[] = WRITE_ROLES_ALL,
+) {
+  const visible = sql`${userId} = ${authUid} and ${isMember(workspaceId)}`;
+  const writable = sql`${userId} = ${authUid} and ${hasRole(workspaceId, writeRoles)}`;
+  return [
+    pgPolicy(`${table}_select_owner`, {
+      for: "select",
+      to: authenticatedRole,
+      using: visible,
+    }),
+    pgPolicy(`${table}_insert_owner`, {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: writable,
+    }),
+    pgPolicy(`${table}_update_owner`, {
+      for: "update",
+      to: authenticatedRole,
+      using: writable,
+      withCheck: writable,
+    }),
+    pgPolicy(`${table}_delete_owner`, {
+      for: "delete",
+      to: authenticatedRole,
+      using: writable,
     }),
   ];
 }

@@ -1,6 +1,8 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  date,
+  index,
   integer,
   jsonb,
   numeric,
@@ -38,6 +40,16 @@ export const PROPERTY_TYPES = [
 ] as const;
 export type PropertyType = (typeof PROPERTY_TYPES)[number];
 
+/** Listing condition, matching rental-portal object details. */
+export const PROPERTY_CONDITIONS = [
+  "new",
+  "renovated",
+  "good",
+  "fair",
+  "needs_work",
+] as const;
+export type PropertyCondition = (typeof PROPERTY_CONDITIONS)[number];
+
 /** Lifecycle (docs/00 §8). */
 export const PROPERTY_STATUSES = [
   "draft",
@@ -66,6 +78,10 @@ export const properties = pgTable(
     workspaceId: uuid("workspace_id")
       .notNull()
       .references(() => workspaces.id, { onDelete: "cascade" }),
+    /** Responsible owner|agent in this workspace (docs/00 §2). Not an RLS scope. */
+    assignedUserId: uuid("assigned_user_id").references(() => authUsers.id, {
+      onDelete: "set null",
+    }),
     type: text("type", { enum: PROPERTY_TYPES }).notNull(),
     title: text("title").notNull(),
     status: text("status", { enum: PROPERTY_STATUSES })
@@ -78,7 +94,14 @@ export const properties = pgTable(
     depositAmount: numeric("deposit_amount"),
     areaM2: numeric("area_m2"),
     rooms: text("rooms"),
+    bedrooms: integer("bedrooms"),
+    bathrooms: integer("bathrooms"),
     floor: integer("floor"),
+    totalFloors: integer("total_floors"),
+    yearBuilt: integer("year_built"),
+    condition: text("condition", { enum: PROPERTY_CONDITIONS }),
+    availableFrom: date("available_from"),
+    duesAmount: numeric("dues_amount"),
     features: jsonb("features")
       .$type<Record<string, unknown>>()
       .notNull()
@@ -96,6 +119,14 @@ export const properties = pgTable(
     check(
       "properties_status_check",
       sql`${t.status} in ('draft','active','viewing_in_progress','application_review','contract_pending','rented','archived')`,
+    ),
+    check(
+      "properties_condition_check",
+      sql`${t.condition} is null or ${t.condition} in ('new','renovated','good','fair','needs_work')`,
+    ),
+    index("properties_workspace_assigned_user_idx").on(
+      t.workspaceId,
+      t.assignedUserId,
     ),
     // Members see everything in their workspace; joined owners/tenants see their property.
     pgPolicy("properties_select_members_or_people", {

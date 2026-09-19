@@ -4,14 +4,19 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { safeNextPath } from "@/lib/action-result";
-import { ACTIVE_WORKSPACE_COOKIE } from "@/lib/auth";
+import {
+  clearWorkspaceCookie,
+  getMembership,
+  requireUser,
+  writeWorkspaceCookie,
+} from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function signOut() {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
   const cookieStore = await cookies();
-  cookieStore.delete(ACTIVE_WORKSPACE_COOKIE);
+  clearWorkspaceCookie(cookieStore);
   redirect("/login");
 }
 
@@ -21,17 +26,17 @@ export async function signOutTo(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
   const cookieStore = await cookies();
-  cookieStore.delete(ACTIVE_WORKSPACE_COOKIE);
+  clearWorkspaceCookie(cookieStore);
   redirect(next);
 }
 
 export async function switchWorkspace(workspaceId: string) {
+  const user = await requireUser();
+  const membership = await getMembership(user.id, workspaceId);
+  if (!membership) {
+    redirect("/home");
+  }
   const cookieStore = await cookies();
-  cookieStore.set(ACTIVE_WORKSPACE_COOKIE, workspaceId, {
-    path: "/",
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 365,
-  });
+  writeWorkspaceCookie(cookieStore, workspaceId);
   redirect("/home");
 }

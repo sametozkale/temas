@@ -89,10 +89,7 @@ export function FilesSection({
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-base font-medium">{t("title")}</h2>
-          <p className="text-sm text-muted-foreground">{t("description")}</p>
-        </div>
+        <p className="text-sm text-muted-foreground">{t("description")}</p>
         {canEdit ? (
           <Button variant="pill" size="sm" onClick={() => setOpen(true)}>
             <Icon icon={PlusSignIcon} size={16} data-icon="inline-start" />

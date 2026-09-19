@@ -8,7 +8,7 @@ import { actionError, actionOk, type ActionResult } from "@/lib/action-result";
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
 import { applications } from "@/lib/db/schema";
-import { sendEmail } from "@/lib/integrations/resend";
+import { notifyWorkspaceStaff } from "@/lib/notifications/dispatch";
 import { STAGE_APPROVED, STAGE_REVIEWING } from "@/lib/pipeline/defaults";
 import {
   getApplicationDetail,
@@ -18,7 +18,6 @@ import {
 import { ownerDecisionSchema } from "@/lib/pipeline/schema";
 import { clientIp } from "@/lib/http";
 import { consumeRateLimit } from "@/lib/rate-limit";
-import { listWorkspaceStaff } from "@/lib/viewings/queries";
 
 export async function submitOwnerDecision(
   token: string,
@@ -79,23 +78,27 @@ export async function submitOwnerDecision(
     data: { to: target.name },
   });
 
-  const staff = await listWorkspaceStaff(db, found.property.workspaceId);
-  for (const member of staff) {
-    if (!member.email) continue;
-    await sendEmail({
-      to: member.email,
+  await notifyWorkspaceStaff({
+    workspaceId: found.property.workspaceId,
+    assignedUserId: found.property.assignedUserId,
+    type: "owner_decisions",
+    email: (name) => ({
       subject:
         parsed.data.decision === "approve"
           ? `Owner approved ${current.contact.fullName}`
           : `Owner requested changes — ${current.contact.fullName}`,
       react: OwnerDecisionEmail({
-        recipientName: member.name || member.email,
+        recipientName: name,
         propertyTitle: found.property.title,
         applicantName: current.contact.fullName,
         decision: parsed.data.decision,
       }),
-    });
-  }
+    }),
+    whatsapp: () =>
+      parsed.data.decision === "approve"
+        ? `Owner approved ${current.contact.fullName} for ${found.property.title}.`
+        : `Owner requested changes on ${current.contact.fullName} for ${found.property.title}.`,
+  });
 
   revalidatePath(`/o/${token}`);
   revalidatePath(`/properties/${found.property.id}/applications`);

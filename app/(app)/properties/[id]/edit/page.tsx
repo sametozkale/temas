@@ -8,6 +8,7 @@ import { PropertyForm } from "@/components/properties/property-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { withUserContext } from "@/lib/db";
 import { requireAbility } from "@/lib/permissions";
+import { listAssignableMembers } from "@/lib/properties/assignment";
 import { listMedia } from "@/lib/properties/queries";
 import { propertyToFormInput } from "@/lib/properties/schema";
 import { STORAGE_BUCKETS, createSignedDownloads } from "@/lib/storage";
@@ -24,7 +25,10 @@ export default async function EditPropertyPage({
   requireAbility(ctx.membership, "properties.write");
   const t = await getTranslations("properties.form");
 
-  const media = await withUserContext(ctx.user.id, (tx) => listMedia(tx, id));
+  const { media, agents } = await withUserContext(ctx.user.id, async (tx) => ({
+    media: await listMedia(tx, id),
+    agents: await listAssignableMembers(tx, ctx.workspace.id),
+  }));
   const urls = await createSignedDownloads(
     STORAGE_BUCKETS.media,
     media.map((m) => m.storagePath),
@@ -36,7 +40,7 @@ export default async function EditPropertyPage({
   }));
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto w-full max-w-xl space-y-6">
       <div className="space-y-4">
         <Link
           href={`/properties/${id}/overview`}
@@ -48,7 +52,6 @@ export default async function EditPropertyPage({
         <PageHeader
           title={t("edit_title")}
           description={t("edit_description")}
-          className="pb-0"
         />
       </div>
 
@@ -66,6 +69,10 @@ export default async function EditPropertyPage({
         propertyId={id}
         defaultValues={propertyToFormInput(property)}
         cancelHref={`/properties/${id}/overview`}
+        agents={agents.map((a) => ({
+          userId: a.userId,
+          name: a.fullName ?? a.userId,
+        }))}
       />
     </div>
   );

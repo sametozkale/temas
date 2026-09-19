@@ -109,7 +109,8 @@ export async function syncGmailIntegration(integrationId: string) {
     const from = parseFromHeader(parsed.from);
     if (from.email && from.email === mailbox) continue;
     const result = await ingestInboundEmail({
-      workspaceId: row.workspaceId,
+      userId: row.userId,
+      homeWorkspaceId: row.workspaceId,
       integrationId: row.id,
       from: parsed.from,
       to: parsed.to,

@@ -2,6 +2,10 @@
 
 import en from "@/messages/en.json";
 
+/**
+ * Last-resort boundary — no app chrome, fonts, or Tailwind. Inline styles
+ * use the same tokens as docs/01 §2 so the page still matches if CSS fails.
+ */
 export default function GlobalError({
   reset,
 }: {
@@ -9,43 +13,71 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" style={{ height: "100%" }}>
       <body
         style={{
           margin: 0,
-          fontFamily: "system-ui, sans-serif",
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+          fontFamily:
+            'Inter, ui-sans-serif, system-ui, sans-serif',
           background: "#fafaf7",
           color: "#1c1b19",
         }}
       >
         <main
           style={{
-            minHeight: "100vh",
             display: "flex",
+            maxWidth: 384,
             flexDirection: "column",
             alignItems: "center",
-            justifyContent: "center",
-            gap: 16,
-            padding: 24,
+            gap: 24,
             textAlign: "center",
           }}
         >
-          <h1 style={{ fontSize: 24, fontWeight: 500, margin: 0 }}>
-            {en.errors.title}
-          </h1>
-          <p style={{ fontSize: 14, color: "#6e6c66", margin: 0 }}>
-            {en.errors.description}
-          </p>
+          <div>
+            <h1
+              style={{
+                margin: 0,
+                fontFamily: "Newsreader, Georgia, ui-serif, serif",
+                fontSize: 20,
+                fontWeight: 500,
+                letterSpacing: "-0.01em",
+                lineHeight: 1.15,
+              }}
+            >
+              {en.errors.title}
+            </h1>
+            <p
+              style={{
+                margin: "8px 0 0",
+                fontSize: 14,
+                lineHeight: 1.5,
+                color: "#6e6c66",
+              }}
+            >
+              {en.errors.description}
+            </p>
+          </div>
           <button
             type="button"
             onClick={reset}
             style={{
-              border: "1px solid #e9e6e0",
+              display: "inline-flex",
+              height: 40,
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "0 16px",
+              border: "none",
+              borderRadius: 9999,
               background: "#22211e",
               color: "#fafaf7",
-              borderRadius: 8,
-              padding: "8px 12px",
+              fontFamily: "inherit",
               fontSize: 14,
+              fontWeight: 500,
               cursor: "pointer",
             }}
           >

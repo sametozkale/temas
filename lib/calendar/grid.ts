@@ -96,3 +96,20 @@ export function timeLabelInZone(value: Date, timeZone: string) {
   const zoned = TZDate.tz(timeZone, value);
   return `${String(zoned.getHours()).padStart(2, "0")}:${String(zoned.getMinutes()).padStart(2, "0")}`;
 }
+
+/** Shift a `YYYY-MM-DD` civil date by whole days (UTC calendar math). */
+export function shiftIsoDate(iso: string, days: number) {
+  const [year, month, day] = iso.split("-").map(Number);
+  const next = new Date(Date.UTC(year!, month! - 1, day! + days));
+  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}-${String(next.getUTCDate()).padStart(2, "0")}`;
+}
+
+/** True when the civil today is among the dates currently painted on the board. */
+export function todayIsOnScreen(
+  view: CalendarView,
+  todayKey: string,
+  visibleDates: readonly string[],
+) {
+  if (view === "list") return false;
+  return visibleDates.includes(todayKey);
+}

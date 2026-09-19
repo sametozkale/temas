@@ -7,6 +7,8 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { createProperty, updateProperty } from "@/app/(app)/properties/actions";
+import { CurrencySelect } from "@/components/currency-select";
+import { CountryCityDistrictFields } from "@/components/properties/address-place-fields";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,32 +27,43 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { PROPERTY_TYPES } from "@/lib/db/schema/properties";
 import {
-  CURRENCIES,
+  PROPERTY_CONDITIONS,
+  PROPERTY_TYPES,
+} from "@/lib/db/schema/properties";
+import {
   FEATURE_KEYS,
+  NONE_CONDITION,
   type PropertyFormInput,
 } from "@/lib/properties/schema";
-import { TIMEZONES } from "@/lib/timezones";
+import { TimezoneSelect } from "@/components/timezone-select";
 
 type Props = {
   mode: "create" | "edit";
   defaultValues: PropertyFormInput;
   propertyId?: string;
   cancelHref: string;
+  agents?: { userId: string; name: string }[];
 };
 
-const ERROR_KEYS = new Set(["title", "invalid_number", "timezone"]);
+const ERROR_KEYS = new Set([
+  "title",
+  "invalid_number",
+  "invalid_date",
+  "timezone",
+]);
 
 export function PropertyForm({
   mode,
   defaultValues,
   propertyId,
   cancelHref,
+  agents = [],
 }: Props) {
   const t = useTranslations("properties.form");
   const tTypes = useTranslations("properties.types");
   const tFeatures = useTranslations("properties.features");
+  const tConditions = useTranslations("properties.conditions");
   const router = useRouter();
   const [pending, startTransition] = React.useTransition();
 
@@ -64,7 +77,9 @@ export function PropertyForm({
     const raw = errors[name]?.message;
     if (!raw) return null;
     return ERROR_KEYS.has(raw)
-      ? t(`errors.${raw as "title" | "invalid_number" | "timezone"}`)
+      ? t(
+          `errors.${raw as "title" | "invalid_number" | "invalid_date" | "timezone"}`,
+        )
       : t("errors.generic");
   };
 
@@ -77,7 +92,11 @@ export function PropertyForm({
           : await createProperty(raw);
       if (result.ok) {
         toast.success(mode === "create" ? t("created") : t("saved"));
-        if (mode === "edit") router.refresh();
+        if (mode === "create" && result.data?.id) {
+          router.push(`/properties/${result.data.id}/edit?created=1`);
+          return;
+        }
+        router.refresh();
       } else if (result.error === "invalid") {
         if (result.fieldErrors) {
           for (const [field, msgs] of Object.entries(result.fieldErrors)) {
@@ -146,22 +165,43 @@ export function PropertyForm({
                 control={form.control}
                 name="timezone"
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger id="timezone" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TIMEZONES.map((tz) => (
-                        <SelectItem key={tz} value={tz}>
-                          {tz}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <TimezoneSelect
+                    id="timezone"
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  />
                 )}
               />
               <FieldError>{messageFor("timezone")}</FieldError>
             </Field>
+            {agents.length > 0 ? (
+              <Field className="sm:max-w-[320px]">
+                <FieldLabel htmlFor="assignedUserId">
+                  {t("assigned_agent")}
+                </FieldLabel>
+                <Controller
+                  control={form.control}
+                  name="assignedUserId"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || agents[0]?.userId}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger id="assignedUserId" className="w-full">
+                        <SelectValue placeholder={t("assigned_agent")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {agents.map((agent) => (
+                          <SelectItem key={agent.userId} value={agent.userId}>
+                            {agent.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </Field>
+            ) : null}
           </FieldGroup>
         </CardContent>
       </Card>
@@ -176,20 +216,13 @@ export function PropertyForm({
               <FieldLabel htmlFor="addressLine">{t("address_line")}</FieldLabel>
               <Input id="addressLine" {...form.register("addressLine")} />
             </Field>
-            <div className="grid gap-5 sm:grid-cols-3">
-              <Field>
-                <FieldLabel htmlFor="district">{t("district")}</FieldLabel>
-                <Input id="district" {...form.register("district")} />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="city">{t("city")}</FieldLabel>
-                <Input id="city" {...form.register("city")} />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="country">{t("country")}</FieldLabel>
-                <Input id="country" {...form.register("country")} />
-              </Field>
-            </div>
+            <CountryCityDistrictFields
+              country={form.watch("country")}
+              city={form.watch("city")}
+              onCountryChange={(value) => form.setValue("country", value)}
+              onCityChange={(value) => form.setValue("city", value)}
+              district={form.register("district")}
+            />
           </FieldGroup>
         </CardContent>
       </Card>
@@ -199,7 +232,7 @@ export function PropertyForm({
           <CardTitle>{t("section_pricing")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-5 sm:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2">
             <Field data-invalid={invalid("rentAmount")}>
               <FieldLabel htmlFor="rentAmount">{t("rent")}</FieldLabel>
               <Input
@@ -218,26 +251,28 @@ export function PropertyForm({
               />
               <FieldError>{messageFor("depositAmount")}</FieldError>
             </Field>
+            <Field data-invalid={invalid("duesAmount")}>
+              <FieldLabel htmlFor="duesAmount">{t("dues")}</FieldLabel>
+              <Input
+                id="duesAmount"
+                inputMode="decimal"
+                {...form.register("duesAmount")}
+              />
+              <FieldError>{messageFor("duesAmount")}</FieldError>
+            </Field>
             <Field>
               <FieldLabel htmlFor="currency">{t("currency")}</FieldLabel>
-              <Controller
-                control={form.control}
-                name="currency"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger id="currency" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CURRENCIES.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {c}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+                <Controller
+                  control={form.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <CurrencySelect
+                      id="currency"
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    />
+                  )}
+                />
             </Field>
           </div>
         </CardContent>
@@ -267,6 +302,24 @@ export function PropertyForm({
                   {...form.register("rooms")}
                 />
               </Field>
+              <Field data-invalid={invalid("bedrooms")}>
+                <FieldLabel htmlFor="bedrooms">{t("bedrooms")}</FieldLabel>
+                <Input
+                  id="bedrooms"
+                  inputMode="numeric"
+                  {...form.register("bedrooms")}
+                />
+                <FieldError>{messageFor("bedrooms")}</FieldError>
+              </Field>
+              <Field data-invalid={invalid("bathrooms")}>
+                <FieldLabel htmlFor="bathrooms">{t("bathrooms")}</FieldLabel>
+                <Input
+                  id="bathrooms"
+                  inputMode="numeric"
+                  {...form.register("bathrooms")}
+                />
+                <FieldError>{messageFor("bathrooms")}</FieldError>
+              </Field>
               <Field data-invalid={invalid("floor")}>
                 <FieldLabel htmlFor="floor">{t("floor")}</FieldLabel>
                 <Input
@@ -275,6 +328,64 @@ export function PropertyForm({
                   {...form.register("floor")}
                 />
                 <FieldError>{messageFor("floor")}</FieldError>
+              </Field>
+              <Field data-invalid={invalid("totalFloors")}>
+                <FieldLabel htmlFor="totalFloors">
+                  {t("total_floors")}
+                </FieldLabel>
+                <Input
+                  id="totalFloors"
+                  inputMode="numeric"
+                  {...form.register("totalFloors")}
+                />
+                <FieldError>{messageFor("totalFloors")}</FieldError>
+              </Field>
+              <Field data-invalid={invalid("yearBuilt")}>
+                <FieldLabel htmlFor="yearBuilt">{t("year_built")}</FieldLabel>
+                <Input
+                  id="yearBuilt"
+                  inputMode="numeric"
+                  {...form.register("yearBuilt")}
+                />
+                <FieldError>{messageFor("yearBuilt")}</FieldError>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="condition">{t("condition")}</FieldLabel>
+                <Controller
+                  control={form.control}
+                  name="condition"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || NONE_CONDITION}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger id="condition" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NONE_CONDITION}>
+                          {tConditions("none")}
+                        </SelectItem>
+                        {PROPERTY_CONDITIONS.map((c) => (
+                          <SelectItem key={c} value={c}>
+                            {tConditions(c)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </Field>
+              <Field data-invalid={invalid("availableFrom")}>
+                <FieldLabel htmlFor="availableFrom">
+                  {t("available_from")}
+                </FieldLabel>
+                <Input
+                  id="availableFrom"
+                  type="date"
+                  {...form.register("availableFrom")}
+                />
+                <FieldError>{messageFor("availableFrom")}</FieldError>
               </Field>
             </div>
 

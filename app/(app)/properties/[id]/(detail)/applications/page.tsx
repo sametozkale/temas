@@ -9,6 +9,11 @@ import { withUserContext } from "@/lib/db";
 import { env } from "@/lib/env";
 import { can } from "@/lib/permissions";
 import { ensurePipeline } from "@/lib/pipeline/ensure";
+import {
+  householdLabel,
+  householdMemberLine,
+  householdOf,
+} from "@/lib/pipeline/household";
 import { listApplications } from "@/lib/pipeline/queries";
 
 import { loadProperty } from "../../load";
@@ -55,7 +60,7 @@ export default async function ApplicationsPage({
       <section className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="font-serif text-2xl tracking-tight">{t("title")}</h2>
+            <h2 className="text-base font-medium">{t("title")}</h2>
             <p className="text-sm text-muted-foreground">{t("hint")}</p>
           </div>
           <div className="flex w-full max-w-sm flex-col gap-3">
@@ -81,18 +86,29 @@ export default async function ApplicationsPage({
             color: s.color,
             isTerminal: s.isTerminal,
           }))}
-          cards={applicants.map((row) => ({
-            id: row.application.id,
-            stageId: row.application.stageId,
-            fullName: row.contact.fullName,
-            email: row.contact.email,
-            summary:
-              row.application.aiSummary ??
-              (typeof row.submission?.answers.employment === "string"
-                ? row.submission.answers.employment
-                : null),
-            score: row.application.score,
-          }))}
+          cards={applicants.map((row) => {
+            const household = householdOf(
+              row.contact.fullName,
+              row.submission?.answers ?? null,
+            );
+            return {
+              id: row.application.id,
+              stageId: row.application.stageId,
+              fullName: householdLabel(household, {
+                family: (name) => t("sheet.family", { name }),
+                plus: (name, count) => t("sheet.plus", { name, count }),
+              }),
+              memberLine:
+                household.size > 1 ? householdMemberLine(household) : null,
+              email: row.contact.email,
+              summary:
+                row.application.aiSummary ??
+                (typeof row.submission?.answers.employment === "string"
+                  ? row.submission.answers.employment
+                  : null),
+              score: row.application.score,
+            };
+          })}
           canManage={canManage}
         />
       </section>

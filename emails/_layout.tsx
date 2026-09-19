@@ -60,11 +60,11 @@ export function EmailLayout({
       <Preview>{preview}</Preview>
       <Body style={styles.body}>
         <Container style={styles.container}>
-          <Text style={styles.brand}>Havn</Text>
+          <Text style={styles.brand}>Temas</Text>
           <Section>{children}</Section>
           <Hr style={styles.hr} />
           <Text style={styles.footer}>
-            This email was sent via Havn. If you weren&apos;t expecting it, you
+            This email was sent via Temas. If you weren&apos;t expecting it, you
             can safely ignore it.
           </Text>
         </Container>

@@ -9,7 +9,9 @@ export function loadPrompt(
     | "draft.md"
     | "applicant-summary.md"
     | "contract-system.md"
-    | "reminder-copy.md",
+    | "reminder-copy.md"
+    | "extract-tasks.md"
+    | "name-thread.md",
 ) {
   return readFileSync(join(DIR, name), "utf8").trim();
 }

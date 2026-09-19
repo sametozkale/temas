@@ -13,7 +13,9 @@ import { getAppContext } from "@/lib/auth";
 import { parseYearMonth, type CalendarView } from "@/lib/calendar/grid";
 import { withUserContext } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
+import { listAssignableMembers } from "@/lib/properties/assignment";
 import { listProperties } from "@/lib/properties/queries";
+import { uuidSchema } from "@/lib/properties/schema";
 import {
   listBookingsInRange,
   listUpcomingBookings,
@@ -27,11 +29,14 @@ export default async function CalendarPage({
     month?: string;
     week?: string;
     property?: string;
+    agent?: string;
   }>;
 }) {
-  const t = await getTranslations("calendar");
-  const ctx = await getAppContext();
-  const params = await searchParams;
+  const [t, ctx, params] = await Promise.all([
+    getTranslations("calendar"),
+    getAppContext(),
+    searchParams,
+  ]);
   const view: CalendarView =
     params.view === "week" || params.view === "list" || params.view === "month"
       ? params.view
@@ -42,26 +47,34 @@ export default async function CalendarPage({
     new Date(zoned.getFullYear(), zoned.getMonth(), zoned.getDate()),
   );
   const propertyId = params.property || undefined;
+  const agentParam = params.agent;
+  const assignedUserId =
+    agentParam === "me"
+      ? ctx.user.id
+      : agentParam && uuidSchema.safeParse(agentParam).success
+        ? agentParam
+        : undefined;
 
-  const { events, upcoming, properties } = await withUserContext(
+  const { events, upcoming, properties, agents } = await withUserContext(
     ctx.user.id,
     async (tx) => {
       const start = startOfMonth(
         new Date(Date.UTC(parsed.year, parsed.month - 1, 1)),
       );
       const end = addMonths(start, 1);
-      const [events, upcoming, properties] = await Promise.all([
+      const [events, upcoming, properties, agents] = await Promise.all([
         listBookingsInRange(
           tx,
           ctx.workspace.id,
           new Date(start.getTime() - 7 * 24 * 60 * 60_000),
           new Date(end.getTime() + 7 * 24 * 60 * 60_000),
-          propertyId,
+          { propertyId, assignedUserId },
         ),
-        listUpcomingBookings(tx, ctx.workspace.id),
+        listUpcomingBookings(tx, ctx.workspace.id, assignedUserId),
         listProperties(tx, ctx.workspace.id),
+        listAssignableMembers(tx, ctx.workspace.id),
       ]);
-      return { events, upcoming, properties };
+      return { events, upcoming, properties, agents };
     },
   );
 
@@ -70,8 +83,8 @@ export default async function CalendarPage({
     : upcoming;
 
   return (
-    <div className="space-y-8">
-      <PageHeader title={t("title")} description={t("description")} />
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <PageHeader className="shrink-0" title={t("title")} />
       <CalendarBoard
         view={view}
         year={parsed.year}
@@ -81,10 +94,15 @@ export default async function CalendarPage({
         events={events}
         properties={properties.map((row) => ({ id: row.id, title: row.title }))}
         propertyId={propertyId}
+        agents={agents.map((a) => ({
+          userId: a.userId,
+          name: a.fullName ?? a.userId,
+        }))}
+        agentId={params.agent}
+        currentUserId={ctx.user.id}
       />
-      {view === "list" || filteredUpcoming.length > 0 ? (
-        <section className="space-y-2">
-          <h2 className="text-sm font-medium">{t("upcoming")}</h2>
+      {view === "list" ? (
+        <section className="min-h-0 flex-1 overflow-auto">
           {filteredUpcoming.length === 0 ? (
             <EmptyState
               icon={Calendar03Icon}
@@ -105,22 +123,13 @@ export default async function CalendarPage({
                       .split(", ")
                       .at(-1)}
                     title={row.propertyTitle}
-                    meta={`${row.prospectName} · ${formatDateTime(row.startsAt, row.timezone)}`}
+                    meta={`${row.prospectName}${row.assignedAgentName ? ` · ${row.assignedAgentName}` : ""} · ${formatDateTime(row.startsAt, row.timezone)}`}
                   />
                 </Link>
               ))}
             </div>
           )}
         </section>
-      ) : null}
-      {view !== "list" &&
-      events.length === 0 &&
-      filteredUpcoming.length === 0 ? (
-        <EmptyState
-          icon={Calendar03Icon}
-          title={t("empty_title")}
-          description={t("empty_description")}
-        />
       ) : null}
     </div>
   );

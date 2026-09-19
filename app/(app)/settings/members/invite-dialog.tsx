@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { INVITE_ROLES } from "@/lib/roles";
+import { INVITE_ROLES, type InviteRole } from "@/lib/roles";
 
 import { inviteMember, type MembersState } from "./actions";
 
@@ -39,6 +39,7 @@ export function InviteDialog() {
   const t = useTranslations("settings.members");
   const tr = useTranslations("roles");
   const [open, setOpen] = React.useState(false);
+  const [role, setRole] = React.useState<InviteRole>("agent");
   const [state, action, pending] = useActionState<
     MembersState | undefined,
     FormData
@@ -79,7 +80,7 @@ export function InviteDialog() {
                 type="email"
                 required
                 autoFocus
-                placeholder="you@agency.com"
+                placeholder={t("email_placeholder")}
               />
               {fieldErrors?.email ? (
                 <FieldError>{t("errors.invalid_email")}</FieldError>
@@ -87,7 +88,11 @@ export function InviteDialog() {
             </Field>
             <Field>
               <FieldLabel htmlFor="invite-role">{t("role")}</FieldLabel>
-              <Select name="role" defaultValue="agent">
+              <input type="hidden" name="role" value={role} />
+              <Select
+                value={role}
+                onValueChange={(value) => setRole(value as InviteRole)}
+              >
                 <SelectTrigger id="invite-role" className="w-full">
                   <SelectValue />
                 </SelectTrigger>

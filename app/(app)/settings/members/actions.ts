@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -9,10 +9,16 @@ import { actionError, actionOk, type ActionResult } from "@/lib/action-result";
 import { logActivity } from "@/lib/activity";
 import { getAppContext } from "@/lib/auth";
 import { db, withUserContext } from "@/lib/db";
-import { invites, workspaceMembers } from "@/lib/db/schema";
+import { authUsers, invites, workspaceMembers } from "@/lib/db/schema";
 import { env } from "@/lib/env";
 import { sendEmail } from "@/lib/integrations/resend";
 import { canAssignRole, requireAbility } from "@/lib/permissions";
+import {
+  isAssignableRole,
+  oldestOwnerId,
+  reassignPropertiesFromUser,
+} from "@/lib/properties/assignment";
+import { syncAssignedAgentWindows } from "@/lib/viewings/assignee";
 import {
   INVITE_ROLES,
   INVITE_TTL_DAYS,
@@ -41,7 +47,7 @@ async function deliverInvite(params: {
   ).toString();
   await sendEmail({
     to: params.email,
-    subject: `You're invited to ${params.workspaceName} on Havn`,
+    subject: `You're invited to ${params.workspaceName} on Temas`,
     react: WorkspaceInviteEmail({
       workspaceName: params.workspaceName,
       inviterName: params.inviterName,
@@ -72,27 +78,37 @@ export async function inviteMember(
     return actionError("self_invite");
   }
 
+  const [alreadyMember] = await db
+    .select({ id: workspaceMembers.id })
+    .from(workspaceMembers)
+    .innerJoin(authUsers, eq(authUsers.id, workspaceMembers.userId))
+    .where(
+      and(
+        eq(workspaceMembers.workspaceId, ctx.workspace.id),
+        sql`lower(${authUsers.email}) = ${email}`,
+      ),
+    )
+    .limit(1);
+  if (alreadyMember) return actionError("already_member");
+
   const token = secureToken();
   const expiresAt = new Date(Date.now() + INVITE_TTL_DAYS * 86_400_000);
 
   const result = await withUserContext(ctx.user.id, async (tx) => {
-    // Re-issuing for a pending invite: refresh token + expiry instead of duplicating.
+    // Re-issuing: refresh token + expiry (and reopen an accepted row if they left).
     const [existing] = await tx
       .select({ id: invites.id })
       .from(invites)
       .where(
-        and(
-          eq(invites.workspaceId, ctx.workspace.id),
-          eq(invites.email, email),
-          isNull(invites.acceptedAt),
-        ),
+        and(eq(invites.workspaceId, ctx.workspace.id), eq(invites.email, email)),
       )
+      .orderBy(sql`${invites.acceptedAt} asc nulls first`)
       .limit(1);
 
     if (existing) {
       await tx
         .update(invites)
-        .set({ role, token, expiresAt })
+        .set({ role, token, expiresAt, acceptedAt: null })
         .where(eq(invites.id, existing.id));
     } else {
       await tx.insert(invites).values({
@@ -123,7 +139,7 @@ export async function inviteMember(
       role,
       token,
       workspaceName: ctx.workspace.name,
-      inviterName: ctx.profile.fullName ?? ctx.user.email ?? "Havn",
+      inviterName: ctx.profile.fullName ?? ctx.user.email ?? "Temas",
     });
   } catch (err) {
     console.error("[invite] email delivery failed", err);
@@ -215,6 +231,37 @@ export async function updateMemberRole(
   }
 
   await withUserContext(ctx.user.id, async (tx) => {
+    if (!isAssignableRole(parsed.data.role)) {
+      const fallback = await oldestOwnerId(tx, ctx.workspace.id, target.userId);
+      if (fallback) {
+        const ids = await reassignPropertiesFromUser(
+          tx,
+          ctx.workspace.id,
+          target.userId,
+          fallback,
+        );
+        for (const propertyId of ids) {
+          await syncAssignedAgentWindows(
+            tx,
+            propertyId,
+            ctx.workspace.id,
+            fallback,
+          );
+          await logActivity(
+            {
+              workspaceId: ctx.workspace.id,
+              actorId: ctx.user.id,
+              propertyId,
+              action: "property.reassigned",
+              entity: "property",
+              entityId: propertyId,
+              data: { from: target.userId, to: fallback },
+            },
+            tx,
+          );
+        }
+      }
+    }
     await tx
       .update(workspaceMembers)
       .set({ role: parsed.data.role })
@@ -264,6 +311,35 @@ export async function removeMember(memberId: string): Promise<MembersState> {
   }
 
   await withUserContext(ctx.user.id, async (tx) => {
+    const fallback = await oldestOwnerId(tx, ctx.workspace.id, target.userId);
+    if (fallback) {
+      const ids = await reassignPropertiesFromUser(
+        tx,
+        ctx.workspace.id,
+        target.userId,
+        fallback,
+      );
+      for (const propertyId of ids) {
+        await syncAssignedAgentWindows(
+          tx,
+          propertyId,
+          ctx.workspace.id,
+          fallback,
+        );
+        await logActivity(
+          {
+            workspaceId: ctx.workspace.id,
+            actorId: ctx.user.id,
+            propertyId,
+            action: "property.reassigned",
+            entity: "property",
+            entityId: propertyId,
+            data: { from: target.userId, to: fallback },
+          },
+          tx,
+        );
+      }
+    }
     await tx.delete(workspaceMembers).where(eq(workspaceMembers.id, id));
     await logActivity(
       {

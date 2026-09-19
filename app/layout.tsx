@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Newsreader } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale } from "next-intl/server";
+import { getLocale, getMessages } from "next-intl/server";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -24,10 +24,10 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "Havn",
+  title: "Temas",
   description: "AI-native property management for real estate agents",
-  applicationName: "Havn",
-  appleWebApp: { capable: true, title: "Havn", statusBarStyle: "default" },
+  applicationName: "Temas",
+  appleWebApp: { capable: true, title: "Temas", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
@@ -43,6 +43,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getLocale();
+  const messages = await getMessages();
 
   return (
     <html
@@ -52,9 +53,11 @@ export default async function RootLayout({
     >
       <body suppressHydrationWarning>
         <ThemeProvider>
-          <NextIntlClientProvider>
-            <TooltipProvider>{children}</TooltipProvider>
-            <Toaster />
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            <TooltipProvider>
+              {children}
+              <Toaster />
+            </TooltipProvider>
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

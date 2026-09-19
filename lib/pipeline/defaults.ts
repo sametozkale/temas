@@ -53,6 +53,13 @@ export const DEFAULT_FORM_FIELDS: FormField[] = [
     label: "Number of occupants",
     type: "number",
     required: true,
+    helpText: "Everyone who will live in the property, including you.",
+  },
+  {
+    key: "household",
+    label: "Other household members",
+    type: "textarea",
+    helpText: "Names of everyone else who will live here, one per line.",
   },
   {
     key: "references",

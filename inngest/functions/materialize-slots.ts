@@ -1,4 +1,5 @@
 import { inngest } from "@/inngest/client";
+import { revalidatePublicBookingByCalendar } from "@/lib/public-cache";
 import { materializeCalendar } from "@/lib/viewings/materialize";
 
 export const materializeSlots = inngest.createFunction(
@@ -9,6 +10,8 @@ export const materializeSlots = inngest.createFunction(
   },
   async ({ event }) => {
     const calendarId = event.data.calendarId as string;
-    return materializeCalendar(calendarId);
+    const result = await materializeCalendar(calendarId);
+    await revalidatePublicBookingByCalendar(calendarId);
+    return result;
   },
 );

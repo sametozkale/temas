@@ -1,5 +1,6 @@
 import { inngest } from "@/inngest/client";
 import { integrations } from "@/lib/env";
+import { revalidatePublicBookingByCalendar } from "@/lib/public-cache";
 import { materializeCalendar } from "@/lib/viewings/materialize";
 
 /** Enqueue Inngest when configured; otherwise materialize inline (dev). */
@@ -12,4 +13,5 @@ export async function enqueueMaterialize(calendarId: string) {
     return;
   }
   await materializeCalendar(calendarId);
+  await revalidatePublicBookingByCalendar(calendarId);
 }

@@ -17,7 +17,7 @@ export default async function PipelineIndexPage() {
   );
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader title={t("index_title")} description={t("index_hint")} />
       {rows.length === 0 ? (
         <EmptyState

@@ -21,7 +21,10 @@ import {
 import { env } from "@/lib/env";
 import { requireAbility } from "@/lib/permissions";
 import { enqueueEmbedProperty } from "@/lib/ai/enqueue";
+import { revalidatePublicPropertyPages } from "@/lib/public-cache";
+import { resolveAssignedUserId } from "@/lib/properties/assignment";
 import { getProperty } from "@/lib/properties/queries";
+import { syncAssignedAgentWindows } from "@/lib/viewings/assignee";
 import {
   documentMetaSchema,
   inventoryItemSchema,
@@ -35,8 +38,8 @@ import { secureToken } from "@/lib/slug";
 import {
   DOCUMENT_MAX_BYTES,
   MEDIA_MAX_BYTES,
-  MEDIA_MIME_TYPES,
   STORAGE_BUCKETS,
+  mediaTypeOf,
   buildObjectPath,
   createSignedDownload,
   createSignedUpload,
@@ -56,7 +59,7 @@ async function requireProperty(tx: Tx, workspaceId: string, id: string) {
 function revalidateProperty(id: string) {
   revalidatePath("/properties");
   revalidatePath(`/properties/${id}`, "layout");
-  revalidatePath("/", "layout"); // sidebar shortcuts
+  revalidatePath("/", "layout");
 }
 
 function toAddress(v: {
@@ -101,10 +104,17 @@ export async function createProperty(
   const v = parsed.data;
 
   const id = await withUserContext(ctx.user.id, async (tx) => {
+    const assignedUserId = await resolveAssignedUserId(
+      tx,
+      ctx.workspace.id,
+      ctx.user.id,
+      v.assignedUserId,
+    );
     const [row] = await tx
       .insert(properties)
       .values({
         workspaceId: ctx.workspace.id,
+        assignedUserId,
         type: v.type,
         title: v.title,
         address: toAddress(v),
@@ -112,9 +122,16 @@ export async function createProperty(
         rentAmount: v.rentAmount?.toString() ?? null,
         currency: v.currency,
         depositAmount: v.depositAmount?.toString() ?? null,
+        duesAmount: v.duesAmount?.toString() ?? null,
         areaM2: v.areaM2?.toString() ?? null,
         rooms: v.rooms,
+        bedrooms: v.bedrooms,
+        bathrooms: v.bathrooms,
         floor: v.floor,
+        totalFloors: v.totalFloors,
+        yearBuilt: v.yearBuilt,
+        condition: v.condition,
+        availableFrom: v.availableFrom,
         features: toFeatures(v.features),
         description: v.description,
       })
@@ -127,7 +144,7 @@ export async function createProperty(
         action: "property.created",
         entity: "property",
         entityId: row!.id,
-        data: { title: v.title, type: v.type },
+        data: { title: v.title, type: v.type, assignedUserId },
       },
       tx,
     );
@@ -141,7 +158,7 @@ export async function createProperty(
   }
 
   revalidateProperty(id);
-  redirect(`/properties/${id}/edit?created=1`);
+  return actionOk({ id });
 }
 
 export async function updateProperty(
@@ -162,6 +179,13 @@ export async function updateProperty(
     const current = await requireProperty(tx, ctx.workspace.id, id);
     if (!current) return "not_found" as const;
 
+    const assignedUserId = await resolveAssignedUserId(
+      tx,
+      ctx.workspace.id,
+      current.assignedUserId ?? ctx.user.id,
+      v.assignedUserId,
+    );
+
     await tx
       .update(properties)
       .set({
@@ -172,13 +196,37 @@ export async function updateProperty(
         rentAmount: v.rentAmount?.toString() ?? null,
         currency: v.currency,
         depositAmount: v.depositAmount?.toString() ?? null,
+        duesAmount: v.duesAmount?.toString() ?? null,
         areaM2: v.areaM2?.toString() ?? null,
         rooms: v.rooms,
+        bedrooms: v.bedrooms,
+        bathrooms: v.bathrooms,
         floor: v.floor,
+        totalFloors: v.totalFloors,
+        yearBuilt: v.yearBuilt,
+        condition: v.condition,
+        availableFrom: v.availableFrom,
         features: toFeatures(v.features),
         description: v.description,
+        assignedUserId,
       })
       .where(eq(properties.id, id));
+
+    if (current.assignedUserId !== assignedUserId) {
+      await syncAssignedAgentWindows(tx, id, ctx.workspace.id, assignedUserId);
+      await logActivity(
+        {
+          workspaceId: ctx.workspace.id,
+          actorId: ctx.user.id,
+          propertyId: id,
+          action: "property.assigned",
+          entity: "property",
+          entityId: id,
+          data: { from: current.assignedUserId, to: assignedUserId },
+        },
+        tx,
+      );
+    }
 
     const changed: string[] = [];
     if (current.title !== v.title) changed.push("title");
@@ -189,6 +237,15 @@ export async function updateProperty(
       (current.depositAmount ?? null) !== (v.depositAmount?.toString() ?? null)
     )
       changed.push("deposit_amount");
+    if ((current.duesAmount ?? null) !== (v.duesAmount?.toString() ?? null))
+      changed.push("dues_amount");
+    if (current.bedrooms !== v.bedrooms) changed.push("bedrooms");
+    if (current.bathrooms !== v.bathrooms) changed.push("bathrooms");
+    if (current.totalFloors !== v.totalFloors) changed.push("total_floors");
+    if (current.yearBuilt !== v.yearBuilt) changed.push("year_built");
+    if (current.condition !== v.condition) changed.push("condition");
+    if ((current.availableFrom ?? null) !== (v.availableFrom ?? null))
+      changed.push("available_from");
 
     await logActivity(
       {
@@ -212,6 +269,7 @@ export async function updateProperty(
     // embeddings are best-effort
   }
   revalidateProperty(id);
+  await revalidatePublicPropertyPages(id);
   return actionOk();
 }
 
@@ -283,6 +341,7 @@ export async function deleteProperty(
 
   if (result !== "ok") return actionError(result);
   revalidateProperty(id);
+  await revalidatePublicPropertyPages(id);
   redirect("/properties");
 }
 
@@ -306,9 +365,8 @@ export async function createMediaUploadUrl(
   if (!parsed.success) return actionError("invalid");
   const { propertyId, fileName, contentType, size } = parsed.data;
 
-  if (!(MEDIA_MIME_TYPES as readonly string[]).includes(contentType)) {
-    return actionError("unsupported_type");
-  }
+  const mime = mediaTypeOf(contentType, fileName);
+  if (!mime) return actionError("unsupported_type");
   if (size > MEDIA_MAX_BYTES) return actionError("too_large");
 
   const exists = await withUserContext(ctx.user.id, (tx) =>
@@ -317,8 +375,13 @@ export async function createMediaUploadUrl(
   if (!exists) return actionError("not_found");
 
   const path = buildObjectPath(ctx.workspace.id, propertyId, fileName);
-  const signed = await createSignedUpload(STORAGE_BUCKETS.media, path);
-  return actionOk(signed);
+  try {
+    const signed = await createSignedUpload(STORAGE_BUCKETS.media, path);
+    return actionOk(signed);
+  } catch (err) {
+    console.error("[media] signed upload url failed", err);
+    return actionError("upload_failed");
+  }
 }
 
 export async function attachMedia(
@@ -724,8 +787,7 @@ export async function removePropertyPerson(
 
 /**
  * Issues (or refreshes) the invite token for an owner/tenant and returns the
- * shareable URL. The link resolves to the magic-link flow in PHASE 3; for now
- * it is copied and sent manually (docs/06 PHASE 2).
+ * shareable URL. The person opens `/p/[token]` and sets their availability.
  */
 export async function generatePersonInviteLink(
   propertyId: string,

@@ -13,14 +13,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { TIMEZONES } from "@/lib/timezones";
+import { TimezoneSelect } from "@/components/timezone-select";
 
 import { createWorkspace, type OnboardingState } from "./actions";
 
@@ -39,7 +32,7 @@ export function OnboardingForm({
   return (
     <form action={action} className="space-y-8">
       <div className="space-y-1">
-        <h1 className="font-serif text-3xl font-medium tracking-tight">
+        <h1 className="font-serif text-xl font-medium tracking-tight">
           {t("title")}
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -78,22 +71,19 @@ export function OnboardingForm({
 
         <Field>
           <FieldLabel htmlFor="timezone">{t("timezone")}</FieldLabel>
-          <Select name="timezone" defaultValue="Europe/Istanbul">
-            <SelectTrigger id="timezone" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TIMEZONES.map((tz) => (
-                <SelectItem key={tz} value={tz}>
-                  {tz}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <TimezoneSelect id="timezone" name="timezone" />
         </Field>
       </FieldGroup>
 
-      <Button type="submit" disabled={pending}>
+      {state && !state.ok && !fieldErrors ? (
+        <FieldError>
+          {state.error === "session_mismatch"
+            ? t("errors.session_mismatch")
+            : t("errors.create_failed")}
+        </FieldError>
+      ) : null}
+
+      <Button type="submit" size="lg" disabled={pending}>
         {pending ? (
           <Icon
             icon={Loading03Icon}

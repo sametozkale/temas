@@ -14,14 +14,19 @@ import {
 
 export type { IconSvgElement };
 
-export type IconProps = Omit<HugeiconsIconProps, "size" | "strokeWidth"> & {
-  size?: 16 | 18 | 20 | 24;
+export type IconProps = Omit<HugeiconsIconProps, "size"> & {
+  size?: 16 | 18 | 20 | 24 | 48;
 };
 
 /** Thin wrapper that fixes the stroke width and default size. */
 export const Icon = React.forwardRef<SVGSVGElement, IconProps>(
-  ({ size = 18, ...props }, ref) => (
-    <HugeiconsIcon ref={ref} size={size} strokeWidth={1.5} {...props} />
+  ({ size = 18, strokeWidth = 1.5, ...props }, ref) => (
+    <HugeiconsIcon
+      ref={ref}
+      size={size}
+      strokeWidth={strokeWidth}
+      {...props}
+    />
   ),
 );
 Icon.displayName = "Icon";
@@ -29,10 +34,12 @@ Icon.displayName = "Icon";
 export {
   // Sidebar navigation
   Home01Icon,
+  Home04Icon,
   InboxIcon,
   Calendar03Icon,
   Building03Icon,
   Settings02Icon,
+  ChatFeedbackIcon,
 
   // Property types (docs/01 §5)
   House01Icon,
@@ -53,6 +60,11 @@ export {
   Loading03Icon,
   CancelCircleIcon,
   Tick02Icon,
+  CheckmarkSquare02Icon,
+  CircleIcon,
+  SignalLow01Icon,
+  SignalMedium01Icon,
+  SignalHighIcon,
 
   // Common actions
   Add01Icon,
@@ -75,11 +87,15 @@ export {
   Menu01Icon,
   Logout01Icon,
 
+  // Sidebar chrome
+  SidebarLeftIcon,
+
   // Navigation arrows
   ArrowRight01Icon,
   ArrowLeft01Icon,
   ArrowDown01Icon,
   ArrowUp01Icon,
+  ArrowUp02Icon,
 
   // Domain
   UserIcon,

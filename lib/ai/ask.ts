@@ -9,13 +9,16 @@ import {
   type UIMessageStreamWriter,
 } from "ai";
 import { and, desc, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 
 import type { DbOrTx } from "@/lib/db";
 import { db } from "@/lib/db";
-import { aiMessages, aiThreads } from "@/lib/db/schema";
+import { aiMessages, aiThreads, profiles } from "@/lib/db/schema";
 import { selectAskTools } from "@/lib/ai/intent";
+import { languageInstruction, normalizeAiLanguage } from "@/lib/ai/languages";
 import { isTextConfigured, modelLabel, textModel } from "@/lib/ai/models";
 import { loadPrompt } from "@/lib/ai/prompts";
+import { nameThread } from "@/lib/ai/name-thread";
 import { searchSnippets } from "@/lib/ai/rag";
 import { createAskTools } from "@/lib/ai/tools";
 import type { AskSource, AskUIMessage } from "@/lib/ai/types";
@@ -67,6 +70,32 @@ function uniqueSources(items: AskSource[]) {
   });
 }
 
+function toolsWithSources(
+  tools: ReturnType<typeof createAskTools>,
+  emit: (source: AskSource) => void,
+) {
+  return Object.fromEntries(
+    Object.entries(tools).map(([name, tool]) => {
+      const execute = tool.execute as
+        ((args: unknown, opts: unknown) => Promise<unknown>) | undefined;
+      if (!execute) return [name, tool];
+      return [
+        name,
+        {
+          ...tool,
+          execute: async (args: unknown, opts: unknown) => {
+            const result = await execute(args, opts);
+            for (const source of uniqueSources(collectSources(result))) {
+              emit(source);
+            }
+            return result;
+          },
+        },
+      ];
+    }),
+  ) as ReturnType<typeof createAskTools>;
+}
+
 export async function persistUserTurn(input: {
   workspaceId: string;
   userId: string;
@@ -74,9 +103,11 @@ export async function persistUserTurn(input: {
   question: string;
 }) {
   let threadId = input.threadId;
+  let title: string | null = null;
+  let isNew = false;
   if (threadId) {
     const [existing] = await db
-      .select({ id: aiThreads.id })
+      .select({ id: aiThreads.id, title: aiThreads.title })
       .from(aiThreads)
       .where(
         and(
@@ -87,6 +118,7 @@ export async function persistUserTurn(input: {
       )
       .limit(1);
     if (!existing) threadId = null;
+    else title = existing.title;
   }
   if (!threadId) {
     const [created] = await db
@@ -94,17 +126,23 @@ export async function persistUserTurn(input: {
       .values({
         workspaceId: input.workspaceId,
         userId: input.userId,
-        title: input.question.slice(0, 80),
+        title: null,
       })
       .returning({ id: aiThreads.id });
     threadId = created!.id;
+    isNew = true;
   }
   await db.insert(aiMessages).values({
     threadId,
     role: "user",
     content: input.question,
   });
-  return threadId;
+  await db
+    .update(aiThreads)
+    .set({ updatedAt: new Date() })
+    .where(eq(aiThreads.id, threadId));
+  revalidatePath("/", "layout");
+  return { threadId, title, isNew };
 }
 
 export async function persistAssistantTurn(
@@ -120,14 +158,38 @@ export async function persistAssistantTurn(
   });
 }
 
+async function persistThreadTitle(
+  threadId: string,
+  question: string,
+  language: string,
+) {
+  const title = await nameThread(question, language);
+  await db
+    .update(aiThreads)
+    .set({ title, updatedAt: new Date() })
+    .where(eq(aiThreads.id, threadId));
+  revalidatePath("/", "layout");
+  return title;
+}
+
 export async function streamAsk(input: {
   workspaceId: string;
   timeZone: string;
+  userId: string;
   threadId: string;
+  title: string | null;
+  isNew: boolean;
   messages: AskUIMessage[];
   question: string;
 }) {
-  const tools = createAskTools(input.workspaceId, input.timeZone);
+  const [prefs] = await db
+    .select({ language: profiles.aiLanguage })
+    .from(profiles)
+    .where(eq(profiles.id, input.userId))
+    .limit(1);
+  const language = normalizeAiLanguage(prefs?.language);
+  const languageRule = languageInstruction(language);
+
   const snippets = await searchSnippets(input.workspaceId, input.question);
   const ragBlock =
     snippets.length > 0
@@ -139,24 +201,50 @@ export async function streamAsk(input: {
   const stream = createUIMessageStream<AskUIMessage>({
     originalMessages: input.messages,
     execute: async ({ writer }) => {
-      writer.write({ type: "data-thread", data: { id: input.threadId } });
-      if (!isTextConfigured()) {
-        await writeMockAsk(writer, tools, input.question);
-        return;
-      }
-      const model = textModel("sonnet");
-      if (!model) {
-        await writeMockAsk(writer, tools, input.question);
-        return;
-      }
-      const result = streamText({
-        model,
-        system: `${loadPrompt("ask-system.md")}${ragBlock}`,
-        messages: await convertToModelMessages(input.messages),
-        tools,
-        stopWhen: stepCountIs(6),
+      const tools = toolsWithSources(
+        createAskTools(input.workspaceId, input.timeZone, input.userId),
+        (source) => {
+          writer.write({ type: "data-source", data: source });
+        },
+      );
+      writer.write({
+        type: "data-thread",
+        data: {
+          id: input.threadId,
+          ...(input.title ? { title: input.title } : {}),
+        },
       });
-      writer.merge(toUIMessageStream({ stream: result.stream }));
+      const naming = input.isNew
+        ? persistThreadTitle(input.threadId, input.question, language)
+            .then((title) => {
+              writer.write({
+                type: "data-thread",
+                data: { id: input.threadId, title },
+              });
+            })
+            .catch(() => undefined)
+        : Promise.resolve();
+      try {
+        if (!isTextConfigured()) {
+          await writeMockAsk(writer, tools, input.question);
+          return;
+        }
+        const model = textModel("sonnet");
+        if (!model) {
+          await writeMockAsk(writer, tools, input.question);
+          return;
+        }
+        const result = streamText({
+          model,
+          system: `${loadPrompt("ask-system.md")}\n- ${languageRule}${ragBlock}`,
+          messages: await convertToModelMessages(input.messages),
+          tools,
+          stopWhen: stepCountIs(6),
+        });
+        writer.merge(toUIMessageStream({ stream: result.stream }));
+      } finally {
+        await naming;
+      }
     },
     onFinish: async ({ responseMessage }) => {
       const text = responseMessage.parts
@@ -178,13 +266,11 @@ async function writeMockAsk(
   question: string,
 ) {
   const needed = selectAskTools(question);
-  const sources: AskSource[] = [];
   const sections: string[] = [];
 
   for (const name of needed) {
     try {
       const raw = await executeAskTool(tools, name, question);
-      collectSources(raw, sources);
       if (
         raw &&
         typeof raw === "object" &&
@@ -212,10 +298,20 @@ async function writeMockAsk(
         "properties" in raw &&
         Array.isArray((raw as { properties: unknown[] }).properties)
       ) {
-        const n = (raw as { properties: unknown[] }).properties.length;
+        const list = (
+          raw as {
+            properties: { id?: string; title?: string; href?: string }[];
+          }
+        ).properties;
+        const n = list.length;
+        const first = list[0];
+        const chip =
+          first?.title && (first.href || first.id)
+            ? ` including [${first.title}](${first.href ?? `/properties/${first.id}`})`
+            : "";
         sections.push(
           n
-            ? `I found ${n} matching properties.`
+            ? `I found ${n} matching properties${chip}.`
             : "I could not find matching properties.",
         );
       }
@@ -233,9 +329,6 @@ async function writeMockAsk(
   writer.write({ type: "text-start", id: "t0" });
   writer.write({ type: "text-delta", id: "t0", delta: text });
   writer.write({ type: "text-end", id: "t0" });
-  for (const source of uniqueSources(sources)) {
-    writer.write({ type: "data-source", data: source });
-  }
 }
 
 async function executeAskTool(
@@ -268,17 +361,106 @@ export async function listThreads(
   tx: DbOrTx,
   workspaceId: string,
   userId: string,
+  limit = 24,
 ) {
   return tx
     .select({
       id: aiThreads.id,
       title: aiThreads.title,
       createdAt: aiThreads.createdAt,
+      updatedAt: aiThreads.updatedAt,
     })
     .from(aiThreads)
     .where(
       and(eq(aiThreads.workspaceId, workspaceId), eq(aiThreads.userId, userId)),
     )
-    .orderBy(desc(aiThreads.createdAt))
-    .limit(8);
+    .orderBy(desc(aiThreads.updatedAt))
+    .limit(limit);
+}
+
+export async function getThread(
+  tx: DbOrTx,
+  workspaceId: string,
+  userId: string,
+  threadId: string,
+) {
+  const [thread] = await tx
+    .select({
+      id: aiThreads.id,
+      title: aiThreads.title,
+    })
+    .from(aiThreads)
+    .where(
+      and(
+        eq(aiThreads.id, threadId),
+        eq(aiThreads.workspaceId, workspaceId),
+        eq(aiThreads.userId, userId),
+      ),
+    )
+    .limit(1);
+  if (!thread) return null;
+
+  const rows = await tx
+    .select({
+      id: aiMessages.id,
+      role: aiMessages.role,
+      content: aiMessages.content,
+    })
+    .from(aiMessages)
+    .where(eq(aiMessages.threadId, thread.id))
+    .orderBy(aiMessages.createdAt);
+
+  const messages: AskUIMessage[] = rows
+    .filter(
+      (row): row is typeof row & { role: "user" | "assistant" } =>
+        (row.role === "user" || row.role === "assistant") &&
+        Boolean(row.content),
+    )
+    .map((row) => ({
+      id: row.id,
+      role: row.role,
+      parts: [{ type: "text" as const, text: row.content ?? "" }],
+    }));
+
+  return { ...thread, messages };
+}
+
+export async function updateThreadTitle(
+  tx: DbOrTx,
+  workspaceId: string,
+  userId: string,
+  threadId: string,
+  title: string,
+) {
+  const [row] = await tx
+    .update(aiThreads)
+    .set({ title, updatedAt: new Date() })
+    .where(
+      and(
+        eq(aiThreads.id, threadId),
+        eq(aiThreads.workspaceId, workspaceId),
+        eq(aiThreads.userId, userId),
+      ),
+    )
+    .returning({ id: aiThreads.id, title: aiThreads.title });
+  return row ?? null;
+}
+
+export async function removeThread(
+  tx: DbOrTx,
+  workspaceId: string,
+  userId: string,
+  threadId: string,
+) {
+  const [row] = await tx
+    .delete(aiThreads)
+    .where(
+      and(
+        eq(aiThreads.id, threadId),
+        eq(aiThreads.workspaceId, workspaceId),
+        eq(aiThreads.userId, userId),
+      ),
+    )
+    .returning({ id: aiThreads.id });
+  return Boolean(row);
 }

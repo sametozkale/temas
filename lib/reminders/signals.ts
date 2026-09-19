@@ -10,6 +10,7 @@ export type ReminderSignal = {
   entity: string;
   entityId: string;
   dueAt: Date;
+  userId?: string | null;
   context: {
     propertyTitle?: string | null;
     contactName?: string | null;
@@ -31,6 +32,7 @@ export type ReminderScanInput = {
   messagesAfter: Record<string, Date | null>;
   conversations: {
     id: string;
+    userId?: string | null;
     lastDirection: "in" | "out" | null;
     lastMessageAt: Date | null;
     contactName: string | null;
@@ -121,6 +123,7 @@ export function detectReminderSignals(
       entity: "conversation",
       entityId: conversation.id,
       dueAt: input.now,
+      userId: conversation.userId ?? null,
       context: {
         propertyTitle: conversation.propertyTitle,
         contactName: conversation.contactName,

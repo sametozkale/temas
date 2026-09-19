@@ -16,7 +16,9 @@ export default async function LoginPage({ searchParams }: Props) {
       next={next}
       defaultEmail={params.email}
       initialError={
-        params.error === "link_invalid" ? "link_invalid" : undefined
+        params.error === "link_invalid" || params.error === "session_mismatch"
+          ? params.error
+          : undefined
       }
       mailpitUrl={isProduction() ? undefined : "http://127.0.0.1:54324"}
     />

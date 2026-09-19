@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { submitPublicForm } from "@/app/(public)/f/actions";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Field,
   FieldDescription,
@@ -14,6 +15,13 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { FormField } from "@/lib/db/schema/forms";
 
@@ -37,6 +45,16 @@ export function PublicForm({
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
+    const missingRequiredSelect = fields.some(
+      (field) =>
+        field.type === "select" &&
+        field.required &&
+        !String(data.get(`field_${field.key}`) ?? "").trim(),
+    );
+    if (missingRequiredSelect) {
+      toast.error(t("errors.invalid"));
+      return;
+    }
     startTransition(async () => {
       const res = await submitPublicForm(token, data);
       if (!res.ok) {
@@ -120,71 +138,13 @@ function FormFieldControl({ field }: { field: FormField }) {
     );
   }
   if (field.type === "boolean") {
-    return (
-      <Field>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            id={name}
-            name={name}
-            type="checkbox"
-            className="size-4 rounded border border-input"
-          />
-          {field.label}
-        </label>
-        {field.helpText ? (
-          <FieldDescription>{field.helpText}</FieldDescription>
-        ) : null}
-      </Field>
-    );
+    return <PublicBooleanField field={field} />;
   }
   if (field.type === "multiselect") {
-    return (
-      <Field>
-        <FieldLabel>{field.label}</FieldLabel>
-        {field.helpText ? (
-          <FieldDescription>{field.helpText}</FieldDescription>
-        ) : null}
-        <div className="space-y-2">
-          {(field.options ?? []).map((opt) => (
-            <label key={opt} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                name={name}
-                value={opt}
-                className="size-4 rounded border border-input"
-              />
-              {opt}
-            </label>
-          ))}
-        </div>
-      </Field>
-    );
+    return <PublicMultiSelectField field={field} />;
   }
   if (field.type === "select") {
-    return (
-      <Field>
-        <FieldLabel htmlFor={name}>{field.label}</FieldLabel>
-        {field.helpText ? (
-          <FieldDescription>{field.helpText}</FieldDescription>
-        ) : null}
-        <select
-          id={name}
-          name={name}
-          required={required}
-          className="h-8 w-full rounded-lg border border-input bg-card px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring"
-          defaultValue=""
-        >
-          <option value="" disabled>
-            —
-          </option>
-          {(field.options ?? []).map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
-      </Field>
-    );
+    return <PublicSelectField field={field} />;
   }
   const type =
     field.type === "number"
@@ -205,6 +165,99 @@ function FormFieldControl({ field }: { field: FormField }) {
         <FieldDescription>{field.helpText}</FieldDescription>
       ) : null}
       <Input id={name} name={name} type={type} required={required} />
+    </Field>
+  );
+}
+
+function PublicBooleanField({ field }: { field: FormField }) {
+  const name = `field_${field.key}`;
+  const [checked, setChecked] = React.useState(false);
+
+  return (
+    <Field>
+      {checked ? <input type="hidden" name={name} value="on" /> : null}
+      <label className="flex items-center gap-2 text-sm">
+        <Checkbox
+          id={name}
+          checked={checked}
+          onCheckedChange={(value) => setChecked(value === true)}
+        />
+        {field.label}
+      </label>
+      {field.helpText ? (
+        <FieldDescription>{field.helpText}</FieldDescription>
+      ) : null}
+    </Field>
+  );
+}
+
+function PublicMultiSelectField({ field }: { field: FormField }) {
+  const name = `field_${field.key}`;
+  const [selected, setSelected] = React.useState<string[]>([]);
+
+  return (
+    <Field>
+      {selected.map((opt) => (
+        <input key={opt} type="hidden" name={name} value={opt} />
+      ))}
+      <FieldLabel>{field.label}</FieldLabel>
+      {field.helpText ? (
+        <FieldDescription>{field.helpText}</FieldDescription>
+      ) : null}
+      <div className="space-y-2">
+        {(field.options ?? []).map((opt) => (
+          <label key={opt} className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={selected.includes(opt)}
+              onCheckedChange={(value) => {
+                setSelected((prev) =>
+                  value === true
+                    ? [...prev, opt]
+                    : prev.filter((item) => item !== opt),
+                );
+              }}
+            />
+            {opt}
+          </label>
+        ))}
+      </div>
+    </Field>
+  );
+}
+
+function PublicSelectField({ field }: { field: FormField }) {
+  const t = useTranslations("public_form");
+  const name = `field_${field.key}`;
+  const required = Boolean(field.required);
+  const [value, setValue] = React.useState("");
+
+  return (
+    <Field>
+      <FieldLabel htmlFor={name}>{field.label}</FieldLabel>
+      {field.helpText ? (
+        <FieldDescription>{field.helpText}</FieldDescription>
+      ) : null}
+      <input type="hidden" name={name} value={value} />
+      <Select
+        value={value || undefined}
+        onValueChange={setValue}
+        required={required}
+      >
+        <SelectTrigger
+          id={name}
+          className="w-full"
+          aria-required={required || undefined}
+        >
+          <SelectValue placeholder={t("select_placeholder")} />
+        </SelectTrigger>
+        <SelectContent position="popper">
+          {(field.options ?? []).map((opt) => (
+            <SelectItem key={opt} value={opt}>
+              {opt}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </Field>
   );
 }

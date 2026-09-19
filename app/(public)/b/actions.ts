@@ -12,6 +12,7 @@ import { bookings, contacts, emailOtps, viewingSlots } from "@/lib/db/schema";
 import { env } from "@/lib/env";
 import { formatAddress, formatDateTime } from "@/lib/format";
 import { sendEmail } from "@/lib/integrations/resend";
+import { notifyWorkspaceStaff } from "@/lib/notifications/dispatch";
 import { clientIp } from "@/lib/http";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { secureToken } from "@/lib/slug";
@@ -19,7 +20,6 @@ import { enqueueMaterialize } from "@/lib/viewings/enqueue";
 import {
   getCalendarByPublicToken,
   getBookingByCancelToken,
-  listWorkspaceStaff,
 } from "@/lib/viewings/queries";
 import { bookingProspectSchema, otpSchema } from "@/lib/viewings/schema";
 import { BookingCancelledEmail } from "@/emails/booking-cancelled";
@@ -28,13 +28,30 @@ import { BookingOtpEmail } from "@/emails/booking-otp";
 import { ViewingNotificationEmail } from "@/emails/viewing-notification";
 import { propertyPeople } from "@/lib/db/schema/properties";
 
-function hashOtp(email: string, code: string) {
-  return createHash("sha256").update(`havn-otp:${email}:${code}`).digest("hex");
+function hashOtp(email: string, code: string, namespace = "temas-otp") {
+  return createHash("sha256")
+    .update(`${namespace}:${email}:${code}`)
+    .digest("hex");
+}
+
+function otpMatches(storedHash: string, email: string, code: string) {
+  const expected = Buffer.from(storedHash);
+  for (const namespace of ["temas-otp", "havn-otp"] as const) {
+    const actual = Buffer.from(hashOtp(email, code, namespace));
+    if (
+      expected.length === actual.length &&
+      timingSafeEqual(expected, actual)
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 async function notifyWorkspaceParties(input: {
   propertyId: string;
   workspaceId: string;
+  assignedUserId?: string | null;
   propertyTitle: string;
   prospectName: string;
   whenLabel: string;
@@ -78,33 +95,35 @@ async function notifyWorkspaceParties(input: {
     }
   }
 
-  const staff = await listWorkspaceStaff(db, input.workspaceId);
-  for (const member of staff) {
-    if (!member.email) continue;
-    if (input.kind === "booked") {
-      await sendEmail({
-        to: member.email,
-        subject: `New viewing — ${input.propertyTitle}`,
-        react: ViewingNotificationEmail({
-          recipientName: member.name || member.email,
-          propertyTitle: input.propertyTitle,
-          prospectName: input.prospectName,
-          whenLabel: input.whenLabel,
-          role: "agent",
-        }),
-      });
-    } else {
-      await sendEmail({
-        to: member.email,
-        subject: `Viewing cancelled — ${input.propertyTitle}`,
-        react: BookingCancelledEmail({
-          recipientName: member.name || member.email,
-          propertyTitle: input.propertyTitle,
-          whenLabel: input.whenLabel,
-        }),
-      });
-    }
-  }
+  await notifyWorkspaceStaff({
+    workspaceId: input.workspaceId,
+    assignedUserId: input.assignedUserId,
+    type: "viewings",
+    email: (name) =>
+      input.kind === "booked"
+        ? {
+            subject: `New viewing — ${input.propertyTitle}`,
+            react: ViewingNotificationEmail({
+              recipientName: name,
+              propertyTitle: input.propertyTitle,
+              prospectName: input.prospectName,
+              whenLabel: input.whenLabel,
+              role: "agent",
+            }),
+          }
+        : {
+            subject: `Viewing cancelled — ${input.propertyTitle}`,
+            react: BookingCancelledEmail({
+              recipientName: name,
+              propertyTitle: input.propertyTitle,
+              whenLabel: input.whenLabel,
+            }),
+          },
+    whatsapp: () =>
+      input.kind === "booked"
+        ? `New viewing — ${input.propertyTitle}. ${input.prospectName} booked ${input.whenLabel}.`
+        : `Viewing cancelled — ${input.propertyTitle} (${input.whenLabel}).`,
+  });
 }
 
 export async function requestBookingOtp(
@@ -179,9 +198,7 @@ export async function confirmBookingOtp(
     return actionError("otp_expired");
   }
 
-  const expected = Buffer.from(otp.codeHash);
-  const actual = Buffer.from(hashOtp(otp.email, parsed.data.code));
-  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
+  if (!otpMatches(otp.codeHash, otp.email, parsed.data.code)) {
     await db
       .update(emailOtps)
       .set({ attempts: otp.attempts + 1 })
@@ -308,6 +325,7 @@ export async function confirmBookingOtp(
   await notifyWorkspaceParties({
     propertyId: found.property.id,
     workspaceId: found.property.workspaceId,
+    assignedUserId: found.property.assignedUserId,
     propertyTitle: found.property.title,
     prospectName: payload.fullName,
     whenLabel,
@@ -362,6 +380,7 @@ export async function cancelBookingByToken(
   await notifyWorkspaceParties({
     propertyId: row.property.id,
     workspaceId: row.property.workspaceId,
+    assignedUserId: row.property.assignedUserId,
     propertyTitle: row.property.title,
     prospectName: row.contact.fullName,
     whenLabel,
@@ -369,6 +388,7 @@ export async function cancelBookingByToken(
   });
 
   await enqueueMaterialize(row.calendarId);
+  revalidatePath(`/b/${row.token}`);
   revalidatePath("/calendar");
   return actionOk();
 }

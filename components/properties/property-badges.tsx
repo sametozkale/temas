@@ -2,31 +2,13 @@
 
 import { useTranslations } from "next-intl";
 
-import {
-  ApartmentIcon,
-  Building03Icon,
-  House01Icon,
-  Icon,
-  MapsIcon,
-  Store01Icon,
-  Tag01Icon,
-  WarehouseIcon,
-  type IconSvgElement,
-} from "@/components/icons";
+import { Icon } from "@/components/icons";
+import { PROPERTY_TYPE_ICONS } from "@/components/properties/type-icons";
 import { Badge } from "@/components/ui/badge";
 import type { PropertyStatus, PropertyType } from "@/lib/db/schema";
 import { STATUS_TONE } from "@/lib/properties/status";
 
-/** Property type → Hugeicon (docs/01 §5). */
-export const PROPERTY_TYPE_ICONS: Record<PropertyType, IconSvgElement> = {
-  apartment: ApartmentIcon,
-  house: House01Icon,
-  office: Building03Icon,
-  shop: Store01Icon,
-  warehouse: WarehouseIcon,
-  land: MapsIcon,
-  other: Tag01Icon,
-};
+export { PROPERTY_TYPE_ICONS };
 
 export function PropertyStatusBadge({
   status,

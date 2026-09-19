@@ -6,20 +6,42 @@ import {
   contacts,
   contractTemplates,
   contracts,
+  inventoryItems,
+  profiles,
   properties,
   propertyPeople,
 } from "@/lib/db/schema";
-import { SEED_CONTRACT_TEMPLATES } from "@/lib/contracts/seed";
+import {
+  seedTemplatesMissing,
+  shouldReplaceStarterBody,
+  starterTemplateByName,
+  templateKindForName,
+} from "@/lib/contracts/seed";
+import { TEMPLATE_KIND_ORDER } from "@/lib/contracts/placeholders";
 
 export async function ensureContractTemplates(tx: DbOrTx, workspaceId: string) {
   const existing = await tx
-    .select({ id: contractTemplates.id })
+    .select({
+      id: contractTemplates.id,
+      name: contractTemplates.name,
+      bodyMd: contractTemplates.bodyMd,
+    })
     .from(contractTemplates)
-    .where(eq(contractTemplates.workspaceId, workspaceId))
-    .limit(1);
-  if (existing.length > 0) return;
+    .where(eq(contractTemplates.workspaceId, workspaceId));
+
+  for (const row of existing) {
+    const starter = starterTemplateByName(row.name);
+    if (!starter || !shouldReplaceStarterBody(row.bodyMd)) continue;
+    await tx
+      .update(contractTemplates)
+      .set({ bodyMd: starter.bodyMd, variables: starter.variables })
+      .where(eq(contractTemplates.id, row.id));
+  }
+
+  const missing = seedTemplatesMissing(existing.map((row) => row.name));
+  if (missing.length === 0) return;
   await tx.insert(contractTemplates).values(
-    SEED_CONTRACT_TEMPLATES.map((template) => ({
+    missing.map((template) => ({
       workspaceId,
       name: template.name,
       bodyMd: template.bodyMd,
@@ -30,11 +52,18 @@ export async function ensureContractTemplates(tx: DbOrTx, workspaceId: string) {
 
 export async function listContractTemplates(tx: DbOrTx, workspaceId: string) {
   await ensureContractTemplates(tx, workspaceId);
-  return tx
+  const rows = await tx
     .select()
     .from(contractTemplates)
-    .where(eq(contractTemplates.workspaceId, workspaceId))
-    .orderBy(contractTemplates.name);
+    .where(eq(contractTemplates.workspaceId, workspaceId));
+  const rank = new Map(TEMPLATE_KIND_ORDER.map((kind, index) => [kind, index]));
+  return rows.sort((a, b) => {
+    const ka = templateKindForName(a.name);
+    const kb = templateKindForName(b.name);
+    const diff = (rank.get(ka) ?? 99) - (rank.get(kb) ?? 99);
+    if (diff !== 0) return diff;
+    return a.name.localeCompare(b.name);
+  });
 }
 
 export async function getContractTemplate(
@@ -106,12 +135,47 @@ export async function getContractParties(tx: DbOrTx, propertyId: string) {
     .select({
       relation: propertyPeople.relation,
       name: contacts.fullName,
+      email: contacts.email,
+      phone: contacts.phone,
     })
     .from(propertyPeople)
     .innerJoin(contacts, eq(contacts.id, propertyPeople.contactId))
     .where(eq(propertyPeople.propertyId, propertyId));
+  const owner = people.find((p) => p.relation === "owner");
+  const tenant = people.find((p) => p.relation === "current_tenant");
   return {
-    landlord: people.find((p) => p.relation === "owner")?.name ?? null,
-    tenant: people.find((p) => p.relation === "current_tenant")?.name ?? null,
+    landlord: owner?.name ?? null,
+    landlordEmail: owner?.email ?? null,
+    landlordPhone: owner?.phone ?? null,
+    tenant: tenant?.name ?? null,
+    tenantEmail: tenant?.email ?? null,
+    tenantPhone: tenant?.phone ?? null,
   };
+}
+
+export async function getContractFillSources(
+  tx: DbOrTx,
+  propertyId: string,
+  assignedUserId: string | null,
+) {
+  const parties = await getContractParties(tx, propertyId);
+  const inventory = await tx
+    .select({
+      name: inventoryItems.name,
+      quantity: inventoryItems.quantity,
+      condition: inventoryItems.condition,
+    })
+    .from(inventoryItems)
+    .where(eq(inventoryItems.propertyId, propertyId))
+    .orderBy(inventoryItems.name);
+  let agentName: string | null = null;
+  if (assignedUserId) {
+    const [profile] = await tx
+      .select({ fullName: profiles.fullName })
+      .from(profiles)
+      .where(eq(profiles.id, assignedUserId))
+      .limit(1);
+    agentName = profile?.fullName ?? null;
+  }
+  return { parties, inventory, agentName };
 }

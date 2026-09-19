@@ -1,15 +1,15 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
-import { ArrowLeft01Icon, Icon, Location01Icon } from "@/components/icons";
-import {
-  PropertyStatusBadge,
-  PropertyTypeLabel,
-} from "@/components/properties/property-badges";
+import { ArrowLeft01Icon, Icon, Share08Icon } from "@/components/icons";
 import { PropertyHeaderActions } from "@/components/properties/property-header-actions";
+import { PropertyRecordHeader } from "@/components/properties/property-record-header";
 import { PropertyTabs } from "@/components/properties/property-tabs";
-import { formatAddress, formatMoney } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { withUserContext } from "@/lib/db";
 import { can } from "@/lib/permissions";
+import { getPropertyTabMeta } from "@/lib/properties/queries";
+import { STORAGE_BUCKETS, createSignedDownloads } from "@/lib/storage";
 
 import { loadProperty } from "../load";
 
@@ -21,14 +21,23 @@ export default async function PropertyLayout({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { ctx, property } = await loadProperty(id);
-  const t = await getTranslations("properties");
-  const rent = formatMoney(property.rentAmount, property.currency);
-  const address = formatAddress(property.address);
+  const [{ ctx, property }, t] = await Promise.all([
+    loadProperty(id),
+    getTranslations("properties"),
+  ]);
+  const meta = await withUserContext(ctx.user.id, (tx) =>
+    getPropertyTabMeta(tx, property.id, property.coverMediaId),
+  );
+  const covers = meta.coverPath
+    ? await createSignedDownloads(STORAGE_BUCKETS.media, [meta.coverPath])
+    : null;
+  const coverUrl = meta.coverPath
+    ? (covers?.get(meta.coverPath) ?? null)
+    : null;
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-5">
+      <div className="flex shrink-0 items-center justify-between gap-2">
         <Link
           href="/properties"
           className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
@@ -36,45 +45,44 @@ export default async function PropertyLayout({
           <Icon icon={ArrowLeft01Icon} size={16} />
           {t("title")}
         </Link>
-        <header className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-serif text-3xl font-medium tracking-tight">
-                {property.title}
-              </h1>
-              <PropertyStatusBadge status={property.status} />
-            </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              <PropertyTypeLabel type={property.type} />
-              {address ? (
-                <span className="inline-flex items-center gap-1">
-                  <Icon icon={Location01Icon} size={16} />
-                  {address}
-                </span>
-              ) : null}
-              {rent ? (
-                <span className="font-medium text-foreground">
-                  {rent}
-                  <span className="font-normal text-muted-foreground">
-                    {" "}
-                    {t("overview.per_month")}
-                  </span>
-                </span>
-              ) : null}
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <PropertyHeaderActions
-              propertyId={property.id}
-              status={property.status}
-              canWrite={can(ctx.membership.role, "properties.write")}
-              canDelete={can(ctx.membership.role, "properties.delete")}
-            />
-          </div>
-        </header>
-        <PropertyTabs propertyId={property.id} />
+        <div className="flex shrink-0 items-center gap-2">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href={`/properties/${property.id}/map`}>
+              <Icon icon={Share08Icon} size={16} data-icon="inline-start" />
+              {t("detail.map")}
+            </Link>
+          </Button>
+          <PropertyHeaderActions
+            propertyId={property.id}
+            status={property.status}
+            canWrite={can(ctx.membership.role, "properties.write")}
+            canDelete={can(ctx.membership.role, "properties.delete")}
+          />
+        </div>
       </div>
-      {children}
+      <div className="shrink-0">
+        <PropertyRecordHeader
+          property={property}
+          coverUrl={coverUrl}
+          labels={{
+            perMonth: t("overview.per_month"),
+            floor: t("overview.floor"),
+          }}
+        />
+      </div>
+      <PropertyTabs
+        propertyId={property.id}
+        counts={{
+          viewings: meta.viewings,
+          applications: meta.applications,
+          people: meta.people,
+          files: meta.files,
+          inventory: meta.inventory,
+        }}
+      />
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-8">
+        {children}
+      </div>
     </div>
   );
 }

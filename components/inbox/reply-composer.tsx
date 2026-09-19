@@ -74,9 +74,13 @@ export function ReplyComposer({
   }
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-2 border-t p-4">
+    <form
+      ref={formRef}
+      action={formAction}
+      className="min-w-0 shrink-0 space-y-2 border-t p-4"
+    >
       <input type="hidden" name="draftId" value={draftId} />
-      <Field data-invalid={errors?.body ? true : undefined}>
+      <Field className="min-w-0" data-invalid={errors?.body ? true : undefined}>
         <Textarea
           name="body"
           rows={4}
@@ -85,6 +89,7 @@ export function ReplyComposer({
           onChange={(event) => setBody(event.target.value)}
           placeholder={t("reply_placeholder")}
           aria-label={t("reply_placeholder")}
+          className="max-h-40 min-w-0 resize-none overflow-y-auto field-sizing-fixed wrap-break-word"
         />
         {errors?.body ? <FieldError>{t("errors.body")}</FieldError> : null}
       </Field>

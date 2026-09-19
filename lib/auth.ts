@@ -4,11 +4,48 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 
 import { db } from "@/lib/db";
-import { profiles, workspaceMembers, workspaces } from "@/lib/db/schema";
+import {
+  authUsers,
+  profiles,
+  workspaceMembers,
+  workspaces,
+} from "@/lib/db/schema";
 import type { Membership } from "@/lib/permissions";
+import { avatarPublicUrl } from "@/lib/storage-constants";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const ACTIVE_WORKSPACE_COOKIE = "havn_ws";
+export const ACTIVE_WORKSPACE_COOKIE = "temas_ws";
+const LEGACY_WORKSPACE_COOKIE = "havn_ws";
+
+const WORKSPACE_COOKIE_OPTS = {
+  path: "/",
+  httpOnly: true,
+  sameSite: "lax" as const,
+  maxAge: 60 * 60 * 24 * 365,
+};
+
+type CookieStore = {
+  get(name: string): { value: string } | undefined;
+  set(name: string, value: string, options?: Record<string, unknown>): void;
+  delete(name: string): void;
+};
+
+export function readWorkspaceCookie(store: CookieStore) {
+  return (
+    store.get(ACTIVE_WORKSPACE_COOKIE)?.value ??
+    store.get(LEGACY_WORKSPACE_COOKIE)?.value
+  );
+}
+
+export function writeWorkspaceCookie(store: CookieStore, workspaceId: string) {
+  store.set(ACTIVE_WORKSPACE_COOKIE, workspaceId, WORKSPACE_COOKIE_OPTS);
+  store.delete(LEGACY_WORKSPACE_COOKIE);
+}
+
+export function clearWorkspaceCookie(store: CookieStore) {
+  store.delete(ACTIVE_WORKSPACE_COOKIE);
+  store.delete(LEGACY_WORKSPACE_COOKIE);
+}
 
 export type AuthUser = {
   id: string;
@@ -18,20 +55,27 @@ export type AuthUser = {
 export type CurrentWorkspace = {
   id: string;
   name: string;
+  legalName: string | null;
   slug: string;
   timezone: string;
   plan: string;
+  logoUrl: string | null;
 };
 
 export type AppContext = {
   user: AuthUser;
-  profile: { fullName: string | null; locale: string };
+  profile: {
+    fullName: string | null;
+    locale: string;
+    avatarUrl: string | null;
+  };
   workspace: CurrentWorkspace;
   membership: Membership;
   memberships: {
     workspaceId: string;
     name: string;
     role: Membership["role"];
+    logoUrl: string | null;
   }[];
 };
 
@@ -54,15 +98,38 @@ export async function requireUser(next?: string): Promise<AuthUser> {
   return user;
 }
 
+/**
+ * Auth cookie is valid, but this Postgres has no matching `auth.users` row
+ * (typical when NEXT_PUBLIC_SUPABASE_* and DATABASE_URL point at different
+ * projects). Clear the session so the user can sign in against the DB in use.
+ */
+export async function requirePersistedUser(next?: string): Promise<AuthUser> {
+  const user = await requireUser(next);
+  const [row] = await db
+    .select({ id: authUsers.id })
+    .from(authUsers)
+    .where(eq(authUsers.id, user.id))
+    .limit(1);
+  if (row) return user;
+
+  const supabase = await createSupabaseServerClient();
+  await supabase.auth.signOut();
+  const cookieStore = await cookies();
+  clearWorkspaceCookie(cookieStore);
+  redirect("/login?error=session_mismatch");
+}
+
 const loadMemberships = cache(async (userId: string) => {
   return db
     .select({
       workspaceId: workspaceMembers.workspaceId,
       role: workspaceMembers.role,
       name: workspaces.name,
+      legalName: workspaces.legalName,
       slug: workspaces.slug,
       timezone: workspaces.timezone,
       plan: workspaces.plan,
+      logoUrl: workspaces.logoUrl,
     })
     .from(workspaceMembers)
     .innerJoin(workspaces, eq(workspaces.id, workspaceMembers.workspaceId))
@@ -76,32 +143,46 @@ const loadMemberships = cache(async (userId: string) => {
  */
 export const getAppContext = cache(async (): Promise<AppContext> => {
   const user = await requireUser();
-  const memberships = await loadMemberships(user.id);
+  const [memberships, profileRows, cookieStore] = await Promise.all([
+    loadMemberships(user.id),
+    db
+      .select({
+        fullName: profiles.fullName,
+        locale: profiles.locale,
+        avatarUrl: profiles.avatarUrl,
+      })
+      .from(profiles)
+      .where(eq(profiles.id, user.id))
+      .limit(1),
+    cookies(),
+  ]);
 
   if (memberships.length === 0) {
     redirect("/onboarding");
   }
 
-  const cookieStore = await cookies();
-  const preferred = cookieStore.get(ACTIVE_WORKSPACE_COOKIE)?.value;
+  const preferred = readWorkspaceCookie(cookieStore);
   const active =
     memberships.find((m) => m.workspaceId === preferred) ?? memberships[0]!;
-
-  const [profile] = await db
-    .select({ fullName: profiles.fullName, locale: profiles.locale })
-    .from(profiles)
-    .where(eq(profiles.id, user.id))
-    .limit(1);
+  const [profile] = profileRows;
 
   return {
     user,
-    profile: profile ?? { fullName: null, locale: "en" },
+    profile: profile
+      ? {
+          fullName: profile.fullName,
+          locale: profile.locale,
+          avatarUrl: avatarPublicUrl(profile.avatarUrl),
+        }
+      : { fullName: null, locale: "en", avatarUrl: null },
     workspace: {
       id: active.workspaceId,
       name: active.name,
+      legalName: active.legalName,
       slug: active.slug,
       timezone: active.timezone,
       plan: active.plan,
+      logoUrl: avatarPublicUrl(active.logoUrl),
     },
     membership: {
       workspaceId: active.workspaceId,
@@ -112,6 +193,7 @@ export const getAppContext = cache(async (): Promise<AppContext> => {
       workspaceId: m.workspaceId,
       name: m.name,
       role: m.role,
+      logoUrl: avatarPublicUrl(m.logoUrl),
     })),
   };
 });
@@ -143,4 +225,4 @@ export async function getMembership(
   return row ? { userId, workspaceId, role: row.role } : null;
 }
 
-export { initialsOf } from "./auth-utils";
+export { firstNameOf, initialsOf } from "./auth-utils";

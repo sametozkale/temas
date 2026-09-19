@@ -1,6 +1,7 @@
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
 import { logActivity } from "@/lib/activity";
+import { enqueueExtractTasks } from "@/lib/ai/enqueue";
 import { db } from "@/lib/db";
 import {
   contacts,
@@ -15,9 +16,11 @@ import {
   normalizeSubject,
   parseFromHeader,
 } from "@/lib/inbox/match";
+import { resolveMailboxWorkspace } from "@/lib/inbox/resolve-workspace";
 
 export type InboundEmail = {
-  workspaceId: string;
+  userId: string;
+  homeWorkspaceId: string;
   integrationId: string | null;
   from: string;
   to?: string | null;
@@ -42,7 +45,7 @@ export async function ingestInboundEmail(input: InboundEmail) {
       .innerJoin(conversations, eq(conversations.id, messages.conversationId))
       .where(
         and(
-          eq(conversations.workspaceId, input.workspaceId),
+          eq(conversations.userId, input.userId),
           eq(messages.externalId, input.externalId),
         ),
       )
@@ -50,22 +53,33 @@ export async function ingestInboundEmail(input: InboundEmail) {
     if (dup) return { conversationId: dup.conversationId, created: false };
   }
 
-  const workspaceContacts = await db
-    .select({
-      id: contacts.id,
-      email: contacts.email,
-      phone: contacts.phone,
-    })
-    .from(contacts)
-    .where(eq(contacts.workspaceId, input.workspaceId));
+  const haystack = `${input.subject ?? ""} ${input.body}`;
+  const resolved = await resolveMailboxWorkspace({
+    userId: input.userId,
+    homeWorkspaceId: input.homeWorkspaceId,
+    email: parsed.email,
+    haystack,
+  });
+  const workspaceId = resolved.workspaceId;
 
-  let contactId = matchContactId(workspaceContacts, parsed.email, null);
+  let contactId = resolved.contactId;
+  if (!contactId) {
+    const workspaceContacts = await db
+      .select({
+        id: contacts.id,
+        email: contacts.email,
+        phone: contacts.phone,
+      })
+      .from(contacts)
+      .where(eq(contacts.workspaceId, workspaceId));
+    contactId = matchContactId(workspaceContacts, parsed.email, null);
+  }
   if (!contactId) {
     try {
       const [created] = await db
         .insert(contacts)
         .values({
-          workspaceId: input.workspaceId,
+          workspaceId,
           fullName: parsed.name ?? parsed.email,
           email: parsed.email,
         })
@@ -77,7 +91,7 @@ export async function ingestInboundEmail(input: InboundEmail) {
         .from(contacts)
         .where(
           and(
-            eq(contacts.workspaceId, input.workspaceId),
+            eq(contacts.workspaceId, workspaceId),
             eq(contacts.email, parsed.email),
           ),
         )
@@ -95,7 +109,7 @@ export async function ingestInboundEmail(input: InboundEmail) {
       .innerJoin(conversations, eq(conversations.id, messages.conversationId))
       .where(
         and(
-          eq(conversations.workspaceId, input.workspaceId),
+          eq(conversations.userId, input.userId),
           sql`${messages.meta}->>'threadId' = ${input.threadId}`,
         ),
       )
@@ -110,7 +124,8 @@ export async function ingestInboundEmail(input: InboundEmail) {
       .from(conversations)
       .where(
         and(
-          eq(conversations.workspaceId, input.workspaceId),
+          eq(conversations.userId, input.userId),
+          eq(conversations.workspaceId, workspaceId),
           eq(conversations.contactId, contactId),
           eq(conversations.channel, "email"),
         ),
@@ -121,7 +136,6 @@ export async function ingestInboundEmail(input: InboundEmail) {
       open.find((c) => normalizeSubject(c.subject) === subject)?.id ?? null;
   }
 
-  const haystack = `${input.subject ?? ""} ${input.body}`;
   const linked = await db
     .select({ propertyId: propertyPeople.propertyId })
     .from(propertyPeople)
@@ -131,7 +145,7 @@ export async function ingestInboundEmail(input: InboundEmail) {
     .from(properties)
     .where(
       and(
-        eq(properties.workspaceId, input.workspaceId),
+        eq(properties.workspaceId, workspaceId),
         isNull(properties.deletedAt),
       ),
     );
@@ -146,7 +160,8 @@ export async function ingestInboundEmail(input: InboundEmail) {
     const [created] = await db
       .insert(conversations)
       .values({
-        workspaceId: input.workspaceId,
+        workspaceId,
+        userId: input.userId,
         integrationId: input.integrationId,
         channel: "email",
         contactId,
@@ -193,13 +208,19 @@ export async function ingestInboundEmail(input: InboundEmail) {
   });
 
   await logActivity({
-    workspaceId: input.workspaceId,
+    workspaceId,
     propertyId,
     action: "inbox.message_received",
     entity: "conversation",
     entityId: conversationId,
     data: { email: parsed.email, subject: input.subject },
   });
+
+  try {
+    await enqueueExtractTasks(conversationId);
+  } catch {
+    // Extraction is best-effort; ingest already succeeded.
+  }
 
   return { conversationId, created: true };
 }

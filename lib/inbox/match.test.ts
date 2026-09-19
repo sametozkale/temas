@@ -9,15 +9,15 @@ import {
 
 describe("parseFromHeader", () => {
   it("reads name and email from a RFC header", () => {
-    expect(parseFromHeader("Deniz Arslan <deniz@havn.test>")).toEqual({
-      email: "deniz@havn.test",
+    expect(parseFromHeader("Deniz Arslan <deniz@temas.test>")).toEqual({
+      email: "deniz@temas.test",
       name: "Deniz Arslan",
     });
   });
 
   it("reads a bare address", () => {
-    expect(parseFromHeader("mehmet@havn.test")).toEqual({
-      email: "mehmet@havn.test",
+    expect(parseFromHeader("mehmet@temas.test")).toEqual({
+      email: "mehmet@temas.test",
       name: null,
     });
   });
@@ -33,12 +33,12 @@ describe("normalizeSubject", () => {
 
 describe("matchContactId", () => {
   const contacts = [
-    { id: "c1", email: "elif@havn.test", phone: "+905551110000" },
-    { id: "c2", email: "mehmet@havn.test", phone: null },
+    { id: "c1", email: "elif@temas.test", phone: "+905551110000" },
+    { id: "c2", email: "mehmet@temas.test", phone: null },
   ];
 
   it("matches by email", () => {
-    expect(matchContactId(contacts, "Elif@havn.test", null)).toBe("c1");
+    expect(matchContactId(contacts, "Elif@temas.test", null)).toBe("c1");
   });
 
   it("matches by phone suffix", () => {

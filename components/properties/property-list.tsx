@@ -35,6 +35,7 @@ export type PropertyListItem = {
   rooms: string | null;
   updatedAt: Date;
   coverUrl: string | null;
+  assignedAgentName?: string | null;
 };
 
 function Cover({ url, title }: { url: string | null; title: string }) {
@@ -95,6 +96,11 @@ export async function PropertyGrid({ items }: { items: PropertyListItem[] }) {
                       </span>
                     )}
                   </p>
+                  {p.assignedAgentName ? (
+                    <p className="text-xs text-muted-foreground">
+                      {p.assignedAgentName}
+                    </p>
+                  ) : null}
                 </div>
               </Card>
             </Link>
@@ -115,6 +121,7 @@ export async function PropertyTable({ items }: { items: PropertyListItem[] }) {
             <TableHead>{t("col_property")}</TableHead>
             <TableHead>{t("col_type")}</TableHead>
             <TableHead>{t("col_status")}</TableHead>
+            <TableHead>{t("col_agent")}</TableHead>
             <TableHead className="text-right">{t("col_rent")}</TableHead>
             <TableHead className="text-right">{t("col_updated")}</TableHead>
           </TableRow>
@@ -154,6 +161,9 @@ export async function PropertyTable({ items }: { items: PropertyListItem[] }) {
               </TableCell>
               <TableCell>
                 <PropertyStatusBadge status={p.status} />
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {p.assignedAgentName ?? "—"}
               </TableCell>
               <TableCell className="text-right tabular-nums">
                 {formatMoney(p.rentAmount, p.currency) ?? t("no_rent")}

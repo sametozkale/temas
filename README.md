@@ -1,4 +1,4 @@
-# Havn
+# Temas
 
 AI-native property management platform for real estate agents. Rental-focused workflow in one workspace: portfolio, multi-party viewing scheduling, applicant pipeline, unified inbox, AI contract mode.
 

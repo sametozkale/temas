@@ -33,11 +33,8 @@ export default async function ActivityPage({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-base font-medium">{t("title")}</h2>
-        <p className="text-sm text-muted-foreground">{t("description")}</p>
-      </div>
-      <ol className="divide-y rounded-lg border">
+      <p className="text-sm text-muted-foreground">{t("description")}</p>
+      <ol className="divide-y rounded-lg border bg-card">
         {rows.map((row) => {
           const data = (row.data ?? {}) as Record<string, unknown>;
           const vars: Record<string, string | number | Date> = {};

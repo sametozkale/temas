@@ -2,6 +2,10 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/** Shared display title for PageHeader and one-off h1s (docs/01 §3). */
+export const pageTitleClassName =
+  "font-serif text-xl font-medium tracking-tight text-foreground";
+
 type PageHeaderProps = React.ComponentProps<"header"> & {
   title: React.ReactNode;
   description?: React.ReactNode;
@@ -10,8 +14,8 @@ type PageHeaderProps = React.ComponentProps<"header"> & {
 };
 
 /**
- * Serif page title + pill actions on the right. No divider underneath —
- * separation is done with spacing (docs/01 §4).
+ * Compact serif page title on one row with actions; description underneath.
+ * No divider — separation is parent spacing (docs/01 §4, §6).
  */
 export function PageHeader({
   title,
@@ -21,23 +25,15 @@ export function PageHeader({
   ...props
 }: PageHeaderProps) {
   return (
-    <header
-      className={cn(
-        "flex flex-wrap items-start justify-between gap-4 pb-6",
-        className,
-      )}
-      {...props}
-    >
-      <div className="min-w-0 space-y-1">
-        <h1 className="font-serif text-3xl font-medium tracking-tight text-foreground">
-          {title}
-        </h1>
-        {description ? (
-          <p className="text-sm text-muted-foreground">{description}</p>
+    <header className={cn("flex flex-col gap-1", className)} {...props}>
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <h1 className={cn(pageTitleClassName, "min-w-0")}>{title}</h1>
+        {actions ? (
+          <div className="flex shrink-0 items-center gap-2">{actions}</div>
         ) : null}
       </div>
-      {actions ? (
-        <div className="flex shrink-0 items-center gap-2">{actions}</div>
+      {description ? (
+        <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
       ) : null}
     </header>
   );

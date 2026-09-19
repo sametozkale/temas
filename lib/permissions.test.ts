@@ -36,7 +36,16 @@ describe("permissions matrix", () => {
     expect(can("assistant", "properties.write")).toBe(true);
     expect(can("assistant", "members.invite")).toBe(false);
     expect(can("assistant", "properties.delete")).toBe(false);
+    expect(can("agent", "integrations.manage")).toBe(true);
     expect(can("assistant", "integrations.manage")).toBe(false);
+  });
+
+  it("owner, agent and assistant can read and write tasks", () => {
+    expect(can("owner", "tasks.read")).toBe(true);
+    expect(can("owner", "tasks.write")).toBe(true);
+    expect(can("agent", "tasks.write")).toBe(true);
+    expect(can("assistant", "tasks.read")).toBe(true);
+    expect(can("assistant", "tasks.write")).toBe(true);
   });
 });
 

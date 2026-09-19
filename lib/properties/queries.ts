@@ -35,6 +35,7 @@ export type PropertyListFilters = {
   type?: PropertyType;
   status?: PropertyStatus | "listed";
   includeArchived?: boolean;
+  assignedUserId?: string;
 };
 
 const LISTED_SQL = sql`${properties.status} in ('active','viewing_in_progress','application_review','contract_pending')`;
@@ -65,6 +66,9 @@ export async function listProperties(
   else if (!filters.includeArchived) {
     where.push(sql`${properties.status} <> 'archived'`);
   }
+  if (filters.assignedUserId) {
+    where.push(eq(properties.assignedUserId, filters.assignedUserId));
+  }
 
   return tx
     .select({
@@ -78,6 +82,8 @@ export async function listProperties(
       areaM2: properties.areaM2,
       rooms: properties.rooms,
       updatedAt: properties.updatedAt,
+      assignedUserId: properties.assignedUserId,
+      assignedAgentName: profiles.fullName,
       coverPath: sql<string | null>`(
         select m.storage_path from property_media m
         where m.property_id = ${properties.id}
@@ -88,6 +94,7 @@ export async function listProperties(
       )`,
     })
     .from(properties)
+    .leftJoin(profiles, eq(profiles.id, properties.assignedUserId))
     .where(and(...where))
     .orderBy(desc(properties.updatedAt));
 }
@@ -108,6 +115,71 @@ export async function getProperty(tx: Tx, workspaceId: string, id: string) {
 }
 
 export type PropertyRow = NonNullable<Awaited<ReturnType<typeof getProperty>>>;
+
+export type PropertyTabMeta = {
+  coverPath: string | null;
+  viewings: number;
+  applications: number;
+  people: number;
+  files: number;
+  inventory: number;
+};
+
+/** Cover path + tab counts for the property record chrome (one round trip). */
+export async function getPropertyTabMeta(
+  tx: Tx,
+  propertyId: string,
+  coverMediaId: string | null,
+): Promise<PropertyTabMeta> {
+  const [row] = await tx
+    .select({
+      coverPath: sql<string | null>`(
+        select m.storage_path
+        from property_media m
+        where m.property_id = ${propertyId}
+          and m.kind = 'photo'
+        order by (m.id = ${coverMediaId}) desc nulls last, m.sort_order asc
+        limit 1
+      )`,
+      people: sql<number>`cast((
+        select count(*) from property_people pp
+        where pp.property_id = ${propertyId}
+      ) as int)`,
+      files: sql<number>`cast((
+        select count(*) from documents d
+        where d.property_id = ${propertyId}
+      ) as int)`,
+      inventory: sql<number>`cast((
+        select count(*) from inventory_items i
+        where i.property_id = ${propertyId}
+      ) as int)`,
+      applications: sql<number>`cast((
+        select count(*) from applications a
+        left join pipeline_stages s on s.id = a.stage_id
+        where a.property_id = ${propertyId}
+          and coalesce(s.is_terminal, false) = false
+      ) as int)`,
+      viewings: sql<number>`cast((
+        select count(*) from bookings b
+        inner join viewing_slots vs on vs.id = b.viewing_slot_id
+        where b.property_id = ${propertyId}
+          and b.status = 'confirmed'
+          and vs.starts_at >= now()
+      ) as int)`,
+    })
+    .from(properties)
+    .where(eq(properties.id, propertyId))
+    .limit(1);
+
+  return {
+    coverPath: row?.coverPath ?? null,
+    people: Number(row?.people ?? 0),
+    files: Number(row?.files ?? 0),
+    inventory: Number(row?.inventory ?? 0),
+    applications: Number(row?.applications ?? 0),
+    viewings: Number(row?.viewings ?? 0),
+  };
+}
 
 export async function listMedia(tx: Tx, propertyId: string) {
   return tx

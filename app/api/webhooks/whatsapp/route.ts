@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
     const [integration] = await db
       .select({
         id: integrations.id,
+        userId: integrations.userId,
         workspaceId: integrations.workspaceId,
       })
       .from(integrations)
@@ -74,7 +75,8 @@ export async function POST(request: NextRequest) {
       .limit(1);
     if (!integration) continue;
     await ingestInboundWhatsApp({
-      workspaceId: integration.workspaceId,
+      userId: integration.userId,
+      homeWorkspaceId: integration.workspaceId,
       integrationId: integration.id,
       from: message.from,
       profileName: message.profileName,

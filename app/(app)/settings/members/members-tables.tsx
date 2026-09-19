@@ -5,7 +5,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { Icon, MoreHorizontalIcon } from "@/components/icons";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PersonAvatar } from "@/components/identity-marks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,7 +41,9 @@ type MemberRow = {
   userId: string;
   role: WorkspaceRole;
   fullName: string | null;
+  avatarUrl: string | null;
   isSelf: boolean;
+  listingCount: number;
 };
 
 function useActionToast() {
@@ -68,12 +70,23 @@ export function MembersTable({
   const [pending, startTransition] = React.useTransition();
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-hidden rounded-2xl border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{t("col_member")}</TableHead>
+            <TableHead>
+              <span className="inline-flex items-center gap-2">
+                {t("col_member")}
+                <span
+                  className="font-normal text-muted-foreground tabular-nums"
+                  aria-label={t("members_count", { count: members.length })}
+                >
+                  {members.length}
+                </span>
+              </span>
+            </TableHead>
             <TableHead className="w-32">{t("col_role")}</TableHead>
+            <TableHead className="w-28">{t("col_listings")}</TableHead>
             <TableHead className="w-12" />
           </TableRow>
         </TableHeader>
@@ -85,11 +98,12 @@ export function MembersTable({
               <TableRow key={m.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <Avatar className="size-7">
-                      <AvatarFallback className="text-xs">
-                        {initialsOf(m.fullName)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <PersonAvatar
+                      src={m.avatarUrl}
+                      initials={initialsOf(m.fullName)}
+                      className="size-7"
+                      fallbackClassName="text-xs"
+                    />
                     <span className="font-medium">{name}</span>
                     {m.isSelf ? (
                       <Badge variant="secondary" className="text-[11px]">
@@ -100,6 +114,9 @@ export function MembersTable({
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {tr(m.role)}
+                </TableCell>
+                <TableCell className="text-muted-foreground tabular-nums">
+                  {m.listingCount}
                 </TableCell>
                 <TableCell className="text-right">
                   {showMenu ? (
@@ -185,14 +202,14 @@ export function InvitesTable({ invites }: { invites: InviteRow[] }) {
 
   if (invites.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+      <p className="rounded-2xl border border-dashed bg-card px-4 py-6 text-center text-sm text-muted-foreground">
         {t("no_pending")}
       </p>
     );
   }
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-hidden rounded-2xl border bg-card">
       <Table>
         <TableHeader>
           <TableRow>

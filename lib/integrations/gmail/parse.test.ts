@@ -11,8 +11,8 @@ describe("parseGmailMessage", () => {
       internalDate: "1700000000000",
       payload: {
         headers: [
-          { name: "From", value: "Elif Yılmaz <elif@havn.test>" },
-          { name: "To", value: "ayse@havn.test" },
+          { name: "From", value: "Elif Yılmaz <elif@temas.test>" },
+          { name: "To", value: "ayse@temas.test" },
           { name: "Subject", value: "Kadıköy bright 2+1" },
           { name: "Message-ID", value: "<abc@mail.gmail.com>" },
         ],
@@ -30,7 +30,7 @@ describe("parseGmailMessage", () => {
       },
     });
     expect(parsed.body).toBe("Hello from Gmail");
-    expect(parsed.from).toContain("elif@havn.test");
+    expect(parsed.from).toContain("elif@temas.test");
     expect(parsed.subject).toBe("Kadıköy bright 2+1");
     expect(parsed.threadId).toBe("t1");
     expect(parsed.sentAt.toISOString()).toBe(

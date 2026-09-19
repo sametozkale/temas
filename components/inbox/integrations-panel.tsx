@@ -1,28 +1,17 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import type { ReactNode } from "react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { GmailMark, WhatsAppMark } from "@/components/brands";
+import { ArrowRight01Icon, Icon } from "@/components/icons";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  SettingsGroup,
+  SettingsItem,
+  SettingsStatus,
+} from "@/components/settings/settings-chrome";
 import { formatDateTime } from "@/lib/format";
-import { integrations as integrationFlags } from "@/lib/env";
 import { can } from "@/lib/permissions";
 import type { WorkspaceRole } from "@/lib/roles";
-
-import {
-  ConnectDevButton,
-  ConnectWhatsAppButton,
-  DevInboundForm,
-  DisconnectButton,
-  DisconnectWhatsAppButton,
-  WhatsAppInboundForm,
-} from "@/components/inbox/dev-inbound-form";
 
 type IntegrationRow = {
   id: string;
@@ -45,110 +34,92 @@ export async function IntegrationsPanel({
 }) {
   const t = await getTranslations("settings.integrations");
   const canManage = can(role, "integrations.manage");
-  const oauthReady = integrationFlags.gmail();
   const connected = gmail?.status === "connected";
   const waConnected = whatsapp?.status === "connected";
 
+  const gmailDescription =
+    connected && gmail?.externalId
+      ? `${t("connected_as", { email: gmail.externalId })}${
+          gmail.lastSyncedAt
+            ? ` · ${t("last_synced", { when: formatDateTime(gmail.lastSyncedAt) })}`
+            : ""
+        }`
+      : t("gmail_description");
+
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <CardTitle>{t("gmail_title")}</CardTitle>
-              <CardDescription>{t("gmail_description")}</CardDescription>
-            </div>
-            <Badge variant={connected ? "success" : "secondary"}>
-              {connected ? t("status_connected") : t("status_disconnected")}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {oauthError ? (
-            <p className="text-sm text-destructive">
-              {t(`errors.${oauthError}`)}
-            </p>
-          ) : null}
-          {connected && gmail?.externalId ? (
-            <p className="text-sm text-muted-foreground">
-              {t("connected_as", { email: gmail.externalId })}
-              {gmail.lastSyncedAt
-                ? ` · ${t("last_synced", { when: formatDateTime(gmail.lastSyncedAt) })}`
-                : null}
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground">{t("gmail_empty")}</p>
-          )}
-          {canManage ? (
-            <div className="flex flex-wrap gap-2">
-              {oauthReady ? (
-                <Button size="sm" asChild>
-                  <Link href="/api/integrations/gmail/start">
-                    {t("connect")}
-                  </Link>
-                </Button>
-              ) : null}
-              {!connected ? <ConnectDevButton /> : <DisconnectButton />}
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">{t("staff_only")}</p>
-          )}
-        </CardContent>
-      </Card>
+    <SettingsGroup
+      title={t("inbox_group")}
+      footer={
+        oauthError ? (
+          <span className="text-destructive">{t(`errors.${oauthError}`)}</span>
+        ) : !canManage ? (
+          t("staff_only")
+        ) : undefined
+      }
+    >
+      <IntegrationRowLink
+        href="/settings/integrations/gmail"
+        mark={<GmailMark className="size-6" />}
+        title={t("gmail_title")}
+        description={gmailDescription}
+        connected={connected}
+        connectedLabel={t("status_connected")}
+        disconnectedLabel={t("status_disconnected")}
+      />
+      <IntegrationRowLink
+        href="/settings/integrations/whatsapp"
+        mark={<WhatsAppMark className="size-[22px]" />}
+        title={t("whatsapp_title")}
+        description={
+          waConnected ? t("whatsapp_connected") : t("whatsapp_description")
+        }
+        connected={waConnected}
+        connectedLabel={t("status_connected")}
+        disconnectedLabel={t("status_disconnected")}
+      />
+    </SettingsGroup>
+  );
+}
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <CardTitle>{t("whatsapp_title")}</CardTitle>
-              <CardDescription>{t("whatsapp_description")}</CardDescription>
-            </div>
-            <Badge variant={waConnected ? "success" : "secondary"}>
-              {waConnected ? t("status_connected") : t("status_disconnected")}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            {waConnected ? t("whatsapp_connected") : t("whatsapp_empty")}
-          </p>
-          {canManage ? (
-            <div className="flex flex-wrap gap-2">
-              {!waConnected ? (
-                <ConnectWhatsAppButton />
-              ) : (
-                <DisconnectWhatsAppButton />
-              )}
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">{t("staff_only")}</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {canManage && connected ? (
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>{t("inject_title")}</CardTitle>
-            <CardDescription>{t("inject_description")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <DevInboundForm />
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {canManage && waConnected ? (
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>{t("inject_wa_title")}</CardTitle>
-            <CardDescription>{t("inject_wa_description")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <WhatsAppInboundForm />
-          </CardContent>
-        </Card>
-      ) : null}
-    </div>
+function IntegrationRowLink({
+  href,
+  mark,
+  title,
+  description,
+  connected,
+  connectedLabel,
+  disconnectedLabel,
+}: {
+  href: string;
+  mark: ReactNode;
+  title: string;
+  description: string;
+  connected: boolean;
+  connectedLabel: string;
+  disconnectedLabel: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="block rounded-2xl outline-none focus-visible:ring-1 focus-visible:ring-ring"
+    >
+      <SettingsItem
+        mark={mark}
+        title={title}
+        description={description}
+        className="hover:border-foreground/10"
+      >
+        <span className="flex items-center gap-2">
+          <SettingsStatus tone={connected ? "success" : "muted"}>
+            {connected ? connectedLabel : disconnectedLabel}
+          </SettingsStatus>
+          <Icon
+            icon={ArrowRight01Icon}
+            size={16}
+            className="text-muted-foreground/50"
+          />
+        </span>
+      </SettingsItem>
+    </Link>
   );
 }

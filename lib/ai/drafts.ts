@@ -1,5 +1,5 @@
 import { generateObject } from "ai";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/lib/db";
@@ -13,6 +13,7 @@ import {
   viewingCalendars,
 } from "@/lib/db/schema";
 import { env } from "@/lib/env";
+import { languageInstruction } from "@/lib/ai/languages";
 import { isTextConfigured, modelLabel, textModel } from "@/lib/ai/models";
 import { loadPrompt } from "@/lib/ai/prompts";
 import { TONES, type DraftTone } from "@/lib/ai/types";
@@ -43,9 +44,15 @@ export async function generateDraft(input: {
     .from(conversations)
     .leftJoin(contacts, eq(contacts.id, conversations.contactId))
     .leftJoin(properties, eq(properties.id, conversations.propertyId))
-    .where(eq(conversations.id, input.conversationId))
+    .where(
+      and(
+        eq(conversations.id, input.conversationId),
+        eq(conversations.workspaceId, input.workspaceId),
+        eq(conversations.userId, input.userId),
+      ),
+    )
     .limit(1);
-  if (!row || row.conversation.workspaceId !== input.workspaceId) {
+  if (!row) {
     throw new Error("not_found");
   }
 
@@ -85,15 +92,11 @@ export async function generateDraft(input: {
 
   const thread = [...history].reverse();
   const lastIn = thread.filter((m) => m.direction === "in").at(-1)?.body ?? "";
-  const viewingIntent =
-    /viewing|visit|see the (flat|apartment|property)|gösterim|gezmek/i.test(
-      lastIn,
-    );
 
   const generated = isTextConfigured()
     ? await generateWithModel({
         tone: input.tone,
-        language: prefs?.language ?? "en",
+        language: prefs?.language ?? "auto",
         signature: prefs?.signature ?? "",
         contactName: row.contactName,
         propertyTitle: row.propertyTitle,
@@ -103,11 +106,11 @@ export async function generateDraft(input: {
       })
     : mockDraft({
         tone: input.tone,
-        language: prefs?.language ?? "en",
+        language: prefs?.language ?? "auto",
         contactName: row.contactName,
         propertyTitle: row.propertyTitle,
         bookingUrl,
-        viewingIntent,
+        lastIn,
       });
 
   let body = generated.body.trim();
@@ -151,10 +154,14 @@ async function generateWithModel(payload: Record<string, unknown>) {
   const { object } = await generateObject({
     model,
     schema: draftSchema,
-    system: loadPrompt("draft.md"),
+    system: `${loadPrompt("draft.md")}\n${languageInstruction(typeof payload.language === "string" ? payload.language : "auto")}`,
     prompt: JSON.stringify(payload),
   });
   return object;
+}
+
+function looksTurkish(text: string) {
+  return /[çğıöşüÇĞİÖŞÜ]/.test(text);
 }
 
 function mockDraft(input: {
@@ -163,9 +170,15 @@ function mockDraft(input: {
   contactName: string | null;
   propertyTitle: string | null;
   bookingUrl: string | null;
-  viewingIntent: boolean;
+  lastIn: string;
 }) {
-  const tr = input.language === "tr";
+  const viewingIntent =
+    /viewing|visit|see the (flat|apartment|property)|gösterim|gezmek/i.test(
+      input.lastIn,
+    );
+  const tr =
+    input.language === "tr" ||
+    (input.language === "auto" && looksTurkish(input.lastIn));
   const name = input.contactName ?? (tr ? "merhaba" : "there");
   const property =
     input.propertyTitle ?? (tr ? "portföydeki ilan" : "the property");
@@ -180,7 +193,7 @@ function mockDraft(input: {
       : input.tone === "short"
         ? `${input.contactName ?? "Hi"},`
         : `Hi ${name},`;
-  const middle = input.viewingIntent
+  const middle = viewingIntent
     ? tr
       ? `${property} için bir gösterim ayarlamaktan memnuniyet duyarım.`
       : `Happy to arrange a viewing for ${property}.`
@@ -188,7 +201,7 @@ function mockDraft(input: {
       ? `${property} hakkındaki notunuz için teşekkürler.`
       : `Thanks for your note about ${property}.`;
   const link =
-    input.viewingIntent && input.bookingUrl
+    viewingIntent && input.bookingUrl
       ? tr
         ? ` Uygun bir saat seçmek için: ${input.bookingUrl}`
         : ` You can pick a time here: ${input.bookingUrl}`
@@ -202,7 +215,7 @@ function mockDraft(input: {
       : "Happy to help with the next step.";
   return {
     body: `${opener}\n\n${middle}${link}\n\n${close}`,
-    detectedIntent: input.viewingIntent
+    detectedIntent: viewingIntent
       ? ("viewing_request" as const)
       : ("other" as const),
   };

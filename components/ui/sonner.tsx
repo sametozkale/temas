@@ -62,6 +62,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
         classNames: {
           toast: "cn-toast shadow-none border",
         },
+        style: {
+          padding: "10px 16px",
+        },
       }}
       {...props}
     />

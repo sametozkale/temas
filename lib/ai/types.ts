@@ -1,20 +1,26 @@
 import type { UIMessage } from "ai";
 
+import { AI_LANGUAGES, type AiLanguage } from "@/lib/ai/languages";
+
+export { AI_LANGUAGES, type AiLanguage };
 export const TONES = ["formal", "friendly", "short"] as const;
 export type DraftTone = (typeof TONES)[number];
 
-export const AI_LANGUAGES = ["en", "tr"] as const;
-export type AiLanguage = (typeof AI_LANGUAGES)[number];
-
 export type AskSource = {
-  kind: "property" | "conversation" | "calendar" | "application";
+  kind:
+    | "property"
+    | "conversation"
+    | "calendar"
+    | "application"
+    | "person"
+    | "task";
   href: string;
   title: string;
 };
 
 export type AskDataParts = {
   source: AskSource;
-  thread: { id: string };
+  thread: { id: string; title?: string };
 };
 
 export type AskUIMessage = UIMessage<unknown, AskDataParts>;

@@ -8,7 +8,8 @@ import {
 } from "@/lib/integrations/gmail/oauth";
 import { requireAbility } from "@/lib/permissions";
 
-export const GMAIL_OAUTH_COOKIE = "havn_gmail_oauth";
+export const GMAIL_OAUTH_COOKIE = "temas_gmail_oauth";
+export const LEGACY_GMAIL_OAUTH_COOKIE = "havn_gmail_oauth";
 
 export async function GET() {
   const ctx = await getAppContext();
@@ -16,13 +17,13 @@ export async function GET() {
     requireAbility(ctx.membership, "integrations.manage");
   } catch {
     return NextResponse.redirect(
-      new URL("/settings/integrations?error=gmail_denied", env().APP_URL),
+      new URL("/settings/integrations/gmail?error=gmail_denied", env().APP_URL),
     );
   }
 
   if (!integrations.gmail()) {
     return NextResponse.redirect(
-      new URL("/settings/integrations?error=gmail_oauth", env().APP_URL),
+      new URL("/settings/integrations/gmail?error=gmail_oauth", env().APP_URL),
     );
   }
 
@@ -39,5 +40,6 @@ export async function GET() {
       maxAge: 600,
     },
   );
+  response.cookies.delete(LEGACY_GMAIL_OAUTH_COOKIE);
   return response;
 }

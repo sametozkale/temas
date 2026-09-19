@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 
-import { hasAnyWorkspace, requireUser } from "@/lib/auth";
+import { hasAnyWorkspace, requirePersistedUser } from "@/lib/auth";
 
 import { OnboardingForm } from "./onboarding-form";
 
 export default async function OnboardingPage() {
-  const user = await requireUser("/onboarding");
+  const user = await requirePersistedUser("/onboarding");
   if (await hasAnyWorkspace(user.id)) {
     redirect("/home");
   }

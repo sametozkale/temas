@@ -17,7 +17,9 @@ const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
 
   RESEND_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().default("Havn <noreply@havn.local>"),
+  EMAIL_FROM: z.string().default("Temas <noreply@temas.local>"),
+  /** Product-feedback inbox. Empty: Mailpit locally (no Resend), required with Resend / in production. */
+  FEEDBACK_TO: z.string().trim().optional(),
   /** Dev fallback: Mailpit SMTP from the local Supabase stack. */
   SMTP_HOST: z.string().default("127.0.0.1"),
   SMTP_PORT: z.coerce.number().default(54325),
@@ -44,7 +46,7 @@ export type ServerEnv = z.infer<typeof serverSchema>;
 let cached: ServerEnv | undefined;
 
 export function env(): ServerEnv {
-  if (cached) return cached;
+  if (cached && process.env.NODE_ENV === "production") return cached;
   const parsed = serverSchema.safeParse(process.env);
   if (!parsed.success) {
     const issues = parsed.error.issues

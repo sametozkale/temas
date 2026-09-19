@@ -8,5 +8,5 @@ export default function PublicError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  return <AppError reset={reset} />;
+  return <AppError reset={reset} className="min-h-[calc(100svh-3.5rem)]" />;
 }

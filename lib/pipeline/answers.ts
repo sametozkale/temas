@@ -56,5 +56,15 @@ export function parseFormAnswers(
 }
 
 export function formCompletionCookie(formId: string) {
-  return `havn_form_${formId}`;
+  return `temas_form_${formId}`;
+}
+
+export function readFormCompletionCookie(
+  store: { get(name: string): { value: string } | undefined },
+  formId: string,
+) {
+  return Boolean(
+    store.get(formCompletionCookie(formId))?.value ??
+      store.get(`havn_form_${formId}`)?.value,
+  );
 }

@@ -4,7 +4,9 @@ import {
   monthGrid,
   monthKey,
   parseYearMonth,
+  shiftIsoDate,
   shiftMonth,
+  todayIsOnScreen,
   weekDays,
 } from "./grid";
 
@@ -29,6 +31,11 @@ describe("calendar grid", () => {
     expect(weeks[4]?.[6]?.date).toBe("2026-10-04");
   });
 
+  it("shifts a civil ISO date across month bounds", () => {
+    expect(shiftIsoDate("2026-09-01", -1)).toBe("2026-08-31");
+    expect(shiftIsoDate("2026-09-07", 7)).toBe("2026-09-14");
+  });
+
   it("returns seven ISO dates for a week", () => {
     const days = weekDays("2026-09-12", "Europe/Istanbul");
     expect(days).toEqual([
@@ -40,5 +47,23 @@ describe("calendar grid", () => {
       "2026-09-12",
       "2026-09-13",
     ]);
+  });
+
+  it("knows when today is already on the painted board", () => {
+    const september = monthGrid(2026, 9, "Europe/Istanbul")
+      .flat()
+      .map((cell) => cell.date);
+    const october = monthGrid(2026, 10, "Europe/Istanbul")
+      .flat()
+      .map((cell) => cell.date);
+    expect(todayIsOnScreen("month", "2026-09-19", september)).toBe(true);
+    expect(todayIsOnScreen("month", "2026-09-19", october)).toBe(false);
+    expect(
+      todayIsOnScreen("week", "2026-09-19", weekDays("2026-09-19", "UTC")),
+    ).toBe(true);
+    expect(
+      todayIsOnScreen("week", "2026-09-19", weekDays("2026-09-07", "UTC")),
+    ).toBe(false);
+    expect(todayIsOnScreen("list", "2026-09-19", september)).toBe(false);
   });
 });

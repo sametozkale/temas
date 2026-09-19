@@ -16,10 +16,10 @@ import {
 import { enableGmailWatch } from "@/lib/integrations/gmail/sync";
 import { requireAbility } from "@/lib/permissions";
 
-import { GMAIL_OAUTH_COOKIE } from "../start/route";
+import { GMAIL_OAUTH_COOKIE, LEGACY_GMAIL_OAUTH_COOKIE } from "../start/route";
 
 function settingsUrl(query?: string) {
-  const url = new URL("/settings/integrations", env().APP_URL);
+  const url = new URL("/settings/integrations/gmail", env().APP_URL);
   if (query) url.search = query;
   return url;
 }
@@ -34,8 +34,11 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
   const jar = await cookies();
-  const raw = jar.get(GMAIL_OAUTH_COOKIE)?.value;
+  const raw =
+    jar.get(GMAIL_OAUTH_COOKIE)?.value ??
+    jar.get(LEGACY_GMAIL_OAUTH_COOKIE)?.value;
   jar.delete(GMAIL_OAUTH_COOKIE);
+  jar.delete(LEGACY_GMAIL_OAUTH_COOKIE);
 
   if (error || !code || !state || !raw) {
     return NextResponse.redirect(settingsUrl("error=gmail_denied"));
@@ -73,10 +76,7 @@ export async function GET(request: NextRequest) {
       .select({ credentials: integrations.credentials })
       .from(integrations)
       .where(
-        and(
-          eq(integrations.workspaceId, payload.workspaceId),
-          eq(integrations.kind, "gmail"),
-        ),
+        and(eq(integrations.userId, user.id), eq(integrations.kind, "gmail")),
       )
       .limit(1);
     const prior = existing?.credentials as GmailCredentials | undefined;
@@ -92,6 +92,7 @@ export async function GET(request: NextRequest) {
   const [upserted] = await db
     .insert(integrations)
     .values({
+      userId: user.id,
       workspaceId: payload.workspaceId,
       kind: "gmail",
       status: "connected",
@@ -99,8 +100,9 @@ export async function GET(request: NextRequest) {
       externalId: profile.emailAddress.toLowerCase(),
     })
     .onConflictDoUpdate({
-      target: [integrations.workspaceId, integrations.kind],
+      target: [integrations.userId, integrations.kind],
       set: {
+        workspaceId: payload.workspaceId,
         status: "connected",
         credentials,
         externalId: profile.emailAddress.toLowerCase(),

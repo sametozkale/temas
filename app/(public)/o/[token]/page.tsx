@@ -5,6 +5,11 @@ import { OwnerBoard } from "@/components/pipeline/owner-board";
 import { db } from "@/lib/db";
 import { formatAddress } from "@/lib/format";
 import {
+  householdLabel,
+  householdMemberLine,
+  householdOf,
+} from "@/lib/pipeline/household";
+import {
   getOwnerViewByToken,
   listApplicationsInStages,
 } from "@/lib/pipeline/queries";
@@ -34,7 +39,7 @@ export default async function OwnerViewPage({
         <p className="text-xs tracking-[0.14em] text-muted-foreground uppercase">
           {t("kicker")}
         </p>
-        <h1 className="font-serif text-3xl tracking-tight">
+        <h1 className="font-serif text-xl font-medium tracking-tight">
           {found.property.title}
         </h1>
         {address ? (
@@ -44,15 +49,26 @@ export default async function OwnerViewPage({
       </header>
       <OwnerBoard
         token={token}
-        cards={rows.map((row) => ({
-          id: row.application.id,
-          fullName: row.contact.fullName,
-          email: row.contact.email,
-          stageName: row.stage?.name ?? null,
-          score: row.application.score,
-          summary: row.application.aiSummary,
-          answers: row.submission?.answers ?? {},
-        }))}
+        cards={rows.map((row) => {
+          const household = householdOf(
+            row.contact.fullName,
+            row.submission?.answers ?? null,
+          );
+          return {
+            id: row.application.id,
+            fullName: householdLabel(household, {
+              family: (name) => t("family", { name }),
+              plus: (name, count) => t("plus", { name, count }),
+            }),
+            memberLine:
+              household.size > 1 ? householdMemberLine(household) : null,
+            email: row.contact.email,
+            stageName: row.stage?.name ?? null,
+            score: row.application.score,
+            summary: row.application.aiSummary,
+            answers: row.submission?.answers ?? {},
+          };
+        })}
       />
     </div>
   );

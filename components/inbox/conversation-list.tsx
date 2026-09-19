@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { GmailMark, WhatsAppMark } from "@/components/brands";
 import { cn } from "@/lib/utils";
 import { formatRelative } from "@/lib/format";
 
@@ -14,6 +15,7 @@ export type ConversationListItem = {
   contactName: string | null;
   contactEmail: string | null;
   propertyTitle: string | null;
+  assignedAgentName?: string | null;
 };
 
 export async function ConversationList({
@@ -34,7 +36,7 @@ export async function ConversationList({
   }
 
   return (
-    <ul className="divide-y">
+    <ul className="flex flex-col gap-px px-2 pb-2">
       {items.map((item) => {
         const active = item.id === selectedId;
         const title =
@@ -44,34 +46,49 @@ export async function ConversationList({
             <Link
               href={`/inbox/${item.id}`}
               className={cn(
-                "block px-4 py-3 transition-colors hover:bg-muted/60",
+                "block rounded-md px-2.5 py-2 transition-colors hover:bg-muted/70",
                 active && "bg-muted",
-                !item.isRead && "bg-brand-soft/40",
               )}
             >
-              <div className="flex items-baseline justify-between gap-3">
+              <div className="flex items-center justify-between gap-3">
                 <p
                   className={cn(
-                    "truncate text-sm",
+                    "min-w-0 truncate text-sm",
                     item.isRead ? "font-medium" : "font-semibold",
                   )}
                 >
                   {title}
                 </p>
-                {item.lastMessageAt ? (
-                  <time
-                    dateTime={item.lastMessageAt.toISOString()}
-                    className="shrink-0 text-[11px] text-muted-foreground"
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <span
+                    className="inline-flex"
+                    aria-label={
+                      item.channel === "whatsapp"
+                        ? t("channel_whatsapp")
+                        : t("channel_email")
+                    }
                   >
-                    {formatRelative(item.lastMessageAt)}
-                  </time>
-                ) : null}
+                    {item.channel === "whatsapp" ? (
+                      <WhatsAppMark className="size-3" />
+                    ) : (
+                      <GmailMark className="size-3" />
+                    )}
+                  </span>
+                  {item.lastMessageAt ? (
+                    <time
+                      dateTime={item.lastMessageAt.toISOString()}
+                      className="text-[11px] text-muted-foreground"
+                    >
+                      {formatRelative(item.lastMessageAt)}
+                    </time>
+                  ) : null}
+                </div>
               </div>
-              <p className="truncate text-xs text-muted-foreground">
-                {item.channel === "whatsapp"
-                  ? t("channel_whatsapp")
-                  : `${t("channel_email")} · ${item.subject ?? t("no_subject")}`}
-              </p>
+              {item.channel === "email" && item.subject ? (
+                <p className="truncate text-xs text-muted-foreground">
+                  {item.subject}
+                </p>
+              ) : null}
               {item.preview ? (
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">
                   {item.preview}
@@ -80,6 +97,7 @@ export async function ConversationList({
               {item.propertyTitle ? (
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   {item.propertyTitle}
+                  {item.assignedAgentName ? ` · ${item.assignedAgentName}` : ""}
                 </p>
               ) : null}
             </Link>

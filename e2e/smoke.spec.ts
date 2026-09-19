@@ -24,7 +24,7 @@ test.describe("public booking smoke", () => {
 
   test("OTP booking reaches confirmation", async ({ page }) => {
     test.skip(!(await mailpitAvailable()), "Mailpit is not running.");
-    const email = `e2e.${Date.now()}@havn.test`;
+    const email = `e2e.${Date.now()}@temas.test`;
     await page.goto(`/b/${seed!.bookingToken}`);
     await page.locator("button.rounded-full").first().click();
     await page.getByLabel("Full name").fill("E2E Visitor");
@@ -55,7 +55,7 @@ test.describe("signup to public booking", () => {
     test.skip(!(await mailpitAvailable()), "Mailpit is not running.");
 
     const stamp = Date.now();
-    const email = `e2e.agent.${stamp}@havn.test`;
+    const email = `e2e.agent.${stamp}@temas.test`;
     const title = `E2E Loft ${stamp}`;
     let userId: string | undefined;
 
@@ -69,7 +69,11 @@ test.describe("signup to public booking", () => {
       await page.waitForURL(/\/home/, { timeout: 20_000 });
 
       await page.goto("/properties/new");
+      await page.getByRole("button", { name: "Continue" }).click();
       await page.getByLabel("Title").fill(title);
+      await page.getByRole("button", { name: "Continue" }).click();
+      await page.getByRole("button", { name: "Continue" }).click();
+      await page.getByRole("button", { name: "Continue" }).click();
       await page.getByRole("button", { name: "Create property" }).click();
       await page.waitForURL(/\/properties\/.+\/edit/, { timeout: 20_000 });
       const propertyId = page.url().match(/\/properties\/([^/]+)\/edit/)?.[1];
@@ -114,12 +118,12 @@ test.describe("signup to public booking", () => {
       await expect(page.getByRole("heading", { level: 1 })).toContainText(
         title,
       );
-      await expect(page.locator("button.rounded-full").first()).toBeVisible({
+      await expect(page.locator("[data-booking-time]").first()).toBeVisible({
         timeout: 15_000,
       });
 
-      const visitor = `e2e.visitor.${stamp}@havn.test`;
-      await page.locator("button.rounded-full").first().click();
+      const visitor = `e2e.visitor.${stamp}@temas.test`;
+      await page.locator("[data-booking-time]").first().click();
       await page.getByLabel("Full name").fill("E2E Visitor");
       await page.getByLabel("Email").fill(visitor);
       const sentAt = Date.now();
@@ -150,9 +154,17 @@ test.describe("signed-in shell", () => {
   }) => {
     await signInViaMagicLink(page, seed!.email, "/home");
     await expect(page).toHaveURL(/\/home/);
+    await expect(
+      page.getByRole("button", { name: "Switch workspace" }),
+    ).toBeVisible();
     await page.goto("/properties");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await page.goto("/calendar");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await page.goto("/tasks");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Tasks" }),
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: "Tasks" })).toBeVisible();
   });
 });

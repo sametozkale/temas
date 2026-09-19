@@ -3,9 +3,12 @@ import { z } from "zod";
 import {
   DOCUMENT_KINDS,
   INVENTORY_CONDITIONS,
+  PROPERTY_CONDITIONS,
   PROPERTY_RELATIONS,
   PROPERTY_TYPES,
 } from "@/lib/db/schema/properties";
+import { isValidCurrency } from "@/lib/currencies";
+import { normalizeCountry } from "@/lib/geo";
 import { isValidTimezone } from "@/lib/timezones";
 
 /** Boolean feature flags stored in `properties.features` (docs/03 §3). */
@@ -14,14 +17,24 @@ export const FEATURE_KEYS = [
   "parking",
   "elevator",
   "balcony",
+  "terrace",
   "garden",
   "pets_allowed",
   "air_conditioning",
   "heating_central",
+  "dishwasher",
+  "washing_machine",
+  "dryer",
+  "internet",
+  "storage",
+  "accessible",
 ] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 
-export const CURRENCIES = ["TRY", "EUR", "USD", "GBP"] as const;
+export const NONE_CONDITION = "none";
+
+export { PROPERTY_CONDITIONS };
+export type { PropertyCondition } from "@/lib/db/schema/properties";
 
 const optionalText = (max: number) =>
   z
@@ -61,6 +74,34 @@ const optionalInt = z
     return n;
   });
 
+const optionalBoundedInt = (min: number, max: number) =>
+  z
+    .string()
+    .trim()
+    .optional()
+    .transform((v, ctx) => {
+      if (!v) return null;
+      const n = Number(v);
+      if (!Number.isInteger(n) || n < min || n > max) {
+        ctx.addIssue({ code: "custom", message: "invalid_number" });
+        return z.NEVER;
+      }
+      return n;
+    });
+
+const optionalDate = z
+  .string()
+  .trim()
+  .optional()
+  .transform((v, ctx) => {
+    if (!v) return null;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+      ctx.addIssue({ code: "custom", message: "invalid_date" });
+      return z.NEVER;
+    }
+    return v;
+  });
+
 export const propertyFormSchema = z.object({
   type: z.enum(PROPERTY_TYPES).default("apartment"),
   title: z.string().trim().min(2, "title").max(120, "title"),
@@ -73,13 +114,33 @@ export const propertyFormSchema = z.object({
     .refine(isValidTimezone, "timezone")
     .default("Europe/Istanbul"),
   rentAmount: optionalDecimal,
-  currency: z.enum(CURRENCIES).default("TRY"),
+  currency: z.string().refine(isValidCurrency).default("TRY"),
   depositAmount: optionalDecimal,
+  duesAmount: optionalDecimal,
   areaM2: optionalDecimal,
   rooms: optionalText(20),
+  bedrooms: optionalBoundedInt(0, 30),
+  bathrooms: optionalBoundedInt(0, 30),
   floor: optionalInt,
+  totalFloors: optionalBoundedInt(1, 200),
+  yearBuilt: optionalBoundedInt(1600, 2100),
+  condition: z
+    .union([
+      z.literal(""),
+      z.literal(NONE_CONDITION),
+      z.enum(PROPERTY_CONDITIONS),
+    ])
+    .optional()
+    .transform((v) => (v && v !== NONE_CONDITION ? v : null)),
+  availableFrom: optionalDate,
   features: z.array(z.enum(FEATURE_KEYS)).default([]),
   description: optionalText(4000),
+  assignedUserId: z
+    .string()
+    .uuid()
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : null)),
 });
 
 export type PropertyFormInput = z.input<typeof propertyFormSchema>;
@@ -139,11 +200,19 @@ export function propertyToFormInput(p: {
   rentAmount: string | null;
   currency: string;
   depositAmount: string | null;
+  duesAmount: string | null;
   areaM2: string | null;
   rooms: string | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
   floor: number | null;
+  totalFloors: number | null;
+  yearBuilt: number | null;
+  condition: string | null;
+  availableFrom: string | null;
   features: Record<string, unknown>;
   description: string | null;
+  assignedUserId?: string | null;
 }): PropertyFormInput {
   return {
     type: p.type,
@@ -151,18 +220,30 @@ export function propertyToFormInput(p: {
     addressLine: p.address?.line ?? "",
     district: p.address?.district ?? "",
     city: p.address?.city ?? "",
-    country: p.address?.country ?? "",
+    country: p.address?.country
+      ? normalizeCountry(p.address.country)
+      : "",
     timezone: p.timezone,
     rentAmount: p.rentAmount ?? "",
-    currency: (CURRENCIES as readonly string[]).includes(p.currency)
-      ? (p.currency as PropertyFormInput["currency"])
-      : "TRY",
+    currency: isValidCurrency(p.currency) ? p.currency : "TRY",
     depositAmount: p.depositAmount ?? "",
+    duesAmount: p.duesAmount ?? "",
     areaM2: p.areaM2 ?? "",
     rooms: p.rooms ?? "",
+    bedrooms: p.bedrooms?.toString() ?? "",
+    bathrooms: p.bathrooms?.toString() ?? "",
     floor: p.floor?.toString() ?? "",
+    totalFloors: p.totalFloors?.toString() ?? "",
+    yearBuilt: p.yearBuilt?.toString() ?? "",
+    condition: (PROPERTY_CONDITIONS as readonly string[]).includes(
+      p.condition ?? "",
+    )
+      ? (p.condition as (typeof PROPERTY_CONDITIONS)[number])
+      : NONE_CONDITION,
+    availableFrom: p.availableFrom ?? "",
     features: FEATURE_KEYS.filter((k) => p.features?.[k] === true),
     description: p.description ?? "",
+    assignedUserId: p.assignedUserId ?? "",
   };
 }
 
@@ -172,14 +253,22 @@ export const EMPTY_PROPERTY_FORM: PropertyFormInput = {
   addressLine: "",
   district: "",
   city: "",
-  country: "Türkiye",
+  country: "Turkey",
   timezone: "Europe/Istanbul",
   rentAmount: "",
   currency: "TRY",
   depositAmount: "",
+  duesAmount: "",
   areaM2: "",
   rooms: "",
+  bedrooms: "",
+  bathrooms: "",
   floor: "",
+  totalFloors: "",
+  yearBuilt: "",
+  condition: NONE_CONDITION,
+  availableFrom: "",
   features: [],
   description: "",
+  assignedUserId: "",
 };

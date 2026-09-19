@@ -21,6 +21,8 @@ export type Action =
   | "pipeline.manage"
   | "inbox.read"
   | "inbox.write"
+  | "tasks.read"
+  | "tasks.write"
   | "integrations.manage"
   | "templates.manage"
   | "contracts.manage"
@@ -44,6 +46,8 @@ const ALL: readonly Action[] = [
   "pipeline.manage",
   "inbox.read",
   "inbox.write",
+  "tasks.read",
+  "tasks.write",
   "integrations.manage",
   "templates.manage",
   "contracts.manage",
@@ -66,6 +70,8 @@ const ROLE_ABILITIES: Record<WorkspaceRole, ReadonlySet<Action>> = {
     "pipeline.manage",
     "inbox.read",
     "inbox.write",
+    "tasks.read",
+    "tasks.write",
     "integrations.manage",
     "templates.manage",
     "contracts.manage",
@@ -82,6 +88,8 @@ const ROLE_ABILITIES: Record<WorkspaceRole, ReadonlySet<Action>> = {
     "pipeline.manage",
     "inbox.read",
     "inbox.write",
+    "tasks.read",
+    "tasks.write",
     "ai.use",
   ]),
 };

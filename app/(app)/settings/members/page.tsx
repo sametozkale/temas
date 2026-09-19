@@ -1,10 +1,20 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
 
+import {
+  SettingsGroup,
+  SettingsPage,
+} from "@/components/settings/settings-chrome";
 import { getAppContext } from "@/lib/auth";
 import { withUserContext } from "@/lib/db";
-import { invites, profiles, workspaceMembers } from "@/lib/db/schema";
+import {
+  invites,
+  profiles,
+  properties,
+  workspaceMembers,
+} from "@/lib/db/schema";
 import { can } from "@/lib/permissions";
+import { avatarPublicUrl } from "@/lib/storage-constants";
 
 import { InviteDialog } from "./invite-dialog";
 import { InvitesTable, MembersTable } from "./members-tables";
@@ -13,7 +23,7 @@ export default async function MembersPage() {
   const ctx = await getAppContext();
   const t = await getTranslations("settings.members");
 
-  const { members, pending } = await withUserContext(
+  const { members, pending, listingCounts } = await withUserContext(
     ctx.user.id,
     async (tx) => {
       const members = await tx
@@ -22,6 +32,7 @@ export default async function MembersPage() {
           userId: workspaceMembers.userId,
           role: workspaceMembers.role,
           fullName: profiles.fullName,
+          avatarUrl: profiles.avatarUrl,
           createdAt: workspaceMembers.createdAt,
         })
         .from(workspaceMembers)
@@ -45,45 +56,58 @@ export default async function MembersPage() {
         )
         .orderBy(desc(invites.createdAt));
 
-      return { members, pending };
+      const listingCounts = await tx
+        .select({
+          userId: properties.assignedUserId,
+          count: sql<number>`cast(count(*) as int)`,
+        })
+        .from(properties)
+        .where(
+          and(
+            eq(properties.workspaceId, ctx.workspace.id),
+            isNull(properties.deletedAt),
+          ),
+        )
+        .groupBy(properties.assignedUserId);
+
+      return { members, pending, listingCounts };
     },
   );
 
   const canInvite = can(ctx.membership.role, "members.invite");
   const canManage = can(ctx.membership.role, "members.update");
 
+  const countByUser = new Map(
+    listingCounts
+      .filter((row) => row.userId)
+      .map((row) => [row.userId as string, row.count]),
+  );
+
   return (
-    <div className="space-y-8">
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-medium">{t("members_title")}</h2>
-            <p className="text-sm text-muted-foreground">
-              {t("members_count", { count: members.length })}
-            </p>
-          </div>
-          {canInvite ? <InviteDialog /> : null}
-        </div>
+    <SettingsPage
+      title={t("members_title")}
+      actions={canInvite ? <InviteDialog /> : null}
+    >
+      <SettingsGroup>
         <MembersTable
           members={members.map((m) => ({
             id: m.id,
             userId: m.userId,
             role: m.role,
             fullName: m.fullName,
+            avatarUrl: avatarPublicUrl(m.avatarUrl),
             isSelf: m.userId === ctx.user.id,
+            listingCount: countByUser.get(m.userId) ?? 0,
           }))}
           canManage={canManage}
         />
-      </section>
+      </SettingsGroup>
 
       {canInvite ? (
-        <section className="space-y-3">
-          <div>
-            <h2 className="text-base font-medium">{t("pending_title")}</h2>
-            <p className="text-sm text-muted-foreground">
-              {t("pending_description")}
-            </p>
-          </div>
+        <SettingsGroup
+          title={t("pending_title")}
+          footer={t("pending_description")}
+        >
           <InvitesTable
             invites={pending.map((i) => ({
               id: i.id,
@@ -92,8 +116,8 @@ export default async function MembersPage() {
               expiresAt: i.expiresAt.toISOString(),
             }))}
           />
-        </section>
+        </SettingsGroup>
       ) : null}
-    </div>
+    </SettingsPage>
   );
 }

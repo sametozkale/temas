@@ -1,8 +1,10 @@
 import { getTranslations } from "next-intl/server";
 
 import { TemplateEditor } from "@/app/(app)/settings/templates/template-editor";
+import { SettingsPage } from "@/components/settings/settings-chrome";
 import { getAppContext } from "@/lib/auth";
 import { listContractTemplates } from "@/lib/contracts/queries";
+import { templateKindForName } from "@/lib/contracts/seed";
 import { withUserContext } from "@/lib/db";
 import { requireAbility } from "@/lib/permissions";
 
@@ -15,18 +17,15 @@ export default async function SettingsTemplatesPage() {
   );
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="font-serif text-2xl tracking-tight">{t("title")}</h2>
-        <p className="text-sm text-muted-foreground">{t("description")}</p>
-      </div>
+    <SettingsPage title={t("title")}>
       <TemplateEditor
         templates={templates.map((row) => ({
           id: row.id,
           name: row.name,
           bodyMd: row.bodyMd,
+          kind: templateKindForName(row.name),
         }))}
       />
-    </div>
+    </SettingsPage>
   );
 }

@@ -8,4 +8,5 @@ export * from "./properties";
 export * from "./scheduling";
 export * from "./forms";
 export * from "./inbox";
+export * from "./tasks";
 export * from "./ai";

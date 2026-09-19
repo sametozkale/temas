@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNull, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
 
 import { ReminderDigestEmail } from "@/emails/reminder-digest";
 import { ReminderEmail } from "@/emails/reminder";
@@ -21,12 +21,15 @@ import {
   workspaces,
 } from "@/lib/db/schema";
 import { sendEmail } from "@/lib/integrations/resend";
+import {
+  deliverStaffNotification,
+  notifyWorkspaceStaff,
+} from "@/lib/notifications/dispatch";
 import { reminderCopy } from "@/lib/reminders/copy";
 import {
   detectReminderSignals,
   type ReminderKind,
 } from "@/lib/reminders/signals";
-import { listWorkspaceStaff } from "@/lib/viewings/queries";
 
 export async function scanReminders(now = new Date()) {
   const workspacesRows = await db
@@ -59,6 +62,7 @@ export async function scanWorkspaceReminders(
       contactEmail: contacts.email,
       propertyId: properties.id,
       propertyTitle: properties.title,
+      assignedUserId: properties.assignedUserId,
     })
     .from(bookings)
     .innerJoin(viewingSlots, eq(viewingSlots.id, bookings.viewingSlotId))
@@ -100,6 +104,7 @@ export async function scanWorkspaceReminders(
   const conversationRows = await db
     .select({
       id: conversations.id,
+      userId: conversations.userId,
       lastMessageAt: conversations.lastMessageAt,
       contactName: contacts.fullName,
       propertyTitle: properties.title,
@@ -186,6 +191,8 @@ export async function scanWorkspaceReminders(
       .insert(reminders)
       .values({
         workspaceId,
+        userId:
+          signal.kind === "unanswered_message" ? (signal.userId ?? null) : null,
         entity: signal.entity,
         entityId: signal.entityId,
         kind: signal.kind,
@@ -218,27 +225,35 @@ export async function scanWorkspaceReminders(
         });
         emailed += 1;
       }
-      const staff = await listWorkspaceStaff(db, workspaceId);
-      for (const member of staff) {
-        if (!member.email) continue;
-        await sendEmail({
-          to: member.email,
-          subject: `Reminder: ${booking?.propertyTitle ?? "viewing"} in 2 hours`,
+      const whenLabel = booking?.startsAt.toISOString() ?? "";
+      const propertyTitle = booking?.propertyTitle ?? "viewing";
+      await notifyWorkspaceStaff({
+        workspaceId,
+        assignedUserId: booking?.assignedUserId,
+        type: "viewing_reminders",
+        email: (name) => ({
+          subject: `Reminder: ${propertyTitle} in 2 hours`,
           react: ReminderEmail({
-            recipientName: member.name ?? member.email,
+            recipientName: name,
             title: "A viewing starts soon",
-            whenLabel: booking?.startsAt.toISOString() ?? "",
+            whenLabel,
             propertyTitle: booking?.propertyTitle,
           }),
-        });
-        emailed += 1;
-      }
+        }),
+        whatsapp: () =>
+          `Reminder: ${propertyTitle} starts soon (${whenLabel}).`,
+      });
+      emailed += 1;
     }
   }
   return { created, emailed };
 }
 
-export async function listOpenReminders(tx: DbOrTx, workspaceId: string) {
+export async function listOpenReminders(
+  tx: DbOrTx,
+  workspaceId: string,
+  userId: string,
+) {
   return tx
     .select({
       id: reminders.id,
@@ -253,6 +268,10 @@ export async function listOpenReminders(tx: DbOrTx, workspaceId: string) {
       and(
         eq(reminders.workspaceId, workspaceId),
         isNull(reminders.deliveredAt),
+        or(
+          sql`${reminders.kind} is distinct from 'unanswered_message'`,
+          eq(reminders.userId, userId),
+        ),
       ),
     )
     .orderBy(reminders.dueAt);
@@ -273,9 +292,11 @@ export async function sendReminderDigests(now = new Date()) {
   const members = await db
     .select({
       workspaceId: workspaceMembers.workspaceId,
+      userId: workspaceMembers.userId,
       email: authUsers.email,
       name: profiles.fullName,
-      digest: profiles.reminderDigestEnabled,
+      phone: profiles.phone,
+      notificationPrefs: profiles.notificationPrefs,
       workspaceName: workspaces.name,
     })
     .from(workspaceMembers)
@@ -285,17 +306,25 @@ export async function sendReminderDigests(now = new Date()) {
 
   let sent = 0;
   for (const member of members) {
-    if (member.digest === false || !member.email) continue;
-    const open = await listOpenReminders(db, member.workspaceId);
+    if (!member.email && !member.phone) continue;
+    const open = await listOpenReminders(db, member.workspaceId, member.userId);
     if (open.length === 0) continue;
-    await sendEmail({
-      to: member.email,
-      subject: `${open.length} items need attention in ${member.workspaceName}`,
-      react: ReminderDigestEmail({
-        recipientName: member.name ?? member.email,
-        workspaceName: member.workspaceName,
-        items: open.map((row) => row.message),
-      }),
+    const items = open.map((row) => row.message);
+    await deliverStaffNotification(member, "digest", {
+      email: member.email
+        ? {
+            subject: `${open.length} items need attention in ${member.workspaceName}`,
+            react: ReminderDigestEmail({
+              recipientName: member.name ?? member.email,
+              workspaceName: member.workspaceName,
+              items,
+            }),
+          }
+        : undefined,
+      whatsapp: `${open.length} items need attention in ${member.workspaceName}:\n${items
+        .slice(0, 8)
+        .map((line) => `• ${line}`)
+        .join("\n")}`,
     });
     sent += 1;
   }

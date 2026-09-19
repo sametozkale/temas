@@ -1,14 +1,19 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getFormatter, getTranslations } from "next-intl/server";
+import { TZDate } from "@date-fns/tz";
 
-import { EventChip } from "@/components/event-chip";
+import { CalendarFilters } from "@/components/calendar/calendar-property-filter";
+import { CalendarEventPill } from "@/components/calendar/event-pill";
+import { ArrowLeft01Icon, ArrowRight01Icon, Icon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   dayKeyInZone,
   monthGrid,
   monthKey,
+  shiftIsoDate,
   shiftMonth,
   timeLabelInZone,
+  todayIsOnScreen,
   weekDays,
   type CalendarView,
 } from "@/lib/calendar/grid";
@@ -22,7 +27,11 @@ export type CalendarEvent = {
   prospectName: string;
   status: string;
   timezone: string;
+  assignedAgentName?: string | null;
 };
+
+const MONTH_VISIBLE = 5;
+const WEEK_VISIBLE = 12;
 
 export async function CalendarBoard({
   view,
@@ -33,6 +42,9 @@ export async function CalendarBoard({
   events,
   properties,
   propertyId,
+  agents = [],
+  agentId,
+  currentUserId,
 }: {
   view: CalendarView;
   year: number;
@@ -42,11 +54,23 @@ export async function CalendarBoard({
   events: CalendarEvent[];
   properties: { id: string; title: string }[];
   propertyId?: string;
+  agents?: { userId: string; name: string }[];
+  agentId?: string;
+  currentUserId?: string;
 }) {
   const t = await getTranslations("calendar");
+  const format = await getFormatter();
   const key = monthKey(year, month);
+  const monthLabel = format.dateTime(new Date(year, month - 1, 15), {
+    month: "long",
+    year: "numeric",
+  });
   const prev = shiftMonth(year, month, -1);
   const next = shiftMonth(year, month, 1);
+  const zonedNow = TZDate.tz(timeZone);
+  const todayKey = dayKeyInZone(zonedNow, timeZone);
+  const todayMonth = monthKey(zonedNow.getFullYear(), zonedNow.getMonth() + 1);
+
   const byDay = new Map<string, CalendarEvent[]>();
   for (const event of events) {
     const day = dayKeyInZone(event.startsAt, event.timezone || timeZone);
@@ -60,6 +84,7 @@ export async function CalendarBoard({
     month?: string;
     week?: string;
     property?: string | null;
+    agent?: string | null;
   }) => {
     const params = new URLSearchParams();
     params.set("view", opts.view ?? view);
@@ -70,6 +95,9 @@ export async function CalendarBoard({
     const filter =
       opts.property === null ? undefined : (opts.property ?? propertyId);
     if (filter) params.set("property", filter);
+    const agentFilter =
+      opts.agent === null ? undefined : (opts.agent ?? agentId);
+    if (agentFilter) params.set("agent", agentFilter);
     return `/calendar?${params.toString()}`;
   };
 
@@ -84,101 +112,168 @@ export async function CalendarBoard({
     t("weekday_sat"),
     t("weekday_sun"),
   ];
+  const weekStart = weekDates[0] ?? todayKey;
+  const weekEnd = weekDates[6] ?? todayKey;
+  const visibleDates =
+    view === "week" ? weekDates : weeks.flat().map((cell) => cell.date);
+  const showToday = !todayIsOnScreen(view, todayKey, visibleDates);
+  const rangeLabel =
+    view === "week"
+      ? `${format.dateTime(new Date(`${weekStart}T12:00:00`), {
+          month: "short",
+          day: "numeric",
+        })} – ${format.dateTime(new Date(`${weekEnd}T12:00:00`), {
+          month: "short",
+          day: "numeric",
+        })}`
+      : monthLabel;
+
+  function pills(date: string, limit: number) {
+    const dayEvents = byDay.get(date) ?? [];
+    const visible = dayEvents.slice(0, limit);
+    const hidden = dayEvents.length - visible.length;
+    return (
+      <>
+        {visible.map((event) => (
+          <CalendarEventPill
+            key={event.id}
+            href={`/properties/${event.propertyId}/viewings`}
+            time={timeLabelInZone(event.startsAt, event.timezone)}
+            title={event.propertyTitle}
+            hint={[event.prospectName, event.assignedAgentName]
+              .filter(Boolean)
+              .join(" · ")}
+            status={event.status}
+            propertyId={event.propertyId}
+          />
+        ))}
+        {hidden > 0 ? (
+          <p className="px-1 text-[11px] text-muted-foreground">
+            {t("more", { count: hidden })}
+          </p>
+        ) : null}
+      </>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-1">
-          {(["month", "week", "list"] as const).map((item) => (
-            <Button
-              key={item}
-              size="xs"
-              variant={view === item ? "secondary" : "ghost"}
-              asChild
-            >
-              <Link href={href({ view: item })}>{t(`view_${item}`)}</Link>
-            </Button>
-          ))}
-        </div>
+    <div
+      className={cn("flex min-h-0 flex-col gap-4", view !== "list" && "flex-1")}
+    >
+      <div className="flex shrink-0 flex-nowrap items-center gap-2">
         {view !== "list" ? (
-          <div className="flex items-center gap-2">
-            <Button size="xs" variant="ghost" asChild>
-              <Link href={href({ month: monthKey(prev.year, prev.month) })}>
-                {t("prev")}
-              </Link>
-            </Button>
-            <p className="text-sm font-medium">{key}</p>
-            <Button size="xs" variant="ghost" asChild>
-              <Link href={href({ month: monthKey(next.year, next.month) })}>
-                {t("next")}
-              </Link>
-            </Button>
+          <div className="flex items-center">
+            <p className="text-sm font-medium whitespace-nowrap tabular-nums">
+              {rangeLabel}
+            </p>
+            <div className="ml-0.5 flex items-center -space-x-1">
+              <Button size="icon-sm" variant="ghost" asChild>
+                <Link
+                  href={
+                    view === "week"
+                      ? href({ week: shiftIsoDate(weekStart, -7) })
+                      : href({ month: monthKey(prev.year, prev.month) })
+                  }
+                  aria-label={t("prev")}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Icon icon={ArrowLeft01Icon} size={16} />
+                </Link>
+              </Button>
+              <Button size="icon-sm" variant="ghost" asChild>
+                <Link
+                  href={
+                    view === "week"
+                      ? href({ week: shiftIsoDate(weekStart, 7) })
+                      : href({ month: monthKey(next.year, next.month) })
+                  }
+                  aria-label={t("next")}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Icon icon={ArrowRight01Icon} size={16} />
+                </Link>
+              </Button>
+            </div>
+            {showToday ? (
+              <Button size="xs" variant="ghost" className="ml-0.5" asChild>
+                <Link
+                  href={href({
+                    month: todayMonth,
+                    week: view === "week" ? todayKey : undefined,
+                  })}
+                >
+                  {t("today")}
+                </Link>
+              </Button>
+            ) : null}
           </div>
         ) : null}
-        <form className="flex items-center gap-2">
-          <input type="hidden" name="view" value={view} />
-          <input type="hidden" name="month" value={key} />
-          <label className="sr-only" htmlFor="calendar-property">
-            {t("filter_property")}
-          </label>
-          <select
-            id="calendar-property"
-            name="property"
-            defaultValue={propertyId ?? ""}
-            className="h-8 rounded-md border bg-card px-2 text-sm"
-          >
-            <option value="">{t("all_properties")}</option>
-            {properties.map((property) => (
-              <option key={property.id} value={property.id}>
-                {property.title}
-              </option>
+        <div className="ml-auto flex min-w-0 shrink-0 items-center gap-2">
+          <CalendarFilters
+            properties={properties}
+            propertyId={propertyId}
+            agents={agents}
+            agentId={agentId}
+            currentUserId={currentUserId}
+            view={view}
+            month={key}
+            week={week}
+          />
+          <div className="flex gap-1">
+            {(["month", "week", "list"] as const).map((item) => (
+              <Button
+                key={item}
+                size="xs"
+                variant={view === item ? "secondary" : "ghost"}
+                asChild
+              >
+                <Link href={href({ view: item })}>{t(`view_${item}`)}</Link>
+              </Button>
             ))}
-          </select>
-          <Button type="submit" size="xs" variant="outline">
-            {t("apply_filter")}
-          </Button>
-        </form>
+          </div>
+        </div>
       </div>
 
       {view === "month" ? (
-        <div className="overflow-x-auto rounded-lg border">
-          <div className="grid min-w-[48rem] grid-cols-7 divide-x divide-y">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="grid shrink-0 grid-cols-7 border-b">
             {weekdayLabels.map((label) => (
               <div
                 key={label}
-                className="bg-muted/40 px-2 py-1.5 text-xs font-medium text-muted-foreground"
+                className="px-1.5 py-1.5 text-[11px] font-medium tracking-wide text-muted-foreground"
               >
                 {label}
               </div>
             ))}
-            {weeks.flat().map((cell) => {
-              const dayEvents = byDay.get(cell.date) ?? [];
+          </div>
+          <div
+            className="grid min-h-0 flex-1 grid-cols-7"
+            style={{
+              gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))`,
+            }}
+          >
+            {weeks.flat().map((cell, index) => {
+              const isToday = cell.date === todayKey;
               return (
                 <div
                   key={cell.date}
                   className={cn(
-                    "min-h-24 space-y-1 p-2",
-                    !cell.inMonth && "bg-muted/20 text-muted-foreground",
+                    "flex min-h-0 flex-col gap-0.5 overflow-hidden border-b p-1",
+                    (index + 1) % 7 !== 0 && "border-r",
+                    !cell.inMonth && "bg-muted/15",
                   )}
                 >
-                  <p className="text-xs tabular-nums">{cell.day}</p>
-                  {dayEvents.map((event) => (
-                    <Link
-                      key={event.id}
-                      href={`/properties/${event.propertyId}/viewings`}
-                      className="block"
-                    >
-                      <EventChip
-                        tone={
-                          event.status === "completed" ? "success" : "brand"
-                        }
-                        time={timeLabelInZone(event.startsAt, event.timezone)}
-                        title={event.propertyTitle}
-                        meta={event.prospectName}
-                        className="py-1"
-                      />
-                    </Link>
-                  ))}
+                  <p
+                    className={cn(
+                      "mb-0.5 flex size-6 items-center justify-center text-xs tabular-nums",
+                      isToday &&
+                        "rounded-full bg-foreground font-medium text-background",
+                      !cell.inMonth && !isToday && "text-muted-foreground/50",
+                    )}
+                  >
+                    {cell.day}
+                  </p>
+                  {pills(cell.date, MONTH_VISIBLE)}
                 </div>
               );
             })}
@@ -187,29 +282,36 @@ export async function CalendarBoard({
       ) : null}
 
       {view === "week" ? (
-        <div className="grid gap-3 md:grid-cols-7">
-          {weekDates.map((date, index) => (
-            <div key={date} className="min-h-40 rounded-lg border p-2">
-              <p className="text-xs font-medium">
-                {weekdayLabels[index]} · {date.slice(8)}
-              </p>
-              {(byDay.get(date) ?? []).map((event) => (
-                <Link
-                  key={event.id}
-                  href={`/properties/${event.propertyId}/viewings`}
-                  className="block"
-                >
-                  <EventChip
-                    tone={event.status === "completed" ? "success" : "brand"}
-                    time={timeLabelInZone(event.startsAt, event.timezone)}
-                    title={event.propertyTitle}
-                    meta={event.prospectName}
-                    className="py-1"
-                  />
-                </Link>
-              ))}
-            </div>
-          ))}
+        <div className="grid min-h-0 flex-1 grid-cols-7 overflow-hidden border-t">
+          {weekDates.map((date, index) => {
+            const isToday = date === todayKey;
+            const dayNum = Number(date.slice(8));
+            return (
+              <div
+                key={date}
+                className={cn(
+                  "flex min-h-0 flex-col gap-0.5 overflow-hidden border-b p-1",
+                  index < 6 && "border-r",
+                )}
+              >
+                <div className="mb-1 flex items-center gap-1.5 px-0.5">
+                  <span className="text-[11px] font-medium tracking-wide text-muted-foreground">
+                    {weekdayLabels[index]}
+                  </span>
+                  <span
+                    className={cn(
+                      "flex size-6 items-center justify-center text-xs tabular-nums",
+                      isToday &&
+                        "rounded-full bg-foreground font-medium text-background",
+                    )}
+                  >
+                    {dayNum}
+                  </span>
+                </div>
+                {pills(date, WEEK_VISIBLE)}
+              </div>
+            );
+          })}
         </div>
       ) : null}
     </div>

@@ -14,6 +14,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { formatDateTime } from "@/lib/format";
+import {
+  householdLabel,
+  householdOf,
+  isHouseholdAnswerKey,
+} from "@/lib/pipeline/household";
 
 type ApplicantPayload = {
   fullName: string;
@@ -63,11 +68,22 @@ export function ApplicantSheet({
     };
   }, [open, applicationId, propertyId]);
 
+  const household = data ? householdOf(data.fullName, data.answers) : null;
+  const heading = household
+    ? householdLabel(household, {
+        family: (name) => t("family", { name }),
+        plus: (name, count) => t("plus", { name, count }),
+      })
+    : (data?.fullName ?? t("loading"));
+  const answers = Object.entries(data?.answers ?? {}).filter(
+    ([key]) => !isHouseholdAnswerKey(key),
+  );
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-lg">
         <SheetHeader>
-          <SheetTitle>{data?.fullName ?? t("loading")}</SheetTitle>
+          <SheetTitle>{heading}</SheetTitle>
           <SheetDescription>
             {[data?.email, data?.phone, data?.stageName]
               .filter(Boolean)
@@ -95,14 +111,26 @@ export function ApplicantSheet({
               {data?.aiSummary ?? t("ai_placeholder")}
             </p>
           </section>
+          {household && household.size > 1 ? (
+            <section className="space-y-2">
+              <h3 className="text-sm font-medium">{t("household")}</h3>
+              <ul className="space-y-1 text-sm">
+                {household.members.map((member, index) => (
+                  <li key={`${member.name}-${index}`}>
+                    {member.unnamed ? "—" : member.name}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
           <section className="space-y-2">
             <h3 className="text-sm font-medium">{t("answers")}</h3>
-            {Object.keys(data?.answers ?? {}).length ? (
+            {answers.length ? (
               <div className="space-y-2">
-                {Object.entries(data?.answers ?? {}).map(([key, value]) => (
+                {answers.map(([key, value]) => (
                   <p key={key} className="text-sm">
                     <span className="text-muted-foreground">{key}: </span>
-                    {formatAnswer(value)}
+                    {formatAnswer(value, { yes: t("yes"), no: t("no") })}
                   </p>
                 ))}
               </div>
@@ -170,9 +198,12 @@ export function ApplicantSheet({
   );
 }
 
-function formatAnswer(value: unknown): string {
+function formatAnswer(
+  value: unknown,
+  labels: { yes: string; no: string },
+): string {
   if (value == null) return "—";
-  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "boolean") return value ? labels.yes : labels.no;
   if (Array.isArray(value)) return value.map(String).join(", ");
   return String(value);
 }

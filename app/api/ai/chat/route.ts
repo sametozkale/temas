@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid" }, { status: 400 });
   }
 
-  const threadId = await persistUserTurn({
+  const { threadId, title, isNew } = await persistUserTurn({
     workspaceId: ctx.workspace.id,
     userId: ctx.user.id,
     threadId: threadIdIn,
@@ -61,7 +61,10 @@ export async function POST(req: Request) {
   return streamAsk({
     workspaceId: ctx.workspace.id,
     timeZone: ctx.workspace.timezone,
+    userId: ctx.user.id,
     threadId,
+    title,
+    isNew,
     messages,
     question,
   });

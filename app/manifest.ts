@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Havn",
-    short_name: "Havn",
+    name: "Temas",
+    short_name: "Temas",
     description: "AI-native property management for real estate agents",
     start_url: "/home",
     display: "standalone",

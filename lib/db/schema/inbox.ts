@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -12,11 +13,11 @@ import {
 } from "drizzle-orm/pg-core";
 
 import {
-  WRITE_ROLES_STAFF,
   conversationChildPolicies,
-  workspacePolicies,
+  conversationOwnerPolicies,
+  mailboxOwnerPolicies,
 } from "../rls";
-import { baseColumns } from "./_shared";
+import { authUsers, baseColumns } from "./_shared";
 import { contacts } from "./contacts";
 import { workspaces } from "./identity";
 import { properties } from "./properties";
@@ -30,6 +31,10 @@ export const integrations = pgTable(
   "integrations",
   {
     ...baseColumns,
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    /** Home workspace (connected-from); unmatched inbound fallback. */
     workspaceId: uuid("workspace_id")
       .notNull()
       .references(() => workspaces.id, { onDelete: "cascade" }),
@@ -41,12 +46,12 @@ export const integrations = pgTable(
     lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
   },
   (t) => [
-    unique("integrations_workspace_kind_unique").on(t.workspaceId, t.kind),
+    unique("integrations_user_kind_unique").on(t.userId, t.kind),
     check(
       "integrations_kind_check",
       sql`${t.kind} in ('gmail','outlook','whatsapp')`,
     ),
-    ...workspacePolicies("integrations", t.workspaceId, WRITE_ROLES_STAFF),
+    ...mailboxOwnerPolicies("integrations", t.userId, t.workspaceId),
   ],
 ).enableRLS();
 
@@ -60,6 +65,9 @@ export const conversations = pgTable(
     workspaceId: uuid("workspace_id")
       .notNull()
       .references(() => workspaces.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
     integrationId: uuid("integration_id").references(() => integrations.id, {
       onDelete: "set null",
     }),
@@ -81,7 +89,8 @@ export const conversations = pgTable(
       "conversations_channel_check",
       sql`${t.channel} in ('email','whatsapp')`,
     ),
-    ...workspacePolicies("conversations", t.workspaceId),
+    index("conversations_workspace_user_idx").on(t.workspaceId, t.userId),
+    ...conversationOwnerPolicies("conversations", t.userId, t.workspaceId),
   ],
 ).enableRLS();
 

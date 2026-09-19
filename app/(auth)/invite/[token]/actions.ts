@@ -1,12 +1,13 @@
 "use server";
 
 import { and, eq, isNull } from "drizzle-orm";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { actionError, type ActionResult } from "@/lib/action-result";
 import { logActivity } from "@/lib/activity";
-import { requireUser } from "@/lib/auth";
+import { requireUser, writeWorkspaceCookie } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { invites, profiles, workspaceMembers } from "@/lib/db/schema";
 
@@ -73,5 +74,7 @@ export async function acceptInvite(
     );
   });
 
+  const cookieStore = await cookies();
+  writeWorkspaceCookie(cookieStore, invite.workspaceId);
   redirect("/home");
 }

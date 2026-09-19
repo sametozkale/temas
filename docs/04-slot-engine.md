@@ -8,6 +8,7 @@ Bookable slot = **the intersection of the participant sets' availability**, tile
 
 - Mandatory sets: `agent` and (if the property has a current_tenant) `current_tenant`. If the owner is `viewer_required`, a third set.
 - A set counts as "available" when **at least one** participant in that set has a window covering the interval (there may be several tenants/agents → OR inside a set, not AND).
+- Agent windows are **listing hours** on the property calendar, not a personal multi-listing calendar. `availability_windows.contact_id` for `participant_kind = 'agent'` points at the **assigned agent's** member contact. Saving the week grid or changing `properties.assigned_user_id` keeps that contact in sync. v1 does not AND several agents' personal calendars.
 - Intersection intervals are tiled onto a `slot_duration` + `buffer` grid; the grid starts at the beginning of the intersection interval.
 - Filters: `min_notice_hours` (anything before now + X hours is dropped), `max_days_ahead` (horizon), `availability_exceptions` (remove blocked days, add overrides).
 - Slots that are already `booked`/`blocked` are not regenerated; their status is preserved.
@@ -74,9 +75,9 @@ Job pseudo-code:
 
 ## 4. Public Booking Flow
 
-1. `GET /b/[token]` → calendar + property summary + `open` slots for the next N days (SSR, 60 s cache).
+1. `GET /b/[token]` → property summary + month calendar of days with `open` slots + times for the selected day (SSR, 60 s cache).
 2. If `require_form_first`, the form step comes first; the submission creates a `contact`.
-3. Pick a slot → name/phone/email → **email OTP** (6 digits, 10 min) → booking INSERT + slot `booked` + confirmation email/WhatsApp + Inbox notification to the agent + notification to the tenant.
+3. Pick a slot → name/phone/email → **email OTP** (6 digits, 10 min) → booking INSERT + slot `booked` + confirmation email/WhatsApp + notification to the tenant, the **assigned agent**, and workspace **owners** (other agents/assistants are not emailed).
 4. Confirmation page: add to calendar (.ics) and a cancel button with the `cancel_token` link; on cancellation the slot becomes `open` and all parties are notified.
 5. Rate limits: 10 OTPs per IP per hour, 5 bookings per token per day.
 
@@ -93,5 +94,5 @@ Job pseudo-code:
 
 ## 6. Deliberate Simplifications (v1)
 
-- Slots belong to a single property calendar; workspace-wide conflict checking (the agent's other viewings) is shown as a **warning** in v1, not a block.
-- Multi-timezone display: the public page detects the visitor's timezone but slots are labelled in the property timezone (both labels are shown together to avoid confusion).
+- Slots belong to a single property calendar; workspace-wide conflict checking (the assigned agent's other viewings) is shown as a **warning** in v1, not a block.
+- Multi-timezone display: the public page defaults to the visitor’s browser timezone (switchable). Each slot is shown once in that zone.

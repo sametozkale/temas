@@ -29,13 +29,13 @@ function createClient() {
 }
 
 const globalForDb = globalThis as unknown as {
-  __havnDb?: ReturnType<typeof createClient>;
+  __temasDb?: ReturnType<typeof createClient>;
 };
 
-export const db = globalForDb.__havnDb ?? createClient();
+export const db = globalForDb.__temasDb ?? createClient();
 
 if (process.env.NODE_ENV !== "production") {
-  globalForDb.__havnDb = db;
+  globalForDb.__temasDb = db;
 }
 
 export type Db = typeof db;

@@ -16,6 +16,7 @@ import {
 } from "@/lib/db/schema";
 import { requireAbility } from "@/lib/permissions";
 import { uuidSchema } from "@/lib/properties/schema";
+import { revalidatePublicPropertyPages } from "@/lib/public-cache";
 import { createSignedDownload } from "@/lib/storage";
 import { STORAGE_BUCKETS } from "@/lib/storage-constants";
 import { secureToken } from "@/lib/slug";
@@ -31,9 +32,10 @@ import { STAGE_RENTED } from "@/lib/pipeline/defaults";
 
 export type PipelineActionResult<T = undefined> = ActionResult<T>;
 
-function revalidatePipeline(propertyId: string) {
+async function revalidatePipeline(propertyId: string) {
   revalidatePath(`/properties/${propertyId}/applications`);
   revalidatePath("/pipeline");
+  await revalidatePublicPropertyPages(propertyId);
 }
 
 export async function saveForm(
@@ -74,7 +76,7 @@ export async function saveForm(
     );
   });
 
-  revalidatePipeline(id);
+  await revalidatePipeline(id);
   return actionOk();
 }
 
@@ -103,7 +105,7 @@ export async function addStage(
     });
   });
 
-  revalidatePipeline(id);
+  await revalidatePipeline(id);
   return actionOk();
 }
 
@@ -129,7 +131,7 @@ export async function renameStage(
   });
 
   if (!ok) return actionError("not_found");
-  revalidatePipeline(id);
+  await revalidatePipeline(id);
   return actionOk();
 }
 
@@ -179,7 +181,7 @@ export async function moveApplication(
   });
 
   if (!ok) return actionError("not_found");
-  revalidatePipeline(pid);
+  await revalidatePipeline(pid);
   return actionOk();
 }
 
@@ -190,8 +192,9 @@ export async function rotateOwnerLink(
   requireAbility(ctx.membership, "pipeline.manage");
   const id = uuidSchema.parse(propertyId);
 
-  await withUserContext(ctx.user.id, async (tx) => {
+  const previousToken = await withUserContext(ctx.user.id, async (tx) => {
     const { ownerView } = await ensurePipeline(tx, id);
+    const previous = ownerView.publicToken;
     await tx
       .update(ownerViews)
       .set({ publicToken: secureToken() })
@@ -207,9 +210,11 @@ export async function rotateOwnerLink(
       },
       tx,
     );
+    return previous;
   });
 
-  revalidatePipeline(id);
+  await revalidatePipeline(id);
+  if (previousToken) revalidatePath(`/o/${previousToken}`);
   return actionOk();
 }
 

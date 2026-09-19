@@ -22,7 +22,7 @@ import {
   reorderMedia,
   setCoverMedia,
 } from "@/app/(app)/properties/actions";
-import { STORAGE_BUCKETS } from "@/lib/storage-constants";
+import { STORAGE_BUCKETS, mediaTypeOf } from "@/lib/storage-constants";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -71,10 +71,15 @@ export function MediaManager({
     const supabase = createSupabaseBrowserClient();
     for (const file of list) {
       try {
+        const contentType = mediaTypeOf(file.type, file.name);
+        if (!contentType) {
+          toast.error(t("errors.unsupported_type"));
+          continue;
+        }
         const signed = await createMediaUploadUrl({
           propertyId,
           fileName: file.name,
-          contentType: file.type,
+          contentType,
           size: file.size,
         });
         if (!signed.ok || !signed.data) {
@@ -89,7 +94,7 @@ export function MediaManager({
         const { error } = await supabase.storage
           .from(STORAGE_BUCKETS.media)
           .uploadToSignedUrl(signed.data.path, signed.data.token, file, {
-            contentType: file.type,
+            contentType,
           });
         if (error) throw error;
         const attached = await attachMedia(propertyId, signed.data.path);

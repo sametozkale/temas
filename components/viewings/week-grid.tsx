@@ -56,7 +56,7 @@ export function WeekGrid({
             <span className="w-20 text-sm font-medium">{t(day)}</span>
             <Input
               type="time"
-              className="w-32"
+              className="min-w-0 flex-1 sm:w-32 sm:flex-none"
               disabled={disabled || !cell.enabled}
               value={minutesToTime(cell.startMin)}
               onChange={(e) =>
@@ -66,7 +66,7 @@ export function WeekGrid({
             <span className="text-xs text-muted-foreground">–</span>
             <Input
               type="time"
-              className="w-32"
+              className="min-w-0 flex-1 sm:w-32 sm:flex-none"
               disabled={disabled || !cell.enabled}
               value={minutesToTime(cell.endMin)}
               onChange={(e) =>

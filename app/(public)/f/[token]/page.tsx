@@ -27,7 +27,7 @@ export default async function PublicFormPage({
         <p className="text-xs tracking-[0.14em] text-muted-foreground uppercase">
           {t("kicker")}
         </p>
-        <h1 className="font-serif text-3xl tracking-tight">
+        <h1 className="font-serif text-xl font-medium tracking-tight">
           {found.form.title}
         </h1>
         <p className="text-sm text-muted-foreground">{found.property.title}</p>

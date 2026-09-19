@@ -56,7 +56,18 @@ export async function embedProperty(propertyId: string) {
     row.status,
     address,
     row.rooms ? `${row.rooms} rooms` : "",
+    row.bedrooms != null ? `${row.bedrooms} bedrooms` : "",
+    row.bathrooms != null ? `${row.bathrooms} bathrooms` : "",
+    row.floor != null
+      ? row.totalFloors != null
+        ? `floor ${row.floor} of ${row.totalFloors}`
+        : `floor ${row.floor}`
+      : "",
+    row.yearBuilt ? `built ${row.yearBuilt}` : "",
+    row.condition ? `condition ${row.condition}` : "",
+    row.availableFrom ? `available from ${row.availableFrom}` : "",
     row.rentAmount ? `${row.rentAmount} ${row.currency}` : "",
+    row.duesAmount ? `dues ${row.duesAmount} ${row.currency}` : "",
     row.description ?? "",
   ]
     .filter(Boolean)

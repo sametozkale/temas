@@ -11,20 +11,32 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
- * Supabase Storage access (docs/02 stack, drizzle/0006).
+ * Supabase Storage access (docs/02 stack, drizzle/0006 + 0019).
  *
- * Buckets are private. Objects live under "<workspaceId>/<propertyId>/<uuid>.<ext>"
- * and storage RLS grants access to workspace members only, so every call here
+ * `property-media` and `documents` are private: objects live under
+ * "<workspaceId>/<propertyId>/<uuid>.<ext>" and storage RLS grants access to
+ * workspace members only. `avatars` is a public bucket
+ * (`profiles/{userId}/…`, `workspaces/{workspaceId}/…`). Every call here
  * runs with the *user's* session client — never the service role. Server
  * Actions still call `requireAbility()` before issuing any URL.
  */
 export {
+  AVATAR_MAX_BYTES,
+  AVATAR_MIME_TYPES,
   DOCUMENT_MAX_BYTES,
   MEDIA_MAX_BYTES,
   MEDIA_MIME_TYPES,
   STORAGE_BUCKETS,
+  mediaTypeOf,
+  type MediaMimeType,
   type StorageBucket,
 } from "./storage-constants";
+export {
+  buildProfileAvatarPath,
+  buildWorkspaceLogoPath,
+  isProfileAvatarPath,
+  isWorkspaceLogoPath,
+} from "./storage-paths";
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
@@ -58,7 +70,7 @@ export async function createSignedUpload(bucket: StorageBucket, path: string) {
   const { data, error } = await supabase.storage
     .from(bucket)
     .createSignedUploadUrl(path);
-  if (error || !data) {
+  if (error || !data?.path || !data.token) {
     throw new Error(error?.message ?? "Could not create upload URL");
   }
   return { path: data.path, token: data.token };
@@ -92,9 +104,14 @@ export async function createSignedDownloads(
   const { data, error } = await supabase.storage
     .from(bucket)
     .createSignedUrls(paths, SIGNED_URL_TTL_SECONDS);
-  if (error || !data) return map;
-  for (const item of data) {
+  if (error) {
+    console.error("[storage] signed downloads failed", error.message);
+  }
+  for (const item of data ?? []) {
     if (item.path && item.signedUrl) map.set(item.path, item.signedUrl);
+    else if (item.error) {
+      console.error("[storage] signed url failed", item.path, item.error);
+    }
   }
   return map;
 }

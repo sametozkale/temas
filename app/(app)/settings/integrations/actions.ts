@@ -12,10 +12,17 @@ import { ingestInboundEmail } from "@/lib/inbox/ingest";
 import { ingestInboundWhatsApp } from "@/lib/inbox/ingest-whatsapp";
 import { inboundInjectSchema, whatsappInjectSchema } from "@/lib/inbox/schema";
 import { ForbiddenError, requireAbility } from "@/lib/permissions";
-import { clientIp } from "@/lib/http";
-import { consumeRateLimit } from "@/lib/rate-limit";
+import { upsertWhatsAppConnection } from "@/lib/integrations/whatsapp/connect";
 
 export type IntegrationsState = ActionResult<{ conversationId?: string }>;
+
+function revalidateIntegrations() {
+  revalidatePath("/settings/integrations");
+  revalidatePath("/settings/integrations/gmail");
+  revalidatePath("/settings/integrations/whatsapp");
+  revalidatePath("/inbox");
+  revalidatePath("/", "layout");
+}
 
 async function consumeInjectLimit(workspaceId: string) {
   const ip = await clientIp();
@@ -43,6 +50,7 @@ export async function connectGmailDev(): Promise<IntegrationsState> {
   const [upserted] = await db
     .insert(integrations)
     .values({
+      userId: ctx.user.id,
       workspaceId: ctx.workspace.id,
       kind: "gmail",
       status: "connected",
@@ -50,8 +58,9 @@ export async function connectGmailDev(): Promise<IntegrationsState> {
       externalId: mailbox,
     })
     .onConflictDoUpdate({
-      target: [integrations.workspaceId, integrations.kind],
+      target: [integrations.userId, integrations.kind],
       set: {
+        workspaceId: ctx.workspace.id,
         status: "connected",
         credentials: { mode: "dev" },
         externalId: mailbox,
@@ -68,9 +77,7 @@ export async function connectGmailDev(): Promise<IntegrationsState> {
     data: { kind: "gmail", mode: "dev", email: mailbox },
   });
 
-  revalidatePath("/settings/integrations");
-  revalidatePath("/inbox");
-  revalidatePath("/", "layout");
+  revalidateIntegrations();
   return actionOk();
 }
 
@@ -87,10 +94,7 @@ export async function disconnectGmail(): Promise<IntegrationsState> {
     .select({ id: integrations.id })
     .from(integrations)
     .where(
-      and(
-        eq(integrations.workspaceId, ctx.workspace.id),
-        eq(integrations.kind, "gmail"),
-      ),
+      and(eq(integrations.userId, ctx.user.id), eq(integrations.kind, "gmail")),
     )
     .limit(1);
   if (!row) return actionError("not_found");
@@ -105,9 +109,7 @@ export async function disconnectGmail(): Promise<IntegrationsState> {
     data: { kind: "gmail" },
   });
 
-  revalidatePath("/settings/integrations");
-  revalidatePath("/inbox");
-  revalidatePath("/", "layout");
+  revalidateIntegrations();
   return actionOk();
 }
 
@@ -141,7 +143,7 @@ export async function injectInbound(
     .from(integrations)
     .where(
       and(
-        eq(integrations.workspaceId, ctx.workspace.id),
+        eq(integrations.userId, ctx.user.id),
         eq(integrations.kind, "gmail"),
         eq(integrations.status, "connected"),
       ),
@@ -151,7 +153,8 @@ export async function injectInbound(
 
   const from = `${parsed.data.fromName} <${parsed.data.fromEmail}>`;
   const result = await ingestInboundEmail({
-    workspaceId: ctx.workspace.id,
+    userId: ctx.user.id,
+    homeWorkspaceId: ctx.workspace.id,
     integrationId: gmail.id,
     from,
     subject: parsed.data.subject,
@@ -160,10 +163,23 @@ export async function injectInbound(
     sentAt: new Date(),
   });
 
-  revalidatePath("/inbox");
-  revalidatePath("/settings/integrations");
-  revalidatePath("/", "layout");
+  revalidateIntegrations();
   return actionOk({ conversationId: result.conversationId });
+}
+
+export async function isWhatsAppConnected(): Promise<boolean> {
+  const ctx = await getAppContext();
+  const [row] = await db
+    .select({ status: integrations.status })
+    .from(integrations)
+    .where(
+      and(
+        eq(integrations.userId, ctx.user.id),
+        eq(integrations.kind, "whatsapp"),
+      ),
+    )
+    .limit(1);
+  return row?.status === "connected";
 }
 
 export async function connectWhatsAppDev(): Promise<IntegrationsState> {
@@ -175,37 +191,13 @@ export async function connectWhatsAppDev(): Promise<IntegrationsState> {
     throw error;
   }
 
-  const [upserted] = await db
-    .insert(integrations)
-    .values({
-      workspaceId: ctx.workspace.id,
-      kind: "whatsapp",
-      status: "connected",
-      credentials: { mode: "dev" },
-      externalId: "dev",
-    })
-    .onConflictDoUpdate({
-      target: [integrations.workspaceId, integrations.kind],
-      set: {
-        status: "connected",
-        credentials: { mode: "dev" },
-        externalId: "dev",
-      },
-    })
-    .returning({ id: integrations.id });
-
-  await logActivity({
+  await upsertWhatsAppConnection({
+    userId: ctx.user.id,
     workspaceId: ctx.workspace.id,
-    actorId: ctx.user.id,
-    action: "integration.connected",
-    entity: "integration",
-    entityId: upserted!.id,
-    data: { kind: "whatsapp", mode: "dev" },
+    mode: "dev",
   });
 
-  revalidatePath("/settings/integrations");
-  revalidatePath("/inbox");
-  revalidatePath("/", "layout");
+  revalidateIntegrations();
   return actionOk();
 }
 
@@ -223,7 +215,7 @@ export async function disconnectWhatsApp(): Promise<IntegrationsState> {
     .from(integrations)
     .where(
       and(
-        eq(integrations.workspaceId, ctx.workspace.id),
+        eq(integrations.userId, ctx.user.id),
         eq(integrations.kind, "whatsapp"),
       ),
     )
@@ -240,9 +232,7 @@ export async function disconnectWhatsApp(): Promise<IntegrationsState> {
     data: { kind: "whatsapp" },
   });
 
-  revalidatePath("/settings/integrations");
-  revalidatePath("/inbox");
-  revalidatePath("/", "layout");
+  revalidateIntegrations();
   return actionOk();
 }
 
@@ -275,7 +265,7 @@ export async function injectWhatsApp(
     .from(integrations)
     .where(
       and(
-        eq(integrations.workspaceId, ctx.workspace.id),
+        eq(integrations.userId, ctx.user.id),
         eq(integrations.kind, "whatsapp"),
         eq(integrations.status, "connected"),
       ),
@@ -284,7 +274,8 @@ export async function injectWhatsApp(
   if (!whatsapp) return actionError("not_connected");
 
   const result = await ingestInboundWhatsApp({
-    workspaceId: ctx.workspace.id,
+    userId: ctx.user.id,
+    homeWorkspaceId: ctx.workspace.id,
     integrationId: whatsapp.id,
     from: parsed.data.fromPhone,
     profileName: parsed.data.fromName,
@@ -293,8 +284,6 @@ export async function injectWhatsApp(
     sentAt: new Date(),
   });
 
-  revalidatePath("/inbox");
-  revalidatePath("/settings/integrations");
-  revalidatePath("/", "layout");
+  revalidateIntegrations();
   return actionOk({ conversationId: result.conversationId });
 }

@@ -18,6 +18,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { FormField } from "@/lib/db/schema/forms";
@@ -103,7 +110,7 @@ export function FormBuilder({
             options:
               f.options && f.options.length >= 2
                 ? f.options
-                : ["Option A", "Option B"],
+                : [t("option_a"), t("option_b")],
           };
         }
         return f;
@@ -240,22 +247,26 @@ export function FormBuilder({
                 </Field>
                 <Field>
                   <FieldLabel>{t("type")}</FieldLabel>
-                  <select
-                    className="h-8 w-full rounded-lg border border-input bg-card px-2.5 text-sm"
+                  <Select
                     value={current.type}
                     disabled={!canManage}
-                    onChange={(e) =>
+                    onValueChange={(type) =>
                       patchField(current.key, {
-                        type: e.target.value as FormField["type"],
+                        type: type as FormField["type"],
                       })
                     }
                   >
-                    {FORM_FIELD_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {t(`types.${type}`)}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {FORM_FIELD_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {t(`types.${type}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </Field>
                 {current.type === "select" || current.type === "multiselect" ? (
                   <Field>

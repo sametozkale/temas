@@ -13,7 +13,7 @@ export default function PublicLayout({
             href="/"
             className="font-serif text-lg tracking-tight text-foreground"
           >
-            Havn
+            Temas
           </Link>
         </div>
       </header>

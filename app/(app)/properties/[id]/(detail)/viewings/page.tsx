@@ -52,16 +52,20 @@ export default async function ViewingsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { ctx, property } = await loadProperty(id);
-  const t = await getTranslations("viewings");
+  const [{ ctx, property }, t] = await Promise.all([
+    loadProperty(id),
+    getTranslations("viewings"),
+  ]);
   const canManage = can(ctx.membership.role, "calendar.manage");
 
   const { calendar, windows, slots, people, form } = await withUserContext(
     ctx.user.id,
     async (tx) => {
-      const calendar = await getCalendarByProperty(tx, id);
-      const people = await listPropertyPeopleForCalendar(tx, id);
-      const form = await getFormByProperty(tx, id);
+      const [calendar, people, form] = await Promise.all([
+        getCalendarByProperty(tx, id),
+        listPropertyPeopleForCalendar(tx, id),
+        getFormByProperty(tx, id),
+      ]);
       if (!calendar) {
         return { calendar: null, windows: [], slots: [], people, form };
       }
@@ -86,7 +90,7 @@ export default async function ViewingsPage({
     : null;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+    <div className="grid min-w-0 gap-6 @3xl:grid-cols-[minmax(0,1fr)_16rem]">
       <ViewingsPanel
         propertyId={id}
         calendar={

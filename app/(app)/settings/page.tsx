@@ -1,34 +1,38 @@
 import { eq } from "drizzle-orm";
+import { getTranslations } from "next-intl/server";
 
-import { getAppContext } from "@/lib/auth";
+import { AppearanceForm } from "@/components/settings/appearance-form";
+import { SettingsPage } from "@/components/settings/settings-chrome";
+import { getAppContext, initialsOf } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
-import { can } from "@/lib/permissions";
-import { AppearanceForm } from "@/components/settings/appearance-form";
 
-import { ProfileForm, WorkspaceForm } from "./general-forms";
+import { ProfileForm } from "./general-forms";
 
-export default async function SettingsGeneralPage() {
+export default async function SettingsProfilePage() {
+  const t = await getTranslations("settings");
   const ctx = await getAppContext();
   const [profile] = await db
-    .select({ fullName: profiles.fullName, phone: profiles.phone })
+    .select({
+      fullName: profiles.fullName,
+      phone: profiles.phone,
+      signature: profiles.aiSignature,
+    })
     .from(profiles)
     .where(eq(profiles.id, ctx.user.id))
     .limit(1);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <WorkspaceForm
-        name={ctx.workspace.name}
-        timezone={ctx.workspace.timezone}
-        canEdit={can(ctx.membership.role, "workspace.update")}
-      />
+    <SettingsPage title={t("nav.profile")}>
       <ProfileForm
         fullName={profile?.fullName ?? ""}
         phone={profile?.phone ?? ""}
+        signature={profile?.signature ?? ""}
         email={ctx.user.email ?? ""}
+        avatarUrl={ctx.profile.avatarUrl}
+        initials={initialsOf(profile?.fullName ?? ctx.user.email)}
       />
       <AppearanceForm />
-    </div>
+    </SettingsPage>
   );
 }

@@ -1,11 +1,14 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 
 import { Icon, Menu01Icon } from "@/components/icons";
+import { isPropertyRecordPath } from "@/components/properties/property-tabs";
 import {
   Sidebar,
+  type SidebarMembership,
   type SidebarShortcut,
   type SidebarUser,
   type SidebarWorkspace,
@@ -17,77 +20,99 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import type { UserMenuWorkspace } from "@/components/user-menu";
 import { cn } from "@/lib/utils";
+import { readLocalPreference, writeLocalPreference } from "@/lib/ui-preference";
 
-const COLLAPSE_KEY = "havn:sidebar-collapsed";
+const SIDEBAR_WIDTH_MOTION =
+  "transition-[width] duration-[280ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none";
 
 type AppShellProps = {
   workspace?: SidebarWorkspace;
   user?: SidebarUser;
-  workspaces?: UserMenuWorkspace[];
-  shortcuts?: SidebarShortcut[];
+  workspaces?: SidebarMembership[];
+  chats?: SidebarShortcut[];
   inboxUnread?: number;
   children: React.ReactNode;
 };
 
 /**
- * AppShell (docs/01 §6): fixed slim sidebar on ≥lg, sheet on smaller screens,
- * content centred at max-width 1080px. No top bar by default.
+ * AppShell (docs/01 §6): paper canvas, slim sidebar on ≥lg, white rounded
+ * body panel. Content is centred at max-width 1080px; Inbox is full-bleed;
+ * property record tabs and Calendar fill the panel height.
  */
 export function AppShell({
   workspace,
   user,
   workspaces,
-  shortcuts,
+  chats,
   inboxUnread = 0,
   children,
 }: AppShellProps) {
   const t = useTranslations("nav");
+  const pathname = usePathname();
+  const fullBleed = pathname === "/inbox" || pathname.startsWith("/inbox/");
+  const homeCanvas = pathname === "/home";
+  const wizardCanvas = pathname === "/properties/new";
+  const propertyRecord = isPropertyRecordPath(pathname);
+  const calendarCanvas = pathname === "/calendar";
   const [collapsed, setCollapsed] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [animateWidth, setAnimateWidth] = React.useState(false);
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     try {
-      setCollapsed(window.localStorage.getItem(COLLAPSE_KEY) === "1");
+      setCollapsed(readLocalPreference("sidebar-collapsed") === "1");
     } catch {
       // ignore storage errors (private mode etc.)
     }
+    let inner = 0;
+    const outer = window.requestAnimationFrame(() => {
+      inner = window.requestAnimationFrame(() => setAnimateWidth(true));
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
   }, []);
 
   function toggleCollapse() {
     setCollapsed((prev) => {
       const next = !prev;
-      try {
-        window.localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
-      } catch {
-        // ignore
-      }
+      writeLocalPreference("sidebar-collapsed", next ? "1" : "0");
       return next;
     });
   }
 
-  const sidebarProps = { workspace, user, workspaces, shortcuts, inboxUnread };
+  const sidebarProps = {
+    workspace,
+    user,
+    workspaces,
+    chats,
+    inboxUnread,
+  };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-svh bg-background">
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "sticky top-0 hidden h-screen shrink-0 border-r transition-[width] duration-150 lg:block",
-          collapsed ? "w-14" : "w-[232px]",
+          "hidden h-svh shrink-0 overflow-hidden lg:block",
+          animateWidth && SIDEBAR_WIDTH_MOTION,
+          collapsed ? "w-[42px]" : "w-[232px]",
         )}
       >
-        <Sidebar
-          {...sidebarProps}
-          collapsed={collapsed}
-          onToggleCollapse={toggleCollapse}
-        />
+        <div className="flex h-full w-[232px] flex-col">
+          <Sidebar
+            {...sidebarProps}
+            collapsed={collapsed}
+            onToggleCollapse={toggleCollapse}
+          />
+        </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {/* Mobile header */}
-        <header className="flex h-12 items-center gap-2 border-b px-3 lg:hidden">
+        <header className="flex h-12 shrink-0 items-center gap-2 px-3 lg:hidden">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button
@@ -115,9 +140,35 @@ export function AppShell({
           </span>
         </header>
 
-        <main className="mx-auto w-full max-w-[1080px] flex-1 px-4 py-8 md:px-8">
-          {children}
-        </main>
+        <div
+          className={cn(
+            "flex min-h-0 flex-1 flex-col p-2",
+            animateWidth &&
+              "transition-[padding] duration-[280ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none",
+            !collapsed && "lg:pl-0",
+          )}
+        >
+          <main className="@container relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-foreground/6 bg-card">
+            <div
+              className={cn(
+                "flex min-h-0 w-full flex-1 flex-col",
+                fullBleed
+                  ? "overflow-hidden"
+                  : homeCanvas
+                    ? "mx-auto max-w-[1080px] overflow-auto px-4 pt-6 pb-2 md:px-8"
+                    : wizardCanvas
+                      ? "mx-auto max-w-[1080px] overflow-hidden px-4 pt-6 pb-6 md:px-8"
+                      : propertyRecord
+                        ? "mx-auto max-w-[1080px] overflow-hidden px-4 pt-6 pb-0 md:px-8"
+                        : calendarCanvas
+                          ? "mx-auto max-w-[1080px] overflow-hidden px-4 pt-6 pb-4 md:px-8"
+                          : "mx-auto max-w-[1080px] overflow-auto px-4 pt-6 pb-8 md:px-8",
+              )}
+            >
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );

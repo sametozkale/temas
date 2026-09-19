@@ -11,10 +11,11 @@ import {
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ChevronDownIcon,
-} from "lucide-react";
+  ArrowDown01Icon,
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  Icon,
+} from "@/components/icons";
 
 function Calendar({
   className,
@@ -44,7 +45,7 @@ function Calendar({
       locale={locale}
       formatters={{
         formatMonthDropdown: (date) =>
-          date.toLocaleString(locale?.code, { month: "short" }),
+          date.toLocaleString(locale?.code ?? "en-GB", { month: "short" }),
         ...formatters,
       }}
       classNames={{
@@ -148,25 +149,14 @@ function Calendar({
             />
           );
         },
-        Chevron: ({ className, orientation, ...props }) => {
-          if (orientation === "left") {
-            return (
-              <ChevronLeftIcon className={cn("size-4", className)} {...props} />
-            );
-          }
-
-          if (orientation === "right") {
-            return (
-              <ChevronRightIcon
-                className={cn("size-4", className)}
-                {...props}
-              />
-            );
-          }
-
-          return (
-            <ChevronDownIcon className={cn("size-4", className)} {...props} />
-          );
+        Chevron: ({ className, orientation }) => {
+          const icon =
+            orientation === "left"
+              ? ArrowLeft01Icon
+              : orientation === "right"
+                ? ArrowRight01Icon
+                : ArrowDown01Icon;
+          return <Icon icon={icon} size={16} className={className} />;
         },
         DayButton: ({ ...props }) => (
           <CalendarDayButton locale={locale} {...props} />
@@ -206,7 +196,7 @@ function CalendarDayButton({
       ref={ref}
       variant="ghost"
       size="icon"
-      data-day={day.date.toLocaleDateString(locale?.code)}
+      data-day={day.date.toLocaleDateString(locale?.code ?? "en-GB")}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&

@@ -3,6 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { InboxReplyEmail } from "@/emails/inbox-reply";
 import { logActivity } from "@/lib/activity";
 import { acceptancePct } from "@/lib/ai/acceptance";
+import { enqueueExtractTasks } from "@/lib/ai/enqueue";
 import { db } from "@/lib/db";
 import {
   aiDrafts,
@@ -63,6 +64,7 @@ export async function sendInboxReply(input: {
       and(
         eq(conversations.id, input.conversationId),
         eq(conversations.workspaceId, input.workspaceId),
+        eq(conversations.userId, input.actorId),
       ),
     )
     .limit(1);
@@ -88,7 +90,7 @@ export async function sendInboxReply(input: {
     .orderBy(desc(messages.sentAt), desc(messages.createdAt))
     .limit(1);
 
-  const subjectBase = normalizeSubject(row.conversation.subject) || "Havn";
+  const subjectBase = normalizeSubject(row.conversation.subject) || "Temas";
   const subject = subjectBase.toLowerCase().startsWith("re:")
     ? subjectBase
     : `Re: ${subjectBase}`;
@@ -102,6 +104,11 @@ export async function sendInboxReply(input: {
     credentials: GmailCredentials;
     externalId: string | null;
   } | null = null;
+  const ownerFilter = [
+    eq(integrations.userId, row.conversation.userId),
+    eq(integrations.kind, "gmail"),
+    eq(integrations.status, "connected"),
+  ];
   if (row.conversation.integrationId) {
     const [found] = await db
       .select({
@@ -110,7 +117,30 @@ export async function sendInboxReply(input: {
         externalId: integrations.externalId,
       })
       .from(integrations)
-      .where(eq(integrations.id, row.conversation.integrationId))
+      .where(
+        and(
+          ...ownerFilter,
+          eq(integrations.id, row.conversation.integrationId),
+        ),
+      )
+      .limit(1);
+    if (found) {
+      integration = {
+        id: found.id,
+        credentials: asGmailCredentials(found.credentials),
+        externalId: found.externalId,
+      };
+    }
+  }
+  if (!integration) {
+    const [found] = await db
+      .select({
+        id: integrations.id,
+        credentials: integrations.credentials,
+        externalId: integrations.externalId,
+      })
+      .from(integrations)
+      .where(and(...ownerFilter))
       .limit(1);
     if (found) {
       integration = {
@@ -124,7 +154,7 @@ export async function sendInboxReply(input: {
   const fromAddress =
     integration?.externalId ??
     env().EMAIL_FROM.match(/<([^>]+)>/)?.[1] ??
-    "noreply@havn.local";
+    "noreply@temas.local";
   let externalId: string | null = null;
   let sentThreadId = threadId;
 
@@ -190,6 +220,7 @@ export async function sendInboxReply(input: {
   });
 
   await markDraftSent(input.conversationId, input.draftId, input.body);
+  await enqueueExtractTasks(input.conversationId);
 }
 
 async function sendWhatsAppReply(
@@ -232,6 +263,7 @@ async function sendWhatsAppReply(
     data: { channel: "whatsapp" },
   });
   await markDraftSent(input.conversationId, input.draftId, input.body);
+  await enqueueExtractTasks(input.conversationId);
 }
 
 async function markDraftSent(

@@ -1,6 +1,7 @@
 import { and, desc, eq, isNull } from "drizzle-orm";
 
 import { logActivity } from "@/lib/activity";
+import { enqueueExtractTasks } from "@/lib/ai/enqueue";
 import { db } from "@/lib/db";
 import {
   contacts,
@@ -10,10 +11,12 @@ import {
   propertyPeople,
 } from "@/lib/db/schema";
 import { matchContactId, matchPropertyId } from "@/lib/inbox/match";
+import { resolveMailboxWorkspace } from "@/lib/inbox/resolve-workspace";
 import { digitsPhone } from "@/lib/integrations/whatsapp/parse";
 
 export type InboundWhatsApp = {
-  workspaceId: string;
+  userId: string;
+  homeWorkspaceId: string;
   integrationId: string | null;
   from: string;
   profileName: string | null;
@@ -33,7 +36,7 @@ export async function ingestInboundWhatsApp(input: InboundWhatsApp) {
       .innerJoin(conversations, eq(conversations.id, messages.conversationId))
       .where(
         and(
-          eq(conversations.workspaceId, input.workspaceId),
+          eq(conversations.userId, input.userId),
           eq(messages.externalId, input.externalId),
         ),
       )
@@ -41,22 +44,33 @@ export async function ingestInboundWhatsApp(input: InboundWhatsApp) {
     if (dup) return { conversationId: dup.conversationId, created: false };
   }
 
-  const workspaceContacts = await db
-    .select({
-      id: contacts.id,
-      email: contacts.email,
-      phone: contacts.phone,
-    })
-    .from(contacts)
-    .where(eq(contacts.workspaceId, input.workspaceId));
+  const haystack = `${input.profileName ?? ""} ${input.body}`;
+  const resolved = await resolveMailboxWorkspace({
+    userId: input.userId,
+    homeWorkspaceId: input.homeWorkspaceId,
+    phone: digits,
+    haystack,
+  });
+  const workspaceId = resolved.workspaceId;
 
-  let contactId = matchContactId(workspaceContacts, null, digits);
+  let contactId = resolved.contactId;
+  if (!contactId) {
+    const workspaceContacts = await db
+      .select({
+        id: contacts.id,
+        email: contacts.email,
+        phone: contacts.phone,
+      })
+      .from(contacts)
+      .where(eq(contacts.workspaceId, workspaceId));
+    contactId = matchContactId(workspaceContacts, null, digits);
+  }
   if (!contactId) {
     try {
       const [created] = await db
         .insert(contacts)
         .values({
-          workspaceId: input.workspaceId,
+          workspaceId,
           fullName: input.profileName ?? digits,
           phone: `+${digits}`,
         })
@@ -70,7 +84,7 @@ export async function ingestInboundWhatsApp(input: InboundWhatsApp) {
           phone: contacts.phone,
         })
         .from(contacts)
-        .where(eq(contacts.workspaceId, input.workspaceId))
+        .where(eq(contacts.workspaceId, workspaceId))
         .limit(50);
       contactId = matchContactId(again, null, digits);
     }
@@ -82,7 +96,8 @@ export async function ingestInboundWhatsApp(input: InboundWhatsApp) {
     .from(conversations)
     .where(
       and(
-        eq(conversations.workspaceId, input.workspaceId),
+        eq(conversations.userId, input.userId),
+        eq(conversations.workspaceId, workspaceId),
         eq(conversations.contactId, contactId),
         eq(conversations.channel, "whatsapp"),
       ),
@@ -90,7 +105,6 @@ export async function ingestInboundWhatsApp(input: InboundWhatsApp) {
     .orderBy(desc(conversations.lastMessageAt))
     .limit(1);
 
-  const haystack = `${input.profileName ?? ""} ${input.body}`;
   const linked = await db
     .select({ propertyId: propertyPeople.propertyId })
     .from(propertyPeople)
@@ -100,7 +114,7 @@ export async function ingestInboundWhatsApp(input: InboundWhatsApp) {
     .from(properties)
     .where(
       and(
-        eq(properties.workspaceId, input.workspaceId),
+        eq(properties.workspaceId, workspaceId),
         isNull(properties.deletedAt),
       ),
     );
@@ -116,7 +130,8 @@ export async function ingestInboundWhatsApp(input: InboundWhatsApp) {
     const [created] = await db
       .insert(conversations)
       .values({
-        workspaceId: input.workspaceId,
+        workspaceId,
+        userId: input.userId,
         integrationId: input.integrationId,
         channel: "whatsapp",
         contactId,
@@ -149,13 +164,19 @@ export async function ingestInboundWhatsApp(input: InboundWhatsApp) {
   });
 
   await logActivity({
-    workspaceId: input.workspaceId,
+    workspaceId,
     propertyId,
     action: "inbox.message_received",
     entity: "conversation",
     entityId: conversationId,
     data: { channel: "whatsapp", from: input.from },
   });
+
+  try {
+    await enqueueExtractTasks(conversationId);
+  } catch {
+    // Extraction is best-effort; ingest already succeeded.
+  }
 
   return { conversationId, created: true };
 }

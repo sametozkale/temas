@@ -25,15 +25,21 @@ import {
   workspaces,
 } from "@/lib/db/schema";
 import { env } from "@/lib/env";
-import { STAGE_REVIEWING } from "@/lib/pipeline/defaults";
+import {
+  STAGE_NEW,
+  STAGE_REVIEWING,
+  STAGE_SHORTLISTED,
+} from "@/lib/pipeline/defaults";
 import { ensurePipeline } from "@/lib/pipeline/ensure";
 import { secureToken } from "@/lib/slug";
 import { minutesToTime } from "@/lib/slots";
 import { materializeCalendar } from "@/lib/viewings/materialize";
 
-export const DEMO_SLUG = "havn-demo";
-export const DEMO_EMAIL = "demo@havn.test";
+export const DEMO_SLUG = "temas-demo";
+export const DEMO_EMAIL = "demo@temas.test";
 export const DEMO_NAME = "Demo Agent";
+export const DEMO_AGENT_EMAIL = "agent@temas.test";
+export const DEMO_AGENT_NAME = "Leyla Agent";
 export const DEMO_TZ = "Europe/Istanbul";
 
 export type DemoSeedResult = {
@@ -53,7 +59,17 @@ type DemoProperty = {
   type: "apartment" | "house";
   status: "active" | "viewing_in_progress" | "application_review" | "rented";
   rooms: string;
+  bedrooms: number;
+  bathrooms: number;
+  areaM2: string;
+  floor: number | null;
+  totalFloors: number | null;
+  yearBuilt: number;
+  condition: "new" | "renovated" | "good" | "fair" | "needs_work";
+  availableFrom: string | null;
   rentAmount: string;
+  duesAmount: string | null;
+  features: Record<string, boolean>;
   district: string;
   line: string;
   publishCalendar: boolean;
@@ -66,7 +82,23 @@ const DEMO_PROPERTIES: DemoProperty[] = [
     type: "apartment",
     status: "active",
     rooms: "2+1",
+    bedrooms: 2,
+    bathrooms: 1,
+    areaM2: "85",
+    floor: 4,
+    totalFloors: 6,
+    yearBuilt: 2014,
+    condition: "renovated",
+    availableFrom: "2026-10-01",
     rentAmount: "45000",
+    duesAmount: "2500",
+    features: {
+      furnished: true,
+      elevator: true,
+      balcony: true,
+      dishwasher: true,
+      heating_central: true,
+    },
     district: "Kadıköy",
     line: "Moda Caddesi 12",
     publishCalendar: true,
@@ -77,7 +109,22 @@ const DEMO_PROPERTIES: DemoProperty[] = [
     type: "apartment",
     status: "viewing_in_progress",
     rooms: "1+1",
+    bedrooms: 1,
+    bathrooms: 1,
+    areaM2: "62",
+    floor: 2,
+    totalFloors: 5,
+    yearBuilt: 2008,
+    condition: "good",
+    availableFrom: "2026-09-15",
     rentAmount: "38000",
+    duesAmount: "1800",
+    features: {
+      furnished: true,
+      elevator: true,
+      parking: true,
+      internet: true,
+    },
     district: "Beşiktaş",
     line: "Cihannüma Sokak 8",
     publishCalendar: false,
@@ -88,7 +135,23 @@ const DEMO_PROPERTIES: DemoProperty[] = [
     type: "house",
     status: "application_review",
     rooms: "3+1",
+    bedrooms: 3,
+    bathrooms: 2,
+    areaM2: "140",
+    floor: null,
+    totalFloors: 2,
+    yearBuilt: 1998,
+    condition: "good",
+    availableFrom: null,
     rentAmount: "62000",
+    duesAmount: null,
+    features: {
+      garden: true,
+      parking: true,
+      terrace: true,
+      pets_allowed: true,
+      washing_machine: true,
+    },
     district: "Üsküdar",
     line: "Salacak Sahil 4",
     publishCalendar: false,
@@ -99,7 +162,17 @@ const DEMO_PROPERTIES: DemoProperty[] = [
     type: "apartment",
     status: "rented",
     rooms: "1+0",
+    bedrooms: 1,
+    bathrooms: 1,
+    areaM2: "38",
+    floor: 5,
+    totalFloors: 7,
+    yearBuilt: 1972,
+    condition: "fair",
+    availableFrom: null,
     rentAmount: "28000",
+    duesAmount: "900",
+    features: { furnished: true, elevator: true },
     district: "Beyoğlu",
     line: "Sıraselviler 90",
     publishCalendar: false,
@@ -128,7 +201,7 @@ function adminClient() {
   });
 }
 
-async function destroyDemo(workspaceId: string | null, userId: string | null) {
+async function destroyDemo(workspaceId: string | null, userIds: string[]) {
   if (workspaceId) {
     const propRows = await db
       .select({ id: properties.id })
@@ -140,7 +213,7 @@ async function destroyDemo(workspaceId: string | null, userId: string | null) {
     }
     await db.delete(workspaces).where(eq(workspaces.id, workspaceId));
   }
-  if (userId) {
+  for (const userId of userIds) {
     await db.execute(sql`delete from auth.users where id = ${userId}::uuid`);
   }
 }
@@ -211,6 +284,7 @@ export async function seedDemo(options: {
     .where(eq(workspaces.slug, DEMO_SLUG))
     .limit(1);
   const existingUser = await authUserIdByEmail(DEMO_EMAIL);
+  const existingAgent = await authUserIdByEmail(DEMO_AGENT_EMAIL);
 
   if (existingWs && !options.force) {
     const tokens = await tokensForWorkspace(existingWs.id);
@@ -226,7 +300,10 @@ export async function seedDemo(options: {
   }
 
   if (options.force) {
-    await destroyDemo(existingWs?.id ?? null, existingUser);
+    await destroyDemo(
+      existingWs?.id ?? null,
+      [existingUser, existingAgent].filter((id): id is string => Boolean(id)),
+    );
   }
 
   const admin = adminClient();
@@ -243,10 +320,26 @@ export async function seedDemo(options: {
     userId = created.data.user.id;
   }
 
+  let agentUserId = await authUserIdByEmail(DEMO_AGENT_EMAIL);
+  if (!agentUserId) {
+    const createdAgent = await admin.auth.admin.createUser({
+      email: DEMO_AGENT_EMAIL,
+      email_confirm: true,
+      user_metadata: { full_name: DEMO_AGENT_NAME },
+    });
+    if (createdAgent.error || !createdAgent.data.user) {
+      throw new Error(
+        createdAgent.error?.message ?? "demo_agent_create_failed",
+      );
+    }
+    agentUserId = createdAgent.data.user.id;
+  }
+
   const [ws] = await db
     .insert(workspaces)
     .values({
-      name: "Havn Demo",
+      name: "Temas Demo",
+      legalName: "Temas Demo Gayrimenkul Ltd.",
       slug: DEMO_SLUG,
       timezone: DEMO_TZ,
     })
@@ -258,6 +351,11 @@ export async function seedDemo(options: {
     userId,
     role: "owner",
   });
+  await db.insert(workspaceMembers).values({
+    workspaceId: ws.id,
+    userId: agentUserId,
+    role: "agent",
+  });
 
   await db
     .insert(profiles)
@@ -266,8 +364,15 @@ export async function seedDemo(options: {
       target: profiles.id,
       set: { fullName: DEMO_NAME },
     });
+  await db
+    .insert(profiles)
+    .values({ id: agentUserId, fullName: DEMO_AGENT_NAME })
+    .onConflictDoUpdate({
+      target: profiles.id,
+      set: { fullName: DEMO_AGENT_NAME },
+    });
 
-  const [agentContact] = await db
+  const [ownerContact] = await db
     .insert(contacts)
     .values({
       workspaceId: ws.id,
@@ -277,22 +382,46 @@ export async function seedDemo(options: {
       emailVerified: true,
     })
     .returning({ id: contacts.id });
+  const [listingAgentContact] = await db
+    .insert(contacts)
+    .values({
+      workspaceId: ws.id,
+      userId: agentUserId,
+      fullName: DEMO_AGENT_NAME,
+      email: DEMO_AGENT_EMAIL,
+      emailVerified: true,
+    })
+    .returning({ id: contacts.id });
 
   await ensureContractTemplates(db, ws.id);
 
   let bookingPropertyId: string | null = null;
   let formPropertyId: string | null = null;
 
-  for (const spec of DEMO_PROPERTIES) {
+  for (const [index, spec] of DEMO_PROPERTIES.entries()) {
+    const assignedUserId = index % 2 === 0 ? userId : agentUserId;
+    const assignedContactId =
+      index % 2 === 0 ? ownerContact!.id : listingAgentContact!.id;
     const [property] = await db
       .insert(properties)
       .values({
         workspaceId: ws.id,
+        assignedUserId,
         type: spec.type,
         title: spec.title,
         status: spec.status,
         rooms: spec.rooms,
+        bedrooms: spec.bedrooms,
+        bathrooms: spec.bathrooms,
+        areaM2: spec.areaM2,
+        floor: spec.floor,
+        totalFloors: spec.totalFloors,
+        yearBuilt: spec.yearBuilt,
+        condition: spec.condition,
+        availableFrom: spec.availableFrom,
         rentAmount: spec.rentAmount,
+        duesAmount: spec.duesAmount,
+        features: spec.features,
         currency: "TRY",
         timezone: DEMO_TZ,
         address: {
@@ -331,7 +460,7 @@ export async function seedDemo(options: {
     await db.insert(availabilityWindows).values({
       viewingCalendarId: calendar!.id,
       participantKind: "agent",
-      contactId: agentContact!.id,
+      contactId: assignedContactId,
       rrule: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR",
       startTime: minutesToTime(10 * 60),
       endTime: minutesToTime(18 * 60),
@@ -401,6 +530,7 @@ export async function seedDemo(options: {
       .insert(conversations)
       .values({
         workspaceId: ws.id,
+        userId,
         channel: "email",
         contactId: enquiry!.id,
         propertyId: bookingPropertyId,
@@ -422,6 +552,7 @@ export async function seedDemo(options: {
       .insert(conversations)
       .values({
         workspaceId: ws.id,
+        userId: agentUserId,
         channel: "whatsapp",
         contactId: enquiry!.id,
         propertyId: bookingPropertyId,
@@ -453,38 +584,92 @@ export async function seedDemo(options: {
 
   if (formPropertyId) {
     const pipeline = await ensurePipeline(db, formPropertyId);
-    const reviewing = pipeline.stages.find((s) => s.name === STAGE_REVIEWING);
-    const [applicant] = await db
-      .insert(contacts)
-      .values({
-        workspaceId: ws.id,
+    const stageId = (name: string) =>
+      pipeline.stages.find((s) => s.name === name)?.id ??
+      pipeline.stages[0]?.id;
+
+    const families = [
+      {
         fullName: "Selin Arslan",
         email: "selin.arslan@example.com",
         phone: "+905551110003",
-      })
-      .returning({ id: contacts.id });
-    const [submission] = await db
-      .insert(formSubmissions)
-      .values({
-        formId: pipeline.form.id,
-        contactId: applicant!.id,
+        stage: STAGE_REVIEWING,
+        score: 82,
+        aiSummary:
+          "Arslan household of two. Stable income, no pets. Strong shortlist.",
         answers: {
           income: 85000,
           employment: "Product designer",
           move_in: "2026-10-01",
           pets: "No",
           occupants: 2,
+          household: [{ name: "Kerem Arslan", relation: "partner" }],
         },
-      })
-      .returning({ id: formSubmissions.id });
-    await db.insert(applications).values({
-      propertyId: formPropertyId,
-      contactId: applicant!.id,
-      submissionId: submission!.id,
-      stageId: reviewing?.id ?? pipeline.stages[0]?.id,
-      score: 82,
-      aiSummary: "Stable income, two occupants, no pets. Strong shortlist.",
-    });
+      },
+      {
+        fullName: "Deniz Yılmaz",
+        email: "deniz.yilmaz@example.com",
+        phone: "+905551110004",
+        stage: STAGE_SHORTLISTED,
+        score: 91,
+        aiSummary:
+          "Yılmaz family of three. Dual income, child in local school. Owner-ready.",
+        answers: {
+          income: 120000,
+          employment: "Software engineer",
+          move_in: "2026-09-15",
+          pets: "No",
+          occupants: 3,
+          household: [
+            { name: "Elif Yılmaz", relation: "partner" },
+            { name: "Can Yılmaz", relation: "child" },
+          ],
+        },
+      },
+      {
+        fullName: "Mert Kaya",
+        email: "mert.kaya@example.com",
+        phone: "+905551110005",
+        stage: STAGE_NEW,
+        score: 64,
+        aiSummary: "Applying alone. Income covers rent; timing is flexible.",
+        answers: {
+          income: 48000,
+          employment: "Freelance photographer",
+          move_in: "2026-11-01",
+          pets: "Yes",
+          occupants: 1,
+        },
+      },
+    ] as const;
+
+    for (const family of families) {
+      const [applicant] = await db
+        .insert(contacts)
+        .values({
+          workspaceId: ws.id,
+          fullName: family.fullName,
+          email: family.email,
+          phone: family.phone,
+        })
+        .returning({ id: contacts.id });
+      const [submission] = await db
+        .insert(formSubmissions)
+        .values({
+          formId: pipeline.form.id,
+          contactId: applicant!.id,
+          answers: family.answers,
+        })
+        .returning({ id: formSubmissions.id });
+      await db.insert(applications).values({
+        propertyId: formPropertyId,
+        contactId: applicant!.id,
+        submissionId: submission!.id,
+        stageId: stageId(family.stage),
+        score: family.score,
+        aiSummary: family.aiSummary,
+      });
+    }
   }
 
   const tokens = await tokensForWorkspace(ws.id);

@@ -11,11 +11,11 @@ export function buildViewingIcs(input: {
       .toISOString()
       .replace(/[-:]/g, "")
       .replace(/\.\d{3}/, "");
-  const uid = `${stamp(input.startsAt)}-${Math.random().toString(36).slice(2)}@havn`;
+  const uid = `${stamp(input.startsAt)}-${Math.random().toString(36).slice(2)}@temas`;
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Havn//Viewing//EN",
+    "PRODID:-//Temas//Viewing//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",

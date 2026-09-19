@@ -22,6 +22,7 @@ import {
   inventoryItems,
   messages,
   pipelineStages,
+  profiles,
   properties,
   propertyPeople,
   reminders,
@@ -32,7 +33,11 @@ import type { AskSource } from "@/lib/ai/types";
 
 export type { AskSource };
 
-export function createAskTools(workspaceId: string, timeZone: string) {
+export function createAskTools(
+  workspaceId: string,
+  timeZone: string,
+  userId: string,
+) {
   return {
     searchProperties: tool({
       description: "Search properties by title, address, status or rent.",
@@ -62,6 +67,7 @@ export function createAskTools(workspaceId: string, timeZone: string) {
             title: properties.title,
             status: properties.status,
             rentAmount: properties.rentAmount,
+            depositAmount: properties.depositAmount,
             currency: properties.currency,
           })
           .from(properties)
@@ -69,7 +75,10 @@ export function createAskTools(workspaceId: string, timeZone: string) {
           .orderBy(desc(properties.updatedAt))
           .limit(12);
         return {
-          properties: rows,
+          properties: rows.map((p) => ({
+            ...p,
+            href: `/properties/${p.id}`,
+          })),
           sources: rows.map((p): AskSource => ({
             kind: "property",
             href: `/properties/${p.id}`,
@@ -89,9 +98,21 @@ export function createAskTools(workspaceId: string, timeZone: string) {
             status: properties.status,
             description: properties.description,
             rentAmount: properties.rentAmount,
+            depositAmount: properties.depositAmount,
+            duesAmount: properties.duesAmount,
+            areaM2: properties.areaM2,
             rooms: properties.rooms,
+            bedrooms: properties.bedrooms,
+            bathrooms: properties.bathrooms,
+            floor: properties.floor,
+            totalFloors: properties.totalFloors,
+            yearBuilt: properties.yearBuilt,
+            condition: properties.condition,
+            availableFrom: properties.availableFrom,
+            assignedAgentName: profiles.fullName,
           })
           .from(properties)
+          .leftJoin(profiles, eq(profiles.id, properties.assignedUserId))
           .where(
             and(
               eq(properties.id, id),
@@ -112,20 +133,29 @@ export function createAskTools(workspaceId: string, timeZone: string) {
           .select({
             relation: propertyPeople.relation,
             name: contacts.fullName,
+            id: contacts.id,
           })
           .from(propertyPeople)
           .innerJoin(contacts, eq(contacts.id, propertyPeople.contactId))
           .where(eq(propertyPeople.propertyId, id));
         return {
-          property,
+          property: { ...property, href: `/properties/${id}` },
           inventory,
-          people,
+          people: people.map((person) => ({
+            ...person,
+            href: `/properties/${id}/people`,
+          })),
           sources: [
             {
               kind: "property" as const,
               href: `/properties/${id}`,
               title: property.title,
             },
+            ...people.map((person): AskSource => ({
+              kind: "person",
+              href: `/properties/${id}/people`,
+              title: person.name,
+            })),
           ],
         };
       },
@@ -160,6 +190,7 @@ export function createAskTools(workspaceId: string, timeZone: string) {
             startsAt: viewingSlots.startsAt,
             propertyId: properties.id,
             propertyTitle: properties.title,
+            contactId: contacts.id,
             prospectName: contacts.fullName,
           })
           .from(bookings)
@@ -176,6 +207,8 @@ export function createAskTools(workspaceId: string, timeZone: string) {
           viewings: rows.map((r) => ({
             ...r,
             startsAt: r.startsAt.toISOString(),
+            href: `/properties/${r.propertyId}/viewings`,
+            prospectHref: `/properties/${r.propertyId}/people`,
           })),
           sources: [
             {
@@ -223,7 +256,10 @@ export function createAskTools(workspaceId: string, timeZone: string) {
           .limit(30);
         return {
           count: rows.length,
-          applications: rows,
+          applications: rows.map((r) => ({
+            ...r,
+            href: `/properties/${r.propertyId}/applications`,
+          })),
           sources: uniqueSources(
             rows.map((r) => ({
               kind: "application" as const,
@@ -242,7 +278,10 @@ export function createAskTools(workspaceId: string, timeZone: string) {
       }),
       execute: async ({ query, propertyId }) => {
         const like = `%${query.replace(/[%_]/g, "\\$&")}%`;
-        const where = [eq(conversations.workspaceId, workspaceId)];
+        const where = [
+          eq(conversations.workspaceId, workspaceId),
+          eq(conversations.userId, userId),
+        ];
         if (propertyId) where.push(eq(conversations.propertyId, propertyId));
         where.push(
           or(
@@ -264,7 +303,10 @@ export function createAskTools(workspaceId: string, timeZone: string) {
           .orderBy(desc(conversations.lastMessageAt))
           .limit(12);
         return {
-          conversations: rows,
+          conversations: rows.map((c) => ({
+            ...c,
+            href: `/inbox/${c.id}`,
+          })),
           sources: rows.map((c): AskSource => ({
             kind: "conversation",
             href: `/inbox/${c.id}`,
@@ -285,6 +327,9 @@ export function createAskTools(workspaceId: string, timeZone: string) {
         } else if (status === "delivered") {
           where.push(sql`${reminders.deliveredAt} is not null`);
         }
+        where.push(
+          sql`(${reminders.kind} is distinct from 'unanswered_message' or ${reminders.userId} = ${userId})`,
+        );
         const rows = await db
           .select({
             id: reminders.id,

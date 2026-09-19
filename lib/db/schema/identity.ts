@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
-  boolean,
   check,
+  jsonb,
   pgPolicy,
   pgTable,
   text,
@@ -10,6 +10,10 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import {
+  DEFAULT_NOTIFICATION_PREFS,
+  type NotificationPrefs,
+} from "@/lib/notifications/prefs";
 import {
   INVITE_ROLES,
   WORKSPACE_ROLES,
@@ -39,14 +43,15 @@ export const profiles = pgTable(
     phone: text("phone"),
     avatarUrl: text("avatar_url"),
     locale: text("locale").notNull().default("en"),
-    /** Settings > AI: signature appended to inbox drafts. */
+    /** Settings > Profile: sign-off appended to AI inbox drafts. */
     aiSignature: text("ai_signature"),
-    aiLanguage: text("ai_language").notNull().default("en"),
+    aiLanguage: text("ai_language").notNull().default("auto"),
     aiTone: text("ai_tone").notNull().default("friendly"),
-    /** Settings > Notifications: daily reminder digest (docs/05 §4). */
-    reminderDigestEnabled: boolean("reminder_digest_enabled")
+    /** Settings > Notifications: per-type email / WhatsApp matrix. */
+    notificationPrefs: jsonb("notification_prefs")
+      .$type<NotificationPrefs>()
       .notNull()
-      .default(true),
+      .default(DEFAULT_NOTIFICATION_PREFS),
     ...timestamps,
   },
   (t) => [
@@ -73,6 +78,8 @@ export const workspaces = pgTable(
     slug: text("slug").notNull().unique(),
     logoUrl: text("logo_url"),
     timezone: text("timezone").notNull().default("Europe/Istanbul"),
+    /** Legal / official company name on contracts; team still sees `name`. */
+    legalName: text("legal_name"),
     plan: text("plan").notNull().default("free"),
   },
   (t) => [

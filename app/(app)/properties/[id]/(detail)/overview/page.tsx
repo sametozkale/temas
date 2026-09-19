@@ -1,13 +1,18 @@
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { Icon, Image02Icon } from "@/components/icons";
+import { MediaManager } from "@/components/properties/media-manager";
 import { PropertyStatusBadge } from "@/components/properties/property-badges";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { withUserContext } from "@/lib/db";
-import { formatMoney, formatNumber } from "@/lib/format";
+import {
+  formatDate,
+  formatFloor,
+  formatMoney,
+  formatNumber,
+  formatPricePerM2,
+} from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { listMedia } from "@/lib/properties/queries";
 import { FEATURE_KEYS } from "@/lib/properties/schema";
@@ -23,8 +28,10 @@ export default async function OverviewPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { ctx, property } = await loadProperty(id);
-  const t = await getTranslations("properties");
+  const [{ ctx, property }, t] = await Promise.all([
+    loadProperty(id),
+    getTranslations("properties"),
+  ]);
   const canWrite = can(ctx.membership.role, "properties.write");
 
   const media = await withUserContext(ctx.user.id, (tx) => listMedia(tx, id));
@@ -52,13 +59,47 @@ export default async function OverviewPage({
       value: formatMoney(property.depositAmount, property.currency),
     },
     {
+      label: t("overview.dues"),
+      value: formatMoney(property.duesAmount, property.currency),
+    },
+    {
+      label: t("overview.rent_per_m2"),
+      value: formatPricePerM2(
+        property.rentAmount,
+        property.areaM2,
+        property.currency,
+      ),
+    },
+    {
       label: t("overview.area"),
       value: property.areaM2 ? `${formatNumber(property.areaM2)} m²` : null,
     },
     { label: t("overview.rooms"), value: property.rooms },
     {
+      label: t("overview.bedrooms"),
+      value: property.bedrooms != null ? String(property.bedrooms) : null,
+    },
+    {
+      label: t("overview.bathrooms"),
+      value: property.bathrooms != null ? String(property.bathrooms) : null,
+    },
+    {
       label: t("overview.floor"),
-      value: property.floor !== null ? String(property.floor) : null,
+      value: formatFloor(property.floor, property.totalFloors),
+    },
+    {
+      label: t("overview.year_built"),
+      value: property.yearBuilt != null ? String(property.yearBuilt) : null,
+    },
+    {
+      label: t("overview.condition"),
+      value: property.condition ? t(`conditions.${property.condition}`) : null,
+    },
+    {
+      label: t("overview.available_from"),
+      value: property.availableFrom
+        ? formatDate(`${property.availableFrom}T12:00:00`)
+        : null,
     },
     { label: t("overview.type"), value: t(`types.${property.type}`) },
     { label: t("overview.timezone"), value: property.timezone },
@@ -70,18 +111,13 @@ export default async function OverviewPage({
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <div className="space-y-6">
         <Card>
-          <CardHeader className="flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle>{t("overview.photos")}</CardTitle>
-            {canWrite ? (
-              <Button variant="soft" size="xs" asChild>
-                <Link href={`/properties/${id}/edit#photos`}>
-                  {t("overview.add_photos")}
-                </Link>
-              </Button>
-            ) : null}
           </CardHeader>
           <CardContent>
-            {photos.length === 0 ? (
+            {canWrite ? (
+              <MediaManager propertyId={id} items={photos} canEdit />
+            ) : photos.length === 0 ? (
               <div className="flex aspect-[16/7] items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
                 <span className="inline-flex items-center gap-2">
                   <Icon icon={Image02Icon} size={16} />

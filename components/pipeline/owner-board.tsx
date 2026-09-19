@@ -9,10 +9,12 @@ import { submitOwnerDecision } from "@/app/(public)/o/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { isHouseholdAnswerKey } from "@/lib/pipeline/household";
 
 export type OwnerCard = {
   id: string;
   fullName: string;
+  memberLine: string | null;
   email: string | null;
   stageName: string | null;
   score: number | null;
@@ -68,7 +70,11 @@ export function OwnerBoard({
           <CardHeader className="flex-row items-start justify-between gap-2">
             <div>
               <CardTitle>{card.fullName}</CardTitle>
-              {card.email ? (
+              {card.memberLine ? (
+                <p className="text-xs text-muted-foreground">
+                  {card.memberLine}
+                </p>
+              ) : card.email ? (
                 <p className="text-xs text-muted-foreground">{card.email}</p>
               ) : null}
             </div>
@@ -89,6 +95,7 @@ export function OwnerBoard({
             </p>
             <dl className="space-y-1 text-sm">
               {Object.entries(card.answers)
+                .filter(([key]) => !isHouseholdAnswerKey(key))
                 .slice(0, 6)
                 .map(([key, value]) => (
                   <div key={key} className="flex justify-between gap-4">

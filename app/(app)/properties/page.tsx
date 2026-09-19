@@ -23,7 +23,9 @@ import {
   type PropertyType,
 } from "@/lib/db/schema/properties";
 import { can } from "@/lib/permissions";
+import { listAssignableMembers } from "@/lib/properties/assignment";
 import { listProperties } from "@/lib/properties/queries";
+import { uuidSchema } from "@/lib/properties/schema";
 import { STORAGE_BUCKETS, createSignedDownloads } from "@/lib/storage";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -37,9 +39,11 @@ export default async function PropertiesPage({
 }: {
   searchParams: SearchParams;
 }) {
-  const ctx = await getAppContext();
-  const t = await getTranslations("properties");
-  const sp = await searchParams;
+  const [ctx, t, sp] = await Promise.all([
+    getAppContext(),
+    getTranslations("properties"),
+    searchParams,
+  ]);
 
   const q = first(sp.q)?.trim() || undefined;
   const typeParam = first(sp.type);
@@ -53,11 +57,27 @@ export default async function PropertiesPage({
       ? (statusParam as PropertyStatus | "listed")
       : undefined;
   const view: PropertiesView = first(sp.view) === "list" ? "list" : "grid";
-  const hasFilters = Boolean(q || type || status);
+  const agentParam = first(sp.agent);
+  const assignedUserId =
+    agentParam === "me"
+      ? ctx.user.id
+      : agentParam && uuidSchema.safeParse(agentParam).success
+        ? agentParam
+        : undefined;
+  const hasFilters = Boolean(q || type || status || assignedUserId);
 
-  const rows = await withUserContext(ctx.user.id, (tx) =>
-    listProperties(tx, ctx.workspace.id, { q, type, status }),
-  );
+  const { rows, agents } = await withUserContext(ctx.user.id, async (tx) => {
+    const [rows, agents] = await Promise.all([
+      listProperties(tx, ctx.workspace.id, {
+        q,
+        type,
+        status,
+        assignedUserId,
+      }),
+      listAssignableMembers(tx, ctx.workspace.id),
+    ]);
+    return { rows, agents };
+  });
   const covers = await createSignedDownloads(
     STORAGE_BUCKETS.media,
     rows.map((r) => r.coverPath).filter((p): p is string => Boolean(p)),
@@ -73,6 +93,7 @@ export default async function PropertiesPage({
     areaM2: r.areaM2,
     rooms: r.rooms,
     updatedAt: r.updatedAt,
+    assignedAgentName: r.assignedAgentName,
     coverUrl: r.coverPath ? (covers.get(r.coverPath) ?? null) : null,
   }));
 
@@ -99,7 +120,15 @@ export default async function PropertiesPage({
         }
       />
 
-      <PropertiesToolbar view={view} hasFilters={hasFilters} />
+      <PropertiesToolbar
+        view={view}
+        hasFilters={hasFilters}
+        agents={agents.map((a) => ({
+          userId: a.userId,
+          name: a.fullName ?? a.userId,
+        }))}
+        currentUserId={ctx.user.id}
+      />
 
       {items.length === 0 ? (
         hasFilters ? (

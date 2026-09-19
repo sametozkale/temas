@@ -10,7 +10,7 @@ import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
 import { applications, contacts, formSubmissions } from "@/lib/db/schema";
 import { env } from "@/lib/env";
-import { sendEmail } from "@/lib/integrations/resend";
+import { notifyWorkspaceStaff } from "@/lib/notifications/dispatch";
 import { formCompletionCookie, parseFormAnswers } from "@/lib/pipeline/answers";
 import { STAGE_NEW, STAGE_RENTED } from "@/lib/pipeline/defaults";
 import { ensurePipeline } from "@/lib/pipeline/ensure";
@@ -20,10 +20,7 @@ import { clientIp } from "@/lib/http";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { enqueueApplicantSummary } from "@/lib/ai/enqueue";
 import { buildObjectPath, uploadPublicDocument } from "@/lib/storage";
-import {
-  getCalendarByProperty,
-  listWorkspaceStaff,
-} from "@/lib/viewings/queries";
+import { getCalendarByProperty } from "@/lib/viewings/queries";
 
 export async function submitPublicForm(
   token: string,
@@ -207,21 +204,24 @@ export async function submitPublicForm(
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
   });
+  cookieStore.delete(`havn_form_${found.form.id}`);
 
   if (result.created) {
-    const staff = await listWorkspaceStaff(db, found.property.workspaceId);
-    for (const member of staff) {
-      if (!member.email) continue;
-      await sendEmail({
-        to: member.email,
+    await notifyWorkspaceStaff({
+      workspaceId: found.property.workspaceId,
+      assignedUserId: found.property.assignedUserId,
+      type: "applications",
+      email: (name) => ({
         subject: `New application — ${found.property.title}`,
         react: ApplicationReceivedEmail({
-          recipientName: member.name || member.email,
+          recipientName: name,
           propertyTitle: found.property.title,
           applicantName: parsedIdentity.data.fullName,
         }),
-      });
-    }
+      }),
+      whatsapp: () =>
+        `New application — ${found.property.title} from ${parsedIdentity.data.fullName}.`,
+    });
   }
 
   revalidatePath(`/f/${token}`);

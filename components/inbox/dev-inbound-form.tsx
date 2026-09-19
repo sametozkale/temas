@@ -26,7 +26,7 @@ import {
 
 export function DevInboundForm({
   defaultFromName = "Elif Yılmaz",
-  defaultFromEmail = "elif@havn.test",
+  defaultFromEmail = "elif@temas.test",
   defaultSubject = "Kadıköy bright 2+1 viewing",
 }: {
   defaultFromName?: string;
@@ -113,7 +113,11 @@ export function DevInboundForm({
   );
 }
 
-export function ConnectDevButton() {
+export function ConnectDevButton({
+  variant = "outline",
+}: {
+  variant?: "outline" | "default";
+}) {
   const t = useTranslations("settings.integrations");
   const [pending, setPending] = React.useState(false);
 
@@ -121,7 +125,7 @@ export function ConnectDevButton() {
     <Button
       type="button"
       size="sm"
-      variant="outline"
+      variant={variant}
       disabled={pending}
       onClick={async () => {
         setPending(true);
@@ -229,7 +233,13 @@ export function WhatsAppInboundForm() {
   );
 }
 
-export function ConnectWhatsAppButton() {
+export function ConnectWhatsAppButton({
+  label,
+  variant = "outline",
+}: {
+  label?: string;
+  variant?: "outline" | "default";
+}) {
   const t = useTranslations("settings.integrations");
   const [pending, setPending] = React.useState(false);
 
@@ -237,7 +247,7 @@ export function ConnectWhatsAppButton() {
     <Button
       type="button"
       size="sm"
-      variant="outline"
+      variant={variant}
       disabled={pending}
       onClick={async () => {
         setPending(true);
@@ -250,7 +260,7 @@ export function ConnectWhatsAppButton() {
         }
       }}
     >
-      {t("connect_whatsapp")}
+      {label ?? t("connect_whatsapp")}
     </Button>
   );
 }

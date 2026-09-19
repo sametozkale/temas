@@ -7,9 +7,18 @@
 ## 1. Identity & Workspace
 
 ```sql
-profiles ( id uuid pk references auth.users, full_name text, phone text, avatar_url text, locale text default 'en' )
+profiles ( id uuid pk references auth.users, full_name text, phone text, avatar_url text, locale text default 'en',
+           notification_prefs jsonb )
+                                -- avatar_url is a storage path in the public `avatars` bucket: profiles/{userId}/{uuid}.ext
+                                -- notification_prefs: per-type `{ email, whatsapp }` matrix (digest, viewings, viewing_reminders, applications, owner_decisions). Settings > Notifications.
 
-workspaces ( name text, slug text unique, logo_url text, timezone text default 'Europe/Istanbul', plan text default 'free' )
+workspaces (
+  name text, slug text unique, logo_url text, timezone text default 'Europe/Istanbul',
+  legal_name text,                    -- official company name on contracts; optional; team still sees `name`
+  plan text default 'free'            -- catalog key in lib/plans.ts (free|pro); billed per workspace, not per account
+  -- logo_url is a storage path: workspaces/{workspaceId}/{uuid}.ext
+  -- Settings > Billing (owner) reads `plan`. later: stripe_customer_id text, stripe_subscription_id text
+)
 
 workspace_members (
   workspace_id uuid references workspaces, user_id uuid references auth.users,
@@ -43,15 +52,27 @@ contacts (
 ```sql
 properties (
   workspace_id uuid references workspaces,
+  assigned_user_id uuid references auth.users,  -- responsible owner|agent in this workspace; not an RLS scope
   type text check (type in ('apartment','house','office','shop','warehouse','land','other')),
   title text not null, status text default 'draft'
     check (status in ('draft','active','viewing_in_progress','application_review','contract_pending','rented','archived')),
   address jsonb,                -- {line, district, city, country, lat, lng}
+                               -- country/city are ISO-backed names from CountriesNow; district is free text
   timezone text default 'Europe/Istanbul',
-  rent_amount numeric, currency text default 'TRY', deposit_amount numeric,
-  area_m2 numeric, rooms text, floor int, features jsonb default '{}',
+  rent_amount numeric, currency text default 'TRY',  -- ISO 4217; app list is Intl.supportedValuesOf('currency')
+  deposit_amount numeric, dues_amount numeric,
+  area_m2 numeric, rooms text, bedrooms int, bathrooms int,
+  floor int, total_floors int, year_built int,
+  condition text check (condition in ('new','renovated','good','fair','needs_work')),
+  available_from date,
+  features jsonb default '{}',  -- furnished, parking, elevator, balcony, garden, pets_allowed,
+                                -- air_conditioning, heating_central, dishwasher, washing_machine,
+                                -- dryer, internet, storage, terrace, accessible
   description text, cover_media_id uuid, deleted_at timestamptz
 )
+-- index (workspace_id, assigned_user_id)
+-- app validation: assigned member role in ('owner','agent'); assistants cannot be assigned
+-- on member remove: reassign listings to the oldest remaining owner
 
 property_media ( property_id uuid, storage_path text, kind text check (kind in ('photo','video','plan')), sort_order int )
 
@@ -133,6 +154,8 @@ applications (
   stage_id uuid references pipeline_stages, score int, ai_summary text, decided_at timestamptz,
   unique (property_id, contact_id)
 )
+-- One row per household. contact_id is the lead applicant; other occupants live on
+-- the form submission (`occupants` count + `household` names), not as extra applications.
 owner_views ( property_id uuid, public_token text unique, show_stages uuid[] , expires_at timestamptz )  -- owner presentation link
 -- Owner Approve / Request changes (docs/00 §3.3) writes activity_log + moves stage; no extra columns.
 ```
@@ -141,16 +164,20 @@ owner_views ( property_id uuid, public_token text unique, show_stages uuid[] , e
 
 ```sql
 integrations (
-  workspace_id uuid, kind text check (kind in ('gmail','outlook','whatsapp')),
+  user_id uuid references auth.users not null,  -- mailbox owner; unique(user_id, kind)
+  workspace_id uuid,                            -- home workspace (connected-from); unmatched inbound fallback
+  kind text check (kind in ('gmail','outlook','whatsapp')),
   status text default 'connected', credentials jsonb,        -- store encrypted (pgsodium/vault)
-  external_id text, last_synced_at timestamptz, unique(workspace_id, kind)
+  external_id text, last_synced_at timestamptz
 )
 
 conversations (
-  workspace_id uuid, integration_id uuid, channel text check (channel in ('email','whatsapp')),
+  workspace_id uuid, user_id uuid references auth.users not null,  -- mailbox owner
+  integration_id uuid, channel text check (channel in ('email','whatsapp')),
   contact_id uuid references contacts, property_id uuid,    -- result of automatic matching
   subject text, last_message_at timestamptz, ai_summary text, is_read bool default false
 )
+-- index (workspace_id, user_id)
 
 messages (
   conversation_id uuid references conversations, direction text check (direction in ('in','out')),
@@ -158,6 +185,26 @@ messages (
 )
 
 ai_drafts ( conversation_id uuid, body text, tone text, status text default 'pending', model text )
+```
+
+## 6.1 Tasks
+
+```sql
+tasks (
+  workspace_id uuid references workspaces not null,
+  property_id uuid references properties,          -- optional; unmatched sit in a "No property" group
+  title text not null, description text,
+  priority text default 'medium' check (priority in ('low','medium','high')),
+  status text default 'open' check (status in ('suggested','open','done','dismissed')),
+  assignee_id uuid references auth.users not null,
+  created_by uuid references auth.users not null,
+  source text default 'manual' check (source in ('manual','ai')),
+  conversation_id uuid references conversations,   -- AI suggestions only; thread stays private
+  fingerprint text,                                -- dedupe AI rows per conversation
+  user_id uuid references auth.users               -- mailbox owner; set only while suggested/dismissed
+)
+-- unique (conversation_id, fingerprint) where conversation_id is not null
+-- index (workspace_id, status), (workspace_id, property_id)
 ```
 
 ## 7. AI
@@ -186,9 +233,20 @@ reminders (
 
 ## 8. RLS Notes
 
-- Main rule: no row is visible without a `workspace_members` membership.
+- Main rule: no row is visible without a `workspace_members` membership. Assigned agent is metadata; members still SELECT/UPDATE every property in the workspace.
+- **Mailbox exception:** `integrations` and `conversations` (plus `messages` / `ai_drafts`) are visible only when `user_id = auth.uid()`. A workspace owner cannot read another agent’s inbox. The conversation’s `workspace_id` still requires membership so leaving the workspace hides those threads.
+- **Tasks:** `open` / `done` rows are visible to every workspace member. `suggested` / `dismissed` rows are visible only when `user_id = auth.uid()` (the mailbox owner). Accepting a suggestion sets `status=open` and clears `user_id`.
 - **Restricted SELECT** for owners/tenants through `property_people`: only the linked property's viewing_slots, bookings (their own), documents (shared kinds), pipeline (owner: only the `owner_views` scope).
 - Public token table access: the anon role may only SELECT `viewing_slots(open)`, `forms(published)`, `viewing_calendars(published)` and INSERT bookings/form_submissions — via token-validating SECURITY DEFINER functions. Never write broad anon policies.
 - `integrations.credentials` is service role only.
 - Helper functions (SECURITY DEFINER, `drizzle/0002_auth_helpers.sql`): `is_workspace_member(ws)`, `workspace_role(ws)`, `shares_workspace_with(user)`; `handle_new_user()` trigger creates the `profiles` row.
 - Policies are declared next to the tables with Drizzle `pgPolicy` (`lib/db/rls.ts` helpers) and land in migrations automatically.
+
+## 9. Storage
+
+- **Private** buckets `property-media` and `documents` (drizzle/0006): object paths are `{workspaceId}/{propertyId}/{uuid}.ext`. Storage RLS lets workspace members read/write objects whose first path segment is a workspace they belong to.
+- **Public** bucket `avatars` (drizzle/0019):
+  - `profiles/{userId}/{uuid}.ext` — the signed-in user may insert/update/delete their own folder; anyone may read.
+  - `workspaces/{workspaceId}/{uuid}.ext` — the workspace owner may insert/update/delete; anyone may read.
+- `profiles.avatar_url` and `workspaces.logo_url` store the **object path**, not a full URL. The app builds `…/storage/v1/object/public/avatars/{path}` from `NEXT_PUBLIC_SUPABASE_URL`.
+- Property media/documents still use signed upload + signed download URLs. Avatars use a signed upload, then a public URL for display.

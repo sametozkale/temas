@@ -28,7 +28,7 @@ export default async function BookingManagePage({
         <p className="text-xs tracking-[0.14em] text-muted-foreground uppercase">
           {cancelled ? t("cancelled_kicker") : t("confirmed_kicker")}
         </p>
-        <h1 className="font-serif text-3xl tracking-tight">
+        <h1 className="font-serif text-xl font-medium tracking-tight">
           {cancelled ? t("cancelled_title") : t("confirmed_title")}
         </h1>
         <p className="text-sm text-muted-foreground">{row.property.title}</p>

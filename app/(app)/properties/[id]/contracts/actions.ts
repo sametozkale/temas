@@ -12,11 +12,12 @@ import { getAppContext } from "@/lib/auth";
 import { exportContractDocuments } from "@/lib/contracts/export";
 import {
   getContract,
-  getContractParties,
+  getContractFillSources,
   getContractTemplate,
 } from "@/lib/contracts/queries";
-import { mergeValues } from "@/lib/contracts/variables";
+import { buildContractValues } from "@/lib/contracts/values";
 import { withUserContext } from "@/lib/db";
+import { workspaceAgencyName } from "@/lib/workspaces/agency-name";
 import {
   applications,
   contacts,
@@ -24,7 +25,6 @@ import {
   documents,
   properties,
 } from "@/lib/db/schema";
-import { formatAddress } from "@/lib/format";
 import { ForbiddenError, requireAbility } from "@/lib/permissions";
 import { STORAGE_BUCKETS, buildObjectPath, uploadBuffer } from "@/lib/storage";
 
@@ -99,10 +99,18 @@ export async function createContract(
       );
       if (!template) return { error: "not_found" as const };
 
-      let tenantName: string | null = null;
+      let applicant: {
+        name: string;
+        email: string | null;
+        phone: string | null;
+      } | null = null;
       if (applicationId) {
         const [app] = await tx
-          .select({ name: contacts.fullName })
+          .select({
+            name: contacts.fullName,
+            email: contacts.email,
+            phone: contacts.phone,
+          })
           .from(applications)
           .innerJoin(contacts, eq(contacts.id, applications.contactId))
           .where(
@@ -112,21 +120,37 @@ export async function createContract(
             ),
           )
           .limit(1);
-        tenantName = app?.name ?? null;
+        applicant = app ?? null;
       }
 
-      const parties = await getContractParties(tx, property.id);
-      const values = mergeValues(
-        {
-          landlord_name: parties.landlord,
-          tenant_name: tenantName ?? parties.tenant,
-          property_title: property.title,
-          property_address: formatAddress(property.address) ?? "",
-          rent: property.rentAmount,
-          deposit: property.depositAmount,
-          currency: property.currency,
-        },
-        {
+      const sources = await getContractFillSources(
+        tx,
+        property.id,
+        property.assignedUserId,
+      );
+      const values = buildContractValues({
+        landlordName: sources.parties.landlord,
+        landlordEmail: sources.parties.landlordEmail,
+        landlordPhone: sources.parties.landlordPhone,
+        tenantName: applicant?.name ?? sources.parties.tenant,
+        tenantEmail: applicant ? applicant.email : sources.parties.tenantEmail,
+        tenantPhone: applicant ? applicant.phone : sources.parties.tenantPhone,
+        agencyName: workspaceAgencyName(ctx.workspace),
+        agentName: sources.agentName,
+        title: property.title,
+        type: property.type,
+        address: property.address,
+        bedrooms: property.bedrooms,
+        bathrooms: property.bathrooms,
+        floor: property.floor,
+        totalFloors: property.totalFloors,
+        areaM2: property.areaM2,
+        rent: property.rentAmount,
+        deposit: property.depositAmount,
+        dues: property.duesAmount,
+        currency: property.currency,
+        inventory: sources.inventory,
+        overrides: {
           rent: parsed.data.rent,
           deposit: parsed.data.deposit,
           start_date: parsed.data.startDate,
@@ -134,7 +158,7 @@ export async function createContract(
           increase_rate: parsed.data.increaseRate,
           special_clauses: parsed.data.specialClauses,
         },
-      );
+      });
 
       const generated = await generateContractDraft({
         templateMd: template.bodyMd,

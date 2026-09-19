@@ -1,36 +1,37 @@
 "use client";
 
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 
-import { signOut, switchWorkspace } from "@/app/(auth)/actions";
-import { Icon, Logout01Icon, Tick02Icon } from "@/components/icons";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { signOut } from "@/app/(auth)/actions";
+import {
+  Icon,
+  Building03Icon,
+  Logout01Icon,
+  UserIcon,
+} from "@/components/icons";
+import { PersonAvatar } from "@/components/identity-marks";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-export type UserMenuWorkspace = { id: string; name: string; role: string };
-
 type Props = {
-  user: { name: string; email?: string; initials: string };
-  workspaces?: UserMenuWorkspace[];
-  activeWorkspaceId?: string;
+  user: {
+    name: string;
+    email?: string;
+    initials: string;
+    imageUrl?: string | null;
+  };
   collapsed?: boolean;
 };
 
-export function UserMenu({
-  user,
-  workspaces = [],
-  activeWorkspaceId,
-  collapsed,
-}: Props) {
+export function UserMenu({ user, collapsed }: Props) {
   const t = useTranslations("nav");
   const [pending, startTransition] = React.useTransition();
 
@@ -40,14 +41,17 @@ export function UserMenu({
         <button
           type="button"
           className={cn(
-            "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-sidebar-accent/60 aria-expanded:bg-sidebar-accent",
-            collapsed && "justify-center px-0",
+            "flex items-center gap-2 rounded-md py-1 text-left transition-colors hover:bg-sidebar-accent/60 aria-expanded:bg-sidebar-accent",
+            collapsed ? "w-fit px-0" : "w-full px-1.5",
           )}
           aria-label={user.name}
         >
-          <Avatar className="size-7">
-            <AvatarFallback className="text-xs">{user.initials}</AvatarFallback>
-          </Avatar>
+          <PersonAvatar
+            src={user.imageUrl}
+            initials={user.initials}
+            className="size-7"
+            fallbackClassName="text-xs"
+          />
           {!collapsed ? (
             <div className="min-w-0">
               <p className="truncate text-[13px] font-medium">{user.name}</p>
@@ -60,27 +64,24 @@ export function UserMenu({
           ) : null}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="start" className="w-56">
-        {workspaces.length > 1 ? (
-          <>
-            <DropdownMenuLabel className="text-xs text-muted-foreground">
-              {t("workspaces")}
-            </DropdownMenuLabel>
-            {workspaces.map((ws) => (
-              <DropdownMenuItem
-                key={ws.id}
-                disabled={pending}
-                onSelect={() => startTransition(() => switchWorkspace(ws.id))}
-              >
-                <span className="truncate">{ws.name}</span>
-                {ws.id === activeWorkspaceId ? (
-                  <Icon icon={Tick02Icon} size={16} className="ml-auto" />
-                ) : null}
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-          </>
-        ) : null}
+      <DropdownMenuContent
+        side={collapsed ? "right" : "top"}
+        align="start"
+        className="w-56"
+      >
+        <DropdownMenuItem asChild>
+          <Link href="/settings">
+            <Icon icon={UserIcon} size={16} />
+            {t("profile_settings")}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/settings/workspace">
+            <Icon icon={Building03Icon} size={16} />
+            {t("workspace_settings")}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={pending}
           onSelect={() => startTransition(() => signOut())}

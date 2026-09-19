@@ -1,5 +1,9 @@
 /** Pure helpers shared by server and client code (no DB / cookies). */
 
+export function firstNameOf(name: string | null | undefined) {
+  return name?.trim().split(/\s+/).filter(Boolean)[0] ?? "";
+}
+
 export function initialsOf(name: string | null | undefined, fallback = "?") {
   if (!name) return fallback;
   const parts = name.trim().split(/\s+/).filter(Boolean);

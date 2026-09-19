@@ -38,6 +38,7 @@ export type KanbanCard = {
   id: string;
   stageId: string | null;
   fullName: string;
+  memberLine: string | null;
   email: string | null;
   summary: string | null;
   score: number | null;
@@ -252,7 +253,11 @@ function ApplicantCard({
       )}
     >
       <p className="text-sm font-medium">{card.fullName}</p>
-      {card.email ? (
+      {card.memberLine ? (
+        <p className="truncate text-xs text-muted-foreground">
+          {card.memberLine}
+        </p>
+      ) : card.email ? (
         <p className="truncate text-xs text-muted-foreground">{card.email}</p>
       ) : null}
       {card.summary ? (

@@ -20,7 +20,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PROPERTY_STATUSES, PROPERTY_TYPES } from "@/lib/db/schema/properties";
-import { cn } from "@/lib/utils";
 
 export type PropertiesView = "grid" | "list";
 
@@ -33,9 +32,13 @@ const ALL = "all";
 export function PropertiesToolbar({
   view,
   hasFilters,
+  agents = [],
+  currentUserId,
 }: {
   view: PropertiesView;
   hasFilters: boolean;
+  agents?: { userId: string; name: string }[];
+  currentUserId?: string;
 }) {
   const t = useTranslations("properties");
   const router = useRouter();
@@ -67,14 +70,15 @@ export function PropertiesToolbar({
   }, [q, params, update]);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="relative min-w-[220px] flex-1">
+    <div className="flex flex-nowrap items-center gap-2">
+      <div className="relative min-w-0 w-[200px] shrink">
         <Icon
           icon={Search01Icon}
           size={16}
           className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground"
         />
         <Input
+          size="sm"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={t("search_placeholder")}
@@ -87,7 +91,11 @@ export function PropertiesToolbar({
         value={params.get("type") ?? ALL}
         onValueChange={(v) => update({ type: v })}
       >
-        <SelectTrigger className="w-[150px]" aria-label={t("col_type")}>
+        <SelectTrigger
+          size="sm"
+          className="w-[150px] shrink-0"
+          aria-label={t("col_type")}
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -104,7 +112,11 @@ export function PropertiesToolbar({
         value={params.get("status") ?? ALL}
         onValueChange={(v) => update({ status: v })}
       >
-        <SelectTrigger className="w-[190px]" aria-label={t("col_status")}>
+        <SelectTrigger
+          size="sm"
+          className="w-[190px] shrink-0"
+          aria-label={t("col_status")}
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -118,13 +130,38 @@ export function PropertiesToolbar({
         </SelectContent>
       </Select>
 
+      {agents.length > 0 ? (
+        <Select
+          value={params.get("agent") ?? ALL}
+          onValueChange={(v) => update({ agent: v })}
+        >
+          <SelectTrigger
+            size="sm"
+            className="w-[180px] shrink-0"
+            aria-label={t("filter_agent")}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>{t("filter_agent_all")}</SelectItem>
+            {currentUserId ? (
+              <SelectItem value="me">{t("filter_agent_mine")}</SelectItem>
+            ) : null}
+            {agents.map((agent) => (
+              <SelectItem key={agent.userId} value={agent.userId}>
+                {agent.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : null}
+
       {hasFilters ? (
         <Button
           variant="ghost"
-          size="sm"
           onClick={() => {
             setQ("");
-            update({ q: null, type: null, status: null });
+            update({ q: null, type: null, status: null, agent: null });
           }}
         >
           {t("clear_filters")}
@@ -133,8 +170,8 @@ export function PropertiesToolbar({
 
       <div
         role="group"
-        aria-label="View"
-        className="ml-auto inline-flex rounded-md border p-0.5"
+        aria-label={t("view_group")}
+        className="ml-auto inline-flex h-8 shrink-0 items-stretch rounded-full border p-0.5"
       >
         <ViewToggle
           active={view === "grid"}
@@ -165,19 +202,16 @@ function ViewToggle({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      size="icon-xs"
+      variant={active ? "secondary" : "ghost"}
       aria-label={label}
       aria-pressed={active}
       onClick={onClick}
-      className={cn(
-        "inline-flex size-7 items-center justify-center rounded-[6px] transition-colors",
-        active
-          ? "bg-secondary text-foreground"
-          : "text-muted-foreground hover:text-foreground",
-      )}
+      className="h-full w-auto min-w-0 aspect-square"
     >
       <Icon icon={icon} size={16} />
-    </button>
+    </Button>
   );
 }

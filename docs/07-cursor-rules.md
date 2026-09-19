@@ -13,7 +13,7 @@ description: Project context — always apply
 alwaysApply: true
 ---
 
-This repo is "Havn": an AI-native property management platform for real estate agents.
+This repo is "Temas": an AI-native property management platform for real estate agents.
 Single sources of truth:
 - docs/00-prd.md (product), docs/01-design-system.md (UI), docs/02-architecture.md (stack & structure),
 - docs/03-database-schema.md (DB), docs/04-slot-engine.md (calendar logic), docs/05-ai-features.md (AI).

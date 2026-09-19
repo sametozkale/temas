@@ -23,6 +23,36 @@ export function formatNumber(value: string | number | null | undefined) {
   return new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 2 }).format(n);
 }
 
+/** Floor in the building, e.g. "5 / 6". */
+export function formatFloor(
+  floor: number | null | undefined,
+  totalFloors?: number | null,
+) {
+  if (floor == null && totalFloors == null) return null;
+  if (floor != null && totalFloors != null) return `${floor} / ${totalFloors}`;
+  if (floor != null) return String(floor);
+  return String(totalFloors);
+}
+
+export function formatPricePerM2(
+  rent: string | number | null | undefined,
+  areaM2: string | number | null | undefined,
+  currency = "TRY",
+) {
+  const r = typeof rent === "string" ? Number(rent) : rent;
+  const a = typeof areaM2 === "string" ? Number(areaM2) : areaM2;
+  if (
+    r == null ||
+    a == null ||
+    !Number.isFinite(r) ||
+    !Number.isFinite(a) ||
+    a <= 0
+  ) {
+    return null;
+  }
+  return formatMoney(r / a, currency);
+}
+
 export function formatDate(
   value: Date | string,
   options: Intl.DateTimeFormatOptions = { dateStyle: "medium" },

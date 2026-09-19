@@ -6,11 +6,13 @@ import { z } from "zod";
 
 import { actionError, actionOk, type ActionResult } from "@/lib/action-result";
 import { logActivity } from "@/lib/activity";
+import { ensureMemberContact } from "@/lib/contacts/ensure";
 import { getAppContext } from "@/lib/auth";
 import { withUserContext } from "@/lib/db";
 import {
+  authUsers,
   availabilityWindows,
-  contacts,
+  profiles,
   properties,
   viewingCalendars,
 } from "@/lib/db/schema";
@@ -18,6 +20,7 @@ import { requireAbility } from "@/lib/permissions";
 import { uuidSchema } from "@/lib/properties/schema";
 import { secureToken } from "@/lib/slug";
 import { minutesToTime } from "@/lib/slots";
+import { revalidatePublicPropertyPages } from "@/lib/public-cache";
 import { enqueueMaterialize } from "@/lib/viewings/enqueue";
 import { getCalendarByProperty } from "@/lib/viewings/queries";
 import { calendarSettingsSchema, weekSchema } from "@/lib/viewings/schema";
@@ -25,36 +28,10 @@ import { rruleForDay } from "@/lib/viewings/week";
 
 export type ViewingActionResult<T = undefined> = ActionResult<T>;
 
-function revalidateViewings(propertyId: string) {
+async function revalidateViewings(propertyId: string) {
   revalidatePath(`/properties/${propertyId}/viewings`);
   revalidatePath("/calendar");
-}
-
-async function ensureMemberContact(
-  tx: Parameters<Parameters<typeof withUserContext>[1]>[0],
-  workspaceId: string,
-  user: { id: string; email: string | null },
-  fullName: string,
-) {
-  const [existing] = await tx
-    .select({ id: contacts.id })
-    .from(contacts)
-    .where(
-      and(eq(contacts.workspaceId, workspaceId), eq(contacts.userId, user.id)),
-    )
-    .limit(1);
-  if (existing) return existing.id;
-  const [row] = await tx
-    .insert(contacts)
-    .values({
-      workspaceId,
-      userId: user.id,
-      fullName,
-      email: user.email,
-      emailVerified: Boolean(user.email),
-    })
-    .returning({ id: contacts.id });
-  return row!.id;
+  await revalidatePublicPropertyPages(propertyId);
 }
 
 export async function ensureViewingCalendar(
@@ -85,7 +62,7 @@ export async function ensureViewingCalendar(
     return row!.id;
   });
 
-  revalidateViewings(id);
+  await revalidateViewings(id);
   return actionOk({ calendarId });
 }
 
@@ -139,7 +116,7 @@ export async function updateCalendarSettings(
 
   if (!calendarId) return actionError("not_found");
   await enqueueMaterialize(calendarId);
-  revalidateViewings(id);
+  await revalidateViewings(id);
   return actionOk();
 }
 
@@ -157,16 +134,33 @@ export async function saveAgentWeek(
     const calendar = await getCalendarByProperty(tx, id);
     if (!calendar) return null;
     const [property] = await tx
-      .select({ timezone: properties.timezone })
+      .select({
+        timezone: properties.timezone,
+        assignedUserId: properties.assignedUserId,
+      })
       .from(properties)
       .where(eq(properties.id, id))
       .limit(1);
     const timezone = property?.timezone ?? ctx.workspace.timezone;
+    const assigneeId = property?.assignedUserId ?? ctx.user.id;
+    const [assignee] = await tx
+      .select({
+        id: authUsers.id,
+        email: authUsers.email,
+        fullName: profiles.fullName,
+      })
+      .from(authUsers)
+      .leftJoin(profiles, eq(profiles.id, authUsers.id))
+      .where(eq(authUsers.id, assigneeId))
+      .limit(1);
     const contactId = await ensureMemberContact(
       tx,
       ctx.workspace.id,
-      ctx.user,
-      ctx.profile.fullName || ctx.user.email || "Agent",
+      {
+        id: assignee?.id ?? ctx.user.id,
+        email: assignee?.email ?? ctx.user.email,
+      },
+      assignee?.fullName || assignee?.email || ctx.profile.fullName || "Agent",
     );
     await tx
       .delete(availabilityWindows)
@@ -207,6 +201,6 @@ export async function saveAgentWeek(
 
   if (!calendarId) return actionError("not_found");
   await enqueueMaterialize(calendarId);
-  revalidateViewings(id);
+  await revalidateViewings(id);
   return actionOk();
 }

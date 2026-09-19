@@ -34,7 +34,7 @@
 **Context:** 00 (§3.1), 01, 03 (§2–3)
 - Schema: properties, property_media, inventory_items, documents, property_people, contacts, activity_log
 - Properties list: grid/list toggle, status badges, search, type filter
-- Create/edit: a single (non-wizard) form (type, title, address, price, details) + photo upload (Supabase Storage, drag-drop, ordering)
+- Create: stepped wizard (type, title, address, price, details) with a progress bar; edit: sectioned form + photo upload (Supabase Storage, drag-drop, ordering)
 - Detail page tabs: Overview / Inventory / People / Files / Viewings(stub) / Applications(stub) / Activity
 - People tab: add contact (owner/tenant), generate invite link (copy only for now — magic link in PHASE 3)
 - Files: upload/list/download; Activity: append-only log view
@@ -46,7 +46,7 @@
 - Schema: viewing_calendars, availability_windows (+exceptions), viewing_slots, bookings
 - UI — Viewings tab: publish calendar, slot settings, agent window editor (weekly grid), tenant invite (magic link + 3-step "enter your availability" wizard)
 - Inngest: materialize-slots + nightly cron
-- Public `/b/[token]`: day list + slot chips + OTP + confirmation + .ics + cancel (in the Granola language: serif heading, single column, hairline)
+- Public `/b/[token]`: Cal.com-style split card (event meta + month calendar + day times) + OTP + confirmation + .ics + cancel (Granola language: serif heading, hairline card)
 - Agent calendar page: bookings across all properties (a list view is enough; month view in phase 7)
 **DoD:** End to end: agent enters windows → tenant enters windows via link → intersection slots on the public link → OTP booking → confirmation email to both sides → cancel. Slot engine test coverage ≥90%.
 
@@ -74,7 +74,7 @@
 - Embeddings pipeline + tool set (6 tools) + Home ask screen (streaming, source cards)
 - Draft with AI (inline in the conversation) + tone picker
 - Applicant auto-summary + score
-- Settings > AI: signature, language, tone defaults, quota indicator
+- Settings > AI: language, tone defaults, quota indicator; reply signature lives on Profile
 - ai_threads history listed on Home
 **DoD:** "How many viewings this month?" counts correctly; drafts are generated and the send metric is recorded; a summary appears on new applications.
 
@@ -91,6 +91,30 @@
 - Dark mode review, mobile responsive pass, PWA manifest
 - Seed script (demo workspace: 4 properties, bookings, conversations) — for demos/sales
 - Performance: public page Lighthouse 95+, N+1 scan (drizzle query log)
+
+## PHASE 9 — Multi-agent workspace + switcher + plan catalog
+**Context:** 00 (§2, §4), 01 §6, 02 §3.1, 03 §1–3
+- `properties.assigned_user_id`; filters, chips, notifications to assignee + owners
+- Sidebar (and Settings rail) workspace switcher; create additional workspace; membership-checked cookie
+- `lib/plans.ts` catalog; AI quota reads it. No Stripe / Billing page yet
+**DoD:** Two agents in one workspace with distinct assigned listings; switcher changes `temas_ws` and lands on Home; a second workspace created from the menu starts on Free.
+
+## PHASE 10 — Account-owned private inbox
+**Context:** 00 (§3.4), 02 §3, 03 §6/§8, 05 §2/§4
+- `integrations.user_id` + `unique(user_id, kind)`; `conversations.user_id`; RLS owner-only
+- Inbound workspace resolver (match contact across memberships; home workspace fallback)
+- Inbox / unread / Ask `searchConversations` / unanswered-message reminders scoped to the caller
+**DoD:** Two agents in one workspace connect (or seed) distinct mailboxes; neither sees the other’s Inbox; a workspace owner cannot open an agent’s thread.
+
+## PHASE 11 — Tasks + inbox AI suggestions
+**Context:** 00 (§3.7, §4), 01 §5–6, 03 §6.1/§8, 05 §7.1
+- `tasks` table + RLS (open/done workspace-visible; suggested/dismissed mailbox-private)
+- `/tasks` Linear-style board (All / Assigned / Suggested), grouped by property; New task (assignee defaults to creator); priority; Completed collapsed
+- Inngest `inbox/extract-tasks` after Gmail/WhatsApp ingest **and** outbound reply; accept/dismiss on the page; auto-`done` when the thread shows completion
+**DoD:** Manual task lands in the property group assigned to the creator; an inbound thread yields a private suggestion only the mailbox owner can accept; a later “thanks, received the keys” message completes that task without a tick.
+
+## Later — Workspace billing (Stripe)
+- Customer + subscription IDs on `workspaces`; Stripe checkout / portal from Settings > Billing; seat/property enforcement from `lib/plans.ts`. The Billing page (plan tiles, usage, invoices) already exists.
 
 ---
 

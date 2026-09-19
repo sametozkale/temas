@@ -8,5 +8,5 @@ export default function ErrorBoundary({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  return <AppError reset={reset} />;
+  return <AppError reset={reset} className="min-h-svh" />;
 }

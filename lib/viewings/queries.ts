@@ -66,7 +66,7 @@ export async function listBookingsInRange(
   workspaceId: string,
   from: Date,
   to: Date,
-  propertyId?: string,
+  filters?: { propertyId?: string; assignedUserId?: string },
 ) {
   const where = [
     eq(properties.workspaceId, workspaceId),
@@ -74,7 +74,10 @@ export async function listBookingsInRange(
     gte(viewingSlots.startsAt, from),
     lte(viewingSlots.startsAt, to),
   ];
-  if (propertyId) where.push(eq(properties.id, propertyId));
+  if (filters?.propertyId) where.push(eq(properties.id, filters.propertyId));
+  if (filters?.assignedUserId) {
+    where.push(eq(properties.assignedUserId, filters.assignedUserId));
+  }
   return tx
     .select({
       id: bookings.id,
@@ -85,16 +88,30 @@ export async function listBookingsInRange(
       propertyTitle: properties.title,
       timezone: properties.timezone,
       prospectName: contacts.fullName,
+      assignedAgentName: profiles.fullName,
     })
     .from(bookings)
     .innerJoin(viewingSlots, eq(viewingSlots.id, bookings.viewingSlotId))
     .innerJoin(properties, eq(properties.id, bookings.propertyId))
     .innerJoin(contacts, eq(contacts.id, bookings.contactId))
+    .leftJoin(profiles, eq(profiles.id, properties.assignedUserId))
     .where(and(...where))
     .orderBy(asc(viewingSlots.startsAt));
 }
 
-export async function listUpcomingBookings(tx: DbOrTx, workspaceId: string) {
+export async function listUpcomingBookings(
+  tx: DbOrTx,
+  workspaceId: string,
+  assignedUserId?: string,
+) {
+  const where = [
+    eq(properties.workspaceId, workspaceId),
+    inArray(bookings.status, ["confirmed", "completed"]),
+    gte(viewingSlots.startsAt, new Date(Date.now() - 60 * 60_000)),
+  ];
+  if (assignedUserId) {
+    where.push(eq(properties.assignedUserId, assignedUserId));
+  }
   return tx
     .select({
       id: bookings.id,
@@ -106,18 +123,14 @@ export async function listUpcomingBookings(tx: DbOrTx, workspaceId: string) {
       timezone: properties.timezone,
       prospectName: contacts.fullName,
       prospectEmail: contacts.email,
+      assignedAgentName: profiles.fullName,
     })
     .from(bookings)
     .innerJoin(viewingSlots, eq(viewingSlots.id, bookings.viewingSlotId))
     .innerJoin(properties, eq(properties.id, bookings.propertyId))
     .innerJoin(contacts, eq(contacts.id, bookings.contactId))
-    .where(
-      and(
-        eq(properties.workspaceId, workspaceId),
-        inArray(bookings.status, ["confirmed", "completed"]),
-        gte(viewingSlots.startsAt, new Date(Date.now() - 60 * 60_000)),
-      ),
-    )
+    .leftJoin(profiles, eq(profiles.id, properties.assignedUserId))
+    .where(and(...where))
     .orderBy(asc(viewingSlots.startsAt));
 }
 
@@ -146,14 +159,38 @@ export async function getInviteByToken(tx: DbOrTx, token: string) {
 export async function listWorkspaceStaff(tx: DbOrTx, workspaceId: string) {
   return tx
     .select({
+      userId: workspaceMembers.userId,
       email: authUsers.email,
+      phone: profiles.phone,
       name: profiles.fullName,
       role: workspaceMembers.role,
+      notificationPrefs: profiles.notificationPrefs,
     })
     .from(workspaceMembers)
     .innerJoin(authUsers, eq(authUsers.id, workspaceMembers.userId))
     .leftJoin(profiles, eq(profiles.id, workspaceMembers.userId))
     .where(eq(workspaceMembers.workspaceId, workspaceId));
+}
+
+/** Owners always, plus the assigned agent — no other agents/assistants. */
+export async function listWorkspaceNotifiers(
+  tx: DbOrTx,
+  workspaceId: string,
+  assignedUserId?: string | null,
+) {
+  const staff = await listWorkspaceStaff(tx, workspaceId);
+  const seen = new Set<string>();
+  const out: typeof staff = [];
+  for (const member of staff) {
+    const include =
+      member.role === "owner" ||
+      (assignedUserId && member.userId === assignedUserId);
+    if (!include || seen.has(member.userId)) continue;
+    if (!member.email && !member.phone) continue;
+    seen.add(member.userId);
+    out.push(member);
+  }
+  return out;
 }
 
 export async function getBookingByCancelToken(tx: DbOrTx, cancelToken: string) {

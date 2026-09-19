@@ -20,9 +20,8 @@ import {
   Link01Icon,
   PlusSignIcon,
   UserAdd01Icon,
-  UserCheck01Icon,
-  UserIcon,
 } from "@/components/icons";
+import { PersonAvatar } from "@/components/identity-marks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,6 +47,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { initialsOf } from "@/lib/auth-utils";
 import { PROPERTY_RELATIONS, type PropertyRelation } from "@/lib/db/schema";
 import { formatDate } from "@/lib/format";
 
@@ -91,10 +91,7 @@ export function PeopleSection({
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-base font-medium">{t("title")}</h2>
-          <p className="text-sm text-muted-foreground">{t("description")}</p>
-        </div>
+        <p className="text-sm text-muted-foreground">{t("description")}</p>
         {canEdit ? (
           <Button variant="pill" size="sm" onClick={() => setOpen(true)}>
             <Icon icon={PlusSignIcon} size={16} data-icon="inline-start" />
@@ -181,14 +178,29 @@ function PersonCard({
     );
   }
 
+  const contactLine =
+    [person.contact.email, person.contact.phone]
+      .filter(Boolean)
+      .join(" · ") || t("no_account");
+  const statusLine = person.joinedAt
+    ? t("joined")
+    : person.inviteToken
+      ? expired
+        ? t("pending")
+        : t("link_expires", {
+            date: formatDate(person.inviteExpiresAt!),
+          })
+      : t("pending");
+
   return (
-    <Card>
-      <CardContent className="flex items-start gap-3 pt-5">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground">
-          <Icon icon={person.joinedAt ? UserCheck01Icon : UserIcon} size={16} />
-        </span>
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex items-center justify-between gap-2">
+    <Card className="py-0">
+      <CardContent className="flex items-start gap-3 p-4">
+        <PersonAvatar
+          initials={initialsOf(person.contact.fullName)}
+          className="size-9 text-[13px]"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
             <p className="truncate text-sm font-medium">
               {person.contact.fullName}
             </p>
@@ -196,28 +208,19 @@ function PersonCard({
               {t(`relations.${person.relation}`)}
             </Badge>
           </div>
-          <p className="truncate text-xs text-muted-foreground">
-            {[person.contact.email, person.contact.phone]
-              .filter(Boolean)
-              .join(" · ") || t("no_account")}
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            {contactLine}
           </p>
-          <p className="text-xs text-muted-foreground">
-            {person.joinedAt
-              ? t("joined")
-              : person.inviteToken
-                ? expired
-                  ? t("pending")
-                  : t("link_expires", {
-                      date: formatDate(person.inviteExpiresAt!),
-                    })
-                : t("pending")}
+          <p className="mt-0.5 text-xs text-muted-foreground/70">
+            {statusLine}
           </p>
           {canEdit ? (
-            <div className="flex flex-wrap gap-1 pt-1">
+            <div className="-ml-2 mt-2 flex flex-wrap items-center">
               {hasInvite && !expired ? (
                 <Button
                   variant="ghost"
                   size="xs"
+                  className="text-muted-foreground"
                   onClick={() => void copyExisting()}
                 >
                   <Icon icon={Copy01Icon} size={16} data-icon="inline-start" />
@@ -227,6 +230,7 @@ function PersonCard({
                 <Button
                   variant="ghost"
                   size="xs"
+                  className="text-muted-foreground"
                   disabled={pending || Boolean(person.joinedAt)}
                   onClick={() =>
                     startTransition(async () => {
@@ -240,7 +244,12 @@ function PersonCard({
                     : t("generate_link")}
                 </Button>
               )}
-              <Button variant="ghost" size="xs" onClick={onUnlink}>
+              <Button
+                variant="ghost"
+                size="xs"
+                className="text-muted-foreground"
+                onClick={onUnlink}
+              >
                 <Icon icon={Delete02Icon} size={16} data-icon="inline-start" />
                 {t("remove")}
               </Button>

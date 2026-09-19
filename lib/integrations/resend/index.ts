@@ -61,12 +61,23 @@ function mailpitTransport(): EmailTransport {
 }
 
 let transport: EmailTransport | undefined;
+let transportKey: string | undefined;
+
+function fromIsUnverifiedLocal(): boolean {
+  return /@[^>]*\.local>?/i.test(env().EMAIL_FROM);
+}
 
 export function getEmailTransport(): EmailTransport {
-  if (transport) return transport;
   const key = env().RESEND_API_KEY;
-  transport =
-    integrations.resend() && key ? resendTransport(key) : mailpitTransport();
+  const from = env().EMAIL_FROM;
+  const useResend = Boolean(
+    integrations.resend() && key && !fromIsUnverifiedLocal(),
+  );
+  const cacheKey = `${useResend ? "resend" : "mailpit"}:${key ?? ""}:${from}`;
+  if (transport && transportKey === cacheKey) return transport;
+  // A .local From address cannot be verified on Resend; keep Mailpit in that case.
+  transportKey = cacheKey;
+  transport = useResend && key ? resendTransport(key) : mailpitTransport();
   return transport;
 }
 
