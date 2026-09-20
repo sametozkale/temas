@@ -21,6 +21,7 @@ export default defineConfig({
       "lib/**/*.test.ts",
       "components/**/*.test.tsx",
       "inngest/**/*.test.ts",
+      "emails/**/*.test.ts",
     ],
     passWithNoTests: true,
     testTimeout: 20_000,

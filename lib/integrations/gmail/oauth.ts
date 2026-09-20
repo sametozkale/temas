@@ -1,3 +1,4 @@
+import { configuredAppUrl } from "@/lib/app-url";
 import { env, integrations } from "@/lib/env";
 import { secureToken } from "@/lib/slug";
 
@@ -8,7 +9,10 @@ const SCOPES = [
 ].join(" ");
 
 export function gmailRedirectUri() {
-  return new URL("/api/integrations/gmail/callback", env().APP_URL).toString();
+  return new URL(
+    "/api/integrations/gmail/callback",
+    configuredAppUrl(),
+  ).toString();
 }
 
 export function isGmailConfigured() {

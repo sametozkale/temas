@@ -12,11 +12,11 @@ import {
   properties,
   viewingCalendars,
 } from "@/lib/db/schema";
-import { env } from "@/lib/env";
 import { languageInstruction } from "@/lib/ai/languages";
 import { isTextConfigured, modelLabel, textModel } from "@/lib/ai/models";
 import { loadPrompt } from "@/lib/ai/prompts";
 import { TONES, type DraftTone } from "@/lib/ai/types";
+import { publicAppUrl } from "@/lib/app-url";
 
 export { TONES, type DraftTone };
 
@@ -86,7 +86,10 @@ export async function generateDraft(input: {
       .where(eq(viewingCalendars.propertyId, row.propertyId))
       .limit(1);
     if (cal?.isPublished && cal.publicToken) {
-      bookingUrl = new URL(`/b/${cal.publicToken}`, env().APP_URL).toString();
+      bookingUrl = new URL(
+        `/b/${cal.publicToken}`,
+        await publicAppUrl(),
+      ).toString();
     }
   }
 

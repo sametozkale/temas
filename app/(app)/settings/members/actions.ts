@@ -10,7 +10,7 @@ import { logActivity } from "@/lib/activity";
 import { getAppContext } from "@/lib/auth";
 import { db, withUserContext } from "@/lib/db";
 import { authUsers, invites, workspaceMembers } from "@/lib/db/schema";
-import { env } from "@/lib/env";
+import { publicAppUrl } from "@/lib/app-url";
 import { sendEmail } from "@/lib/integrations/resend";
 import { canAssignRole, requireAbility } from "@/lib/permissions";
 import {
@@ -43,7 +43,7 @@ async function deliverInvite(params: {
 }) {
   const acceptUrl = new URL(
     `/invite/${params.token}`,
-    env().APP_URL,
+    await publicAppUrl(),
   ).toString();
   await sendEmail({
     to: params.email,
@@ -100,7 +100,10 @@ export async function inviteMember(
       .select({ id: invites.id })
       .from(invites)
       .where(
-        and(eq(invites.workspaceId, ctx.workspace.id), eq(invites.email, email)),
+        and(
+          eq(invites.workspaceId, ctx.workspace.id),
+          eq(invites.email, email),
+        ),
       )
       .orderBy(sql`${invites.acceptedAt} asc nulls first`)
       .limit(1);

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { publicAppUrl } from "@/lib/app-url";
 import { getAppContext } from "@/lib/auth";
 import { env, integrations } from "@/lib/env";
 import {
@@ -17,13 +18,19 @@ export async function GET() {
     requireAbility(ctx.membership, "integrations.manage");
   } catch {
     return NextResponse.redirect(
-      new URL("/settings/integrations/gmail?error=gmail_denied", env().APP_URL),
+      new URL(
+        "/settings/integrations/gmail?error=gmail_denied",
+        await publicAppUrl(),
+      ),
     );
   }
 
   if (!integrations.gmail()) {
     return NextResponse.redirect(
-      new URL("/settings/integrations/gmail?error=gmail_oauth", env().APP_URL),
+      new URL(
+        "/settings/integrations/gmail?error=gmail_oauth",
+        await publicAppUrl(),
+      ),
     );
   }
 

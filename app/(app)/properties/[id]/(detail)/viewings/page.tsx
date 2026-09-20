@@ -4,7 +4,7 @@ import { EventChip } from "@/components/event-chip";
 import { CopyInviteButton } from "@/components/viewings/copy-invite-button";
 import { ViewingsPanel } from "@/components/viewings/viewings-panel";
 import { withUserContext } from "@/lib/db";
-import { env } from "@/lib/env";
+import { publicAppUrl } from "@/lib/app-url";
 import { formatDateTime } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { parseTimeToMinutes } from "@/lib/slots";
@@ -86,7 +86,7 @@ export default async function ViewingsPage({
   }
 
   const publicUrl = calendar
-    ? new URL(`/b/${calendar.publicToken}`, env().APP_URL).toString()
+    ? new URL(`/b/${calendar.publicToken}`, await publicAppUrl()).toString()
     : null;
 
   return (

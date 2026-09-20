@@ -78,7 +78,7 @@ docs/          # ← these md files live here in the repo
 
 ## 4. Environments & Variables
 
-`.env.example` is mandatory: `DATABASE_URL`, `SUPABASE_*`, `RESEND_API_KEY`, `FEEDBACK_TO`, `GOOGLE_CLIENT_*`, `META_WHATSAPP_*`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `INNGEST_*`, `APP_URL`.
+`.env.example` is mandatory: `DATABASE_URL`, `SUPABASE_*`, `RESEND_API_KEY`, `SEND_EMAIL_HOOK_SECRET`, `FEEDBACK_TO`, `GOOGLE_CLIENT_*`, `META_WHATSAPP_*`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `INNGEST_*`, `APP_URL`.
 Three environments: local (Supabase CLI local Postgres), preview (Vercel), prod.
 Missing integration keys never crash the app: `lib/env.ts` exposes `isConfigured` flags and the feature falls back to a dev mode (Mailpit for email, Inngest dev server, mock AI model). A `.local` `EMAIL_FROM` also stays on Mailpit even if a Resend key is present. `FEEDBACK_TO` is the product-feedback inbox for the sidebar dialog. Empty in development delivers to Mailpit (`feedback@localhost`); production must set it.
 

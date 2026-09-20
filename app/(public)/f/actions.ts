@@ -9,7 +9,7 @@ import { actionError, actionOk, type ActionResult } from "@/lib/action-result";
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
 import { applications, contacts, formSubmissions } from "@/lib/db/schema";
-import { env } from "@/lib/env";
+import { publicAppUrl } from "@/lib/app-url";
 import { notifyWorkspaceStaff } from "@/lib/notifications/dispatch";
 import { formCompletionCookie, parseFormAnswers } from "@/lib/pipeline/answers";
 import { STAGE_NEW, STAGE_RENTED } from "@/lib/pipeline/defaults";
@@ -231,7 +231,7 @@ export async function submitPublicForm(
   const calendar = await getCalendarByProperty(db, found.property.id);
   const bookingUrl =
     calendar?.isPublished && calendar.publicToken
-      ? new URL(`/b/${calendar.publicToken}`, env().APP_URL).toString()
+      ? new URL(`/b/${calendar.publicToken}`, await publicAppUrl()).toString()
       : null;
 
   return actionOk({ bookingUrl });

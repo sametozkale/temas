@@ -56,7 +56,12 @@ export function EmailLayout({
 }) {
   return (
     <Html lang="en">
-      <Head />
+      <Head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Newsreader:wght@500&display=swap"
+          rel="stylesheet"
+        />
+      </Head>
       <Preview>{preview}</Preview>
       <Body style={styles.body}>
         <Container style={styles.container}>
@@ -84,13 +89,21 @@ export const emailStyles = {
   },
   text: { fontSize: 15, lineHeight: 1.5, margin: "0 0 16px" },
   muted: { fontSize: 13, color: "#6E6C66", margin: "0 0 8px" },
+  /** Matches login’s `text-sm text-muted-foreground` supporting line. */
+  lede: {
+    fontSize: 14,
+    lineHeight: 1.5,
+    color: "#6E6C66",
+    margin: "0 0 24px",
+  },
   button: {
     backgroundColor: "#22211E",
     color: "#FAFAF7",
-    borderRadius: 999,
+    borderRadius: 9999,
     fontSize: 14,
     fontWeight: 500,
-    padding: "10px 18px",
+    lineHeight: "20px",
+    padding: "10px 16px",
     textDecoration: "none",
     display: "inline-block",
   },

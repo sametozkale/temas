@@ -18,6 +18,8 @@ const serverSchema = z.object({
 
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default("Temas <noreply@temas.local>"),
+  /** Standard Webhooks secret for the Auth Send Email hook (`v1,whsec_…`). */
+  SEND_EMAIL_HOOK_SECRET: z.string().optional(),
   /** Product-feedback inbox. Empty: Mailpit locally (no Resend), required with Resend / in production. */
   FEEDBACK_TO: z.string().trim().optional(),
   /** Dev fallback: Mailpit SMTP from the local Supabase stack. */

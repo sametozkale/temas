@@ -1,7 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { headers } from "next/headers";
-
+import { configuredAppUrl, publicAppUrl } from "@/lib/app-url";
 import { env } from "@/lib/env";
 
 const PAIR_TTL_MS = 10 * 60 * 1000;
@@ -62,15 +61,9 @@ export function verifyWhatsAppPairToken(
 }
 
 export function whatsappPairUrl(token: string) {
-  return new URL(`/i/wa/${token}`, env().APP_URL).toString();
+  return new URL(`/i/wa/${token}`, configuredAppUrl()).toString();
 }
 
 export async function whatsappPairUrlFromRequest(token: string) {
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  if (!host) return whatsappPairUrl(token);
-  const proto =
-    h.get("x-forwarded-proto") ??
-    (host.includes("localhost") ? "http" : "https");
-  return `${proto}://${host}/i/wa/${encodeURIComponent(token)}`;
+  return new URL(`/i/wa/${token}`, await publicAppUrl()).toString();
 }

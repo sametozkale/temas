@@ -18,7 +18,7 @@ import {
   propertyPeople,
   type PropertyStatus,
 } from "@/lib/db/schema";
-import { env } from "@/lib/env";
+import { publicAppUrl } from "@/lib/app-url";
 import { requireAbility } from "@/lib/permissions";
 import { enqueueEmbedProperty } from "@/lib/ai/enqueue";
 import { revalidatePublicPropertyPages } from "@/lib/public-cache";
@@ -831,7 +831,7 @@ export async function generatePersonInviteLink(
 
   if (!ok) return actionError("not_found");
   revalidateProperty(id);
-  const url = new URL(`/p/${token}`, env().APP_URL).toString();
+  const url = new URL(`/p/${token}`, await publicAppUrl()).toString();
   return actionOk({ url, expiresAt: expiresAt.toISOString() });
 }
 

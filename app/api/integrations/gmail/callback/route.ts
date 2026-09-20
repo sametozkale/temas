@@ -3,10 +3,10 @@ import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { logActivity } from "@/lib/activity";
+import { publicAppUrl } from "@/lib/app-url";
 import { getMembership, getUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { integrations } from "@/lib/db/schema";
-import { env } from "@/lib/env";
 import { enqueueInboxSync } from "@/lib/inbox/enqueue";
 import { exchangeCode } from "@/lib/integrations/gmail/oauth";
 import {
@@ -18,8 +18,8 @@ import { requireAbility } from "@/lib/permissions";
 
 import { GMAIL_OAUTH_COOKIE, LEGACY_GMAIL_OAUTH_COOKIE } from "../start/route";
 
-function settingsUrl(query?: string) {
-  const url = new URL("/settings/integrations/gmail", env().APP_URL);
+async function settingsUrl(query?: string) {
+  const url = new URL("/settings/integrations/gmail", await publicAppUrl());
   if (query) url.search = query;
   return url;
 }
@@ -27,7 +27,7 @@ function settingsUrl(query?: string) {
 export async function GET(request: NextRequest) {
   const user = await getUser();
   if (!user) {
-    return NextResponse.redirect(new URL("/login", env().APP_URL));
+    return NextResponse.redirect(new URL("/login", await publicAppUrl()));
   }
 
   const error = request.nextUrl.searchParams.get("error");
@@ -41,27 +41,27 @@ export async function GET(request: NextRequest) {
   jar.delete(LEGACY_GMAIL_OAUTH_COOKIE);
 
   if (error || !code || !state || !raw) {
-    return NextResponse.redirect(settingsUrl("error=gmail_denied"));
+    return NextResponse.redirect(await settingsUrl("error=gmail_denied"));
   }
 
   let payload: { state: string; workspaceId: string };
   try {
     payload = JSON.parse(raw) as { state: string; workspaceId: string };
   } catch {
-    return NextResponse.redirect(settingsUrl("error=gmail_denied"));
+    return NextResponse.redirect(await settingsUrl("error=gmail_denied"));
   }
   if (payload.state !== state) {
-    return NextResponse.redirect(settingsUrl("error=gmail_denied"));
+    return NextResponse.redirect(await settingsUrl("error=gmail_denied"));
   }
 
   const membership = await getMembership(user.id, payload.workspaceId);
   if (!membership) {
-    return NextResponse.redirect(settingsUrl("error=gmail_denied"));
+    return NextResponse.redirect(await settingsUrl("error=gmail_denied"));
   }
   try {
     requireAbility(membership, "integrations.manage");
   } catch {
-    return NextResponse.redirect(settingsUrl("error=gmail_denied"));
+    return NextResponse.redirect(await settingsUrl("error=gmail_denied"));
   }
 
   const tokens = await exchangeCode(code);
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     credentials.refreshToken = prior?.refreshToken;
   }
   if (!credentials.refreshToken) {
-    return NextResponse.redirect(settingsUrl("error=gmail_denied"));
+    return NextResponse.redirect(await settingsUrl("error=gmail_denied"));
   }
 
   const profile = await gmailProfile(credentials);
@@ -126,5 +126,5 @@ export async function GET(request: NextRequest) {
   }
   await enqueueInboxSync({ integrationId: upserted!.id });
 
-  return NextResponse.redirect(settingsUrl());
+  return NextResponse.redirect(await settingsUrl());
 }

@@ -9,7 +9,7 @@ import { actionError, actionOk, type ActionResult } from "@/lib/action-result";
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
 import { bookings, contacts, emailOtps, viewingSlots } from "@/lib/db/schema";
-import { env } from "@/lib/env";
+import { publicAppUrl } from "@/lib/app-url";
 import { formatAddress, formatDateTime } from "@/lib/format";
 import { sendEmail } from "@/lib/integrations/resend";
 import { notifyWorkspaceStaff } from "@/lib/notifications/dispatch";
@@ -303,11 +303,9 @@ export async function confirmBookingOtp(
 
   const whenLabel = formatDateTime(result.startsAt, found.property.timezone);
   const address = formatAddress(found.property.address);
-  const cancelUrl = new URL(`/b/c/${cancelToken}`, env().APP_URL).toString();
-  const icsUrl = new URL(
-    `/b/c/${cancelToken}/event.ics`,
-    env().APP_URL,
-  ).toString();
+  const origin = await publicAppUrl();
+  const cancelUrl = new URL(`/b/c/${cancelToken}`, origin).toString();
+  const icsUrl = new URL(`/b/c/${cancelToken}/event.ics`, origin).toString();
 
   await sendEmail({
     to: otp.email,

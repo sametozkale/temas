@@ -6,7 +6,7 @@ import { PipelineKanban } from "@/components/pipeline/kanban";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { withUserContext } from "@/lib/db";
-import { env } from "@/lib/env";
+import { publicAppUrl } from "@/lib/app-url";
 import { can } from "@/lib/permissions";
 import { ensurePipeline } from "@/lib/pipeline/ensure";
 import {
@@ -37,13 +37,11 @@ export default async function ApplicationsPage({
     },
   );
 
+  const origin = await publicAppUrl();
   const formUrl = form.publicToken
-    ? new URL(`/f/${form.publicToken}`, env().APP_URL).toString()
+    ? new URL(`/f/${form.publicToken}`, origin).toString()
     : null;
-  const ownerUrl = new URL(
-    `/o/${ownerView.publicToken}`,
-    env().APP_URL,
-  ).toString();
+  const ownerUrl = new URL(`/o/${ownerView.publicToken}`, origin).toString();
 
   return (
     <div className="space-y-8">

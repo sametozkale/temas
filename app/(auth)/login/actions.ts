@@ -8,7 +8,7 @@ import {
   safeNextPath,
   type ActionResult,
 } from "@/lib/action-result";
-import { env } from "@/lib/env";
+import { publicAppUrl } from "@/lib/app-url";
 import { clientIp } from "@/lib/http";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -44,7 +44,7 @@ export async function sendMagicLink(
     return actionError("rate_limited");
   }
 
-  const redirectTo = new URL("/auth/callback", env().APP_URL);
+  const redirectTo = new URL("/auth/callback", await publicAppUrl());
   redirectTo.searchParams.set("next", next);
 
   const supabase = await createSupabaseServerClient();
