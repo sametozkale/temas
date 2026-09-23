@@ -38,7 +38,7 @@ export function PropertyTypeLabel({
     <span className={cn("inline-flex items-center gap-1", className)}>
       <Icon
         icon={PROPERTY_TYPE_ICONS[type]}
-        size={14}
+        size={16}
         className="shrink-0 text-muted-foreground"
       />
       <span className="truncate">{t(type)}</span>
