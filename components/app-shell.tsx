@@ -37,8 +37,8 @@ type AppShellProps = {
 
 /**
  * AppShell (docs/01 §6): paper canvas, slim sidebar on ≥lg, white rounded
- * body panel. Content is centred at max-width 1080px; Inbox is full-bleed;
- * property record tabs and Calendar fill the panel height.
+ * body panel. Content is centred at max-width 1080px; Inbox and the
+ * property record are full-bleed. Calendar fills the panel height.
  */
 export function AppShell({
   workspace,
@@ -152,17 +152,15 @@ export function AppShell({
             <div
               className={cn(
                 "flex min-h-0 w-full flex-1 flex-col",
-                fullBleed
+                fullBleed || propertyRecord
                   ? "overflow-hidden"
                   : homeCanvas
                     ? "mx-auto max-w-[1080px] overflow-auto px-4 pt-6 pb-2 md:px-8"
                     : wizardCanvas
                       ? "mx-auto max-w-[1080px] overflow-hidden px-4 pt-6 pb-6 md:px-8"
-                      : propertyRecord
-                        ? "mx-auto max-w-[1080px] overflow-hidden px-4 pt-6 pb-0 md:px-8"
-                        : calendarCanvas
-                          ? "mx-auto max-w-[1080px] overflow-hidden px-4 pt-6 pb-4 md:px-8"
-                          : "mx-auto max-w-[1080px] overflow-auto px-4 pt-6 pb-8 md:px-8",
+                      : calendarCanvas
+                        ? "mx-auto max-w-[1080px] overflow-hidden px-4 pt-6 pb-4 md:px-8"
+                        : "mx-auto max-w-[1080px] overflow-auto px-4 pt-6 pb-8 md:px-8",
               )}
             >
               {children}

@@ -84,6 +84,7 @@ export function UserMenu({ user, collapsed }: Props) {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={pending}
+          className="text-muted-foreground focus:text-accent-foreground"
           onSelect={() => startTransition(() => signOut())}
         >
           <Icon icon={Logout01Icon} size={16} />

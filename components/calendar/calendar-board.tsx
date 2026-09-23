@@ -5,11 +5,12 @@ import { TZDate } from "@date-fns/tz";
 import { CalendarFilters } from "@/components/calendar/calendar-property-filter";
 import { CalendarEventPill } from "@/components/calendar/event-pill";
 import { ArrowLeft01Icon, ArrowRight01Icon, Icon } from "@/components/icons";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   dayKeyInZone,
   monthGrid,
   monthKey,
+  monthKeyFromIso,
   shiftIsoDate,
   shiftMonth,
   timeLabelInZone,
@@ -166,33 +167,47 @@ export async function CalendarBoard({
             <p className="text-sm font-medium whitespace-nowrap tabular-nums">
               {rangeLabel}
             </p>
-            <div className="ml-0.5 flex items-center -space-x-1">
-              <Button size="icon-sm" variant="ghost" asChild>
-                <Link
-                  href={
-                    view === "week"
-                      ? href({ week: shiftIsoDate(weekStart, -7) })
-                      : href({ month: monthKey(prev.year, prev.month) })
-                  }
-                  aria-label={t("prev")}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <Icon icon={ArrowLeft01Icon} size={16} />
-                </Link>
-              </Button>
-              <Button size="icon-sm" variant="ghost" asChild>
-                <Link
-                  href={
-                    view === "week"
-                      ? href({ week: shiftIsoDate(weekStart, 7) })
-                      : href({ month: monthKey(next.year, next.month) })
-                  }
-                  aria-label={t("next")}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <Icon icon={ArrowRight01Icon} size={16} />
-                </Link>
-              </Button>
+            <div className="ml-0.5 flex items-center gap-0.5">
+              {(() => {
+                const prevWeek = shiftIsoDate(weekStart, -7);
+                const nextWeek = shiftIsoDate(weekStart, 7);
+                const prevHref =
+                  view === "week"
+                    ? href({
+                        week: prevWeek,
+                        month: monthKeyFromIso(prevWeek),
+                      })
+                    : href({ month: monthKey(prev.year, prev.month) });
+                const nextHref =
+                  view === "week"
+                    ? href({
+                        week: nextWeek,
+                        month: monthKeyFromIso(nextWeek),
+                      })
+                    : href({ month: monthKey(next.year, next.month) });
+                const navClass = cn(
+                  buttonVariants({ variant: "ghost", size: "icon-sm" }),
+                  "text-muted-foreground hover:text-foreground",
+                );
+                return (
+                  <>
+                    <Link
+                      href={prevHref}
+                      aria-label={t("prev")}
+                      className={navClass}
+                    >
+                      <Icon icon={ArrowLeft01Icon} size={16} />
+                    </Link>
+                    <Link
+                      href={nextHref}
+                      aria-label={t("next")}
+                      className={navClass}
+                    >
+                      <Icon icon={ArrowRight01Icon} size={16} />
+                    </Link>
+                  </>
+                );
+              })()}
             </div>
             {showToday ? (
               <Button size="xs" variant="ghost" className="ml-0.5" asChild>

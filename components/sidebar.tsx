@@ -224,7 +224,7 @@ function ChatSection({
           : "size-7 text-secondary-foreground",
       )}
     >
-      <Icon icon={PlusSignIcon} size={16} />
+      <Icon icon={PlusSignIcon} size={dimmed ? 18 : 16} />
     </Link>
   );
 

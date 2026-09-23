@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { TZDate } from "@date-fns/tz";
@@ -10,7 +11,12 @@ import { EventChip } from "@/components/event-chip";
 import { Calendar03Icon } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { getAppContext } from "@/lib/auth";
-import { parseYearMonth, type CalendarView } from "@/lib/calendar/grid";
+import {
+  monthKeyFromIso,
+  parseYearMonth,
+  weekDays,
+  type CalendarView,
+} from "@/lib/calendar/grid";
 import { withUserContext } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import { listAssignableMembers } from "@/lib/properties/assignment";
@@ -42,11 +48,27 @@ export default async function CalendarPage({
       ? params.view
       : "month";
   const zoned = TZDate.tz(ctx.workspace.timezone);
-  const parsed = parseYearMonth(
-    params.month,
-    new Date(zoned.getFullYear(), zoned.getMonth(), zoned.getDate()),
-  );
+  const now = new Date(zoned.getFullYear(), zoned.getMonth(), zoned.getDate());
+  const parsed = parseYearMonth(params.month, now);
   const propertyId = params.property || undefined;
+
+  if (view === "week") {
+    const weekAnchor =
+      params.week && /^\d{4}-\d{2}-\d{2}$/.test(params.week)
+        ? params.week
+        : weekDays(undefined, ctx.workspace.timezone, now)[0]!;
+    const weekMonth = monthKeyFromIso(weekAnchor);
+    if (params.week !== weekAnchor || params.month !== weekMonth) {
+      const q = new URLSearchParams();
+      q.set("view", "week");
+      q.set("month", weekMonth);
+      q.set("week", weekAnchor);
+      if (propertyId) q.set("property", propertyId);
+      if (params.agent) q.set("agent", params.agent);
+      redirect(`/calendar?${q.toString()}`);
+    }
+  }
+
   const agentParam = params.agent;
   const assignedUserId =
     agentParam === "me"

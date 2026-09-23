@@ -35,6 +35,7 @@ export function CurrencySelect({
   onValueChange,
   disabled,
   className,
+  ariaLabel,
 }: {
   id?: string;
   name?: string;
@@ -43,6 +44,7 @@ export function CurrencySelect({
   onValueChange?: (value: string) => void;
   disabled?: boolean;
   className?: string;
+  ariaLabel?: string;
 }) {
   const t = useTranslations("common");
   const [open, setOpen] = React.useState(false);
@@ -67,6 +69,7 @@ export function CurrencySelect({
             aria-expanded={open}
             aria-controls={id ? `${id}-list` : undefined}
             disabled={disabled}
+            aria-label={ariaLabel}
             className={cn(
               "flex h-10 w-full items-center justify-between gap-1.5 rounded-lg border border-input bg-card py-2 pr-2 pl-3 text-left text-sm whitespace-nowrap shadow-none transition-colors outline-none select-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 dark:hover:bg-input/50",
               className,
@@ -82,7 +85,7 @@ export function CurrencySelect({
         </PopoverTrigger>
         <PopoverContent
           align="start"
-          className="w-(--radix-popover-trigger-width) p-0"
+          className="w-(--radix-popover-trigger-width) min-w-56 p-0"
         >
           <Command filter={currencyFilter} className="rounded-lg!">
             <CommandInput placeholder={t("currency_search")} />

@@ -104,6 +104,11 @@ export function shiftIsoDate(iso: string, days: number) {
   return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}-${String(next.getUTCDate()).padStart(2, "0")}`;
 }
 
+/** `YYYY-MM` month key for the civil week anchor (Monday). */
+export function monthKeyFromIso(iso: string) {
+  return iso.slice(0, 7);
+}
+
 /** True when the civil today is among the dates currently painted on the board. */
 export function todayIsOnScreen(
   view: CalendarView,

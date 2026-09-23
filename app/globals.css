@@ -231,6 +231,13 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus-visible {
+    -webkit-text-fill-color: var(--foreground);
+    box-shadow: 0 0 0 1000px var(--card) inset;
+    caret-color: var(--foreground);
+  }
   h1,
   h2,
   .font-serif {

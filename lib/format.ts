@@ -13,14 +13,18 @@ export function formatMoney(
     style: "currency",
     currency,
     maximumFractionDigits: Number.isInteger(n) ? 0 : 2,
-  }).format(n);
+  })
+    .format(n)
+    .replace(/\u202f|\u00a0/g, " ");
 }
 
 export function formatNumber(value: string | number | null | undefined) {
   if (value === null || value === undefined || value === "") return null;
   const n = typeof value === "string" ? Number(value) : value;
   if (!Number.isFinite(n)) return null;
-  return new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 2 }).format(n);
+  return new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 2 })
+    .format(n)
+    .replace(/\u202f|\u00a0/g, " ");
 }
 
 /** Floor in the building, e.g. "5 / 6". */

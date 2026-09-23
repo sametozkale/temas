@@ -40,6 +40,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
+import { FileInput } from "@/components/ui/file-input";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -247,7 +248,6 @@ function UploadDialog({
   const [kind, setKind] = React.useState<DocumentKind>("contract");
   const [title, setTitle] = React.useState("");
   const [shared, setShared] = React.useState(false);
-  const [fileName, setFileName] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [pending, startTransition] = React.useTransition();
 
@@ -360,19 +360,15 @@ function UploadDialog({
               }
             >
               <FieldLabel htmlFor="doc-file">{t("file")}</FieldLabel>
-              <Input
+              <FileInput
                 id="doc-file"
                 ref={fileRef}
-                type="file"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  setFileName(f?.name ?? null);
+                buttonLabel={t("choose_file")}
+                emptyLabel={t("no_file_chosen")}
+                onFileChange={(f) => {
                   if (f && !title) setTitle(f.name.replace(/\.[^.]+$/, ""));
                 }}
               />
-              <p className="text-xs text-muted-foreground">
-                {fileName ?? t("choose_file")}
-              </p>
               {error === "file_required" || error === "too_large" ? (
                 <FieldError>{t(`errors.${error}`)}</FieldError>
               ) : null}

@@ -3,7 +3,7 @@ import { withUserContext } from "@/lib/db";
 import { can } from "@/lib/permissions";
 import { listDocuments } from "@/lib/properties/queries";
 
-import { loadProperty } from "../../load";
+import { loadProperty } from "../../../load";
 
 export default async function FilesPage({
   params,

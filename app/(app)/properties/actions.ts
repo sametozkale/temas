@@ -23,9 +23,10 @@ import { requireAbility } from "@/lib/permissions";
 import { enqueueEmbedProperty } from "@/lib/ai/enqueue";
 import { revalidatePublicPropertyPages } from "@/lib/public-cache";
 import { resolveAssignedUserId } from "@/lib/properties/assignment";
-import { getProperty } from "@/lib/properties/queries";
+import { getProperty, type PropertyRow } from "@/lib/properties/queries";
 import { syncAssignedAgentWindows } from "@/lib/viewings/assignee";
 import {
+  FEATURE_KEYS,
   documentMetaSchema,
   inventoryItemSchema,
   propertyFormSchema,
@@ -213,7 +214,13 @@ export async function updateProperty(
       .where(eq(properties.id, id));
 
     if (current.assignedUserId !== assignedUserId) {
-      await syncAssignedAgentWindows(tx, id, ctx.workspace.id, assignedUserId);
+      await syncAssignedAgentWindows(
+        tx,
+        id,
+        ctx.workspace.id,
+        assignedUserId,
+        null,
+      );
       await logActivity(
         {
           workspaceId: ctx.workspace.id,
@@ -271,6 +278,51 @@ export async function updateProperty(
   revalidateProperty(id);
   await revalidatePublicPropertyPages(id);
   return actionOk();
+}
+
+function propertyToFormInput(row: PropertyRow): PropertyFormInput {
+  const address = row.address ?? {};
+  const featureFlags = row.features ?? {};
+  return {
+    type: row.type,
+    title: row.title,
+    addressLine: address.line ?? "",
+    district: address.district ?? "",
+    city: address.city ?? "",
+    country: address.country ?? "",
+    timezone: row.timezone,
+    rentAmount: row.rentAmount ?? "",
+    currency: row.currency,
+    depositAmount: row.depositAmount ?? "",
+    duesAmount: row.duesAmount ?? "",
+    areaM2: row.areaM2 ?? "",
+    rooms: row.rooms ?? "",
+    bedrooms: row.bedrooms != null ? String(row.bedrooms) : "",
+    bathrooms: row.bathrooms != null ? String(row.bathrooms) : "",
+    floor: row.floor != null ? String(row.floor) : "",
+    totalFloors: row.totalFloors != null ? String(row.totalFloors) : "",
+    yearBuilt: row.yearBuilt != null ? String(row.yearBuilt) : "",
+    condition: row.condition ?? "",
+    availableFrom: row.availableFrom ?? "",
+    features: FEATURE_KEYS.filter((key) => featureFlags[key] === true),
+    description: row.description ?? "",
+    assignedUserId: row.assignedUserId ?? "",
+  };
+}
+
+/** Saves one or a few listing fields without a full form post. */
+export async function patchProperty(
+  propertyId: string,
+  patch: Partial<PropertyFormInput>,
+): Promise<PropertyActionResult> {
+  const ctx = await getAppContext();
+  requireAbility(ctx.membership, "properties.write");
+  const id = uuidSchema.parse(propertyId);
+  const current = await withUserContext(ctx.user.id, (tx) =>
+    getProperty(tx, ctx.workspace.id, id),
+  );
+  if (!current) return actionError("not_found");
+  return updateProperty(id, { ...propertyToFormInput(current), ...patch });
 }
 
 export async function changePropertyStatus(

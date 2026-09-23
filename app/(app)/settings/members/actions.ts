@@ -249,6 +249,7 @@ export async function updateMemberRole(
             propertyId,
             ctx.workspace.id,
             fallback,
+            null,
           );
           await logActivity(
             {
@@ -328,6 +329,7 @@ export async function removeMember(memberId: string): Promise<MembersState> {
           propertyId,
           ctx.workspace.id,
           fallback,
+          null,
         );
         await logActivity(
           {

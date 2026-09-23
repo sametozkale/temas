@@ -26,10 +26,13 @@ export function isPropertyRecordPath(pathname: string) {
 }
 
 export type PropertyTabCounts = Partial<
-  Record<Exclude<PropertyTab, "overview" | "activity">, number>
+  Record<
+    Exclude<PropertyTab, "overview" | "activity" | "people" | "files">,
+    number
+  >
 >;
 
-/** Grouped underline tabs for the property record (docs/01 §4, §6). */
+/** Pill segmented control for the property record (docs/01 §4). */
 export function PropertyTabs({
   propertyId,
   counts = {},
@@ -38,58 +41,42 @@ export function PropertyTabs({
   counts?: PropertyTabCounts;
 }) {
   const t = useTranslations("properties.detail.tabs");
-  const tGroups = useTranslations("properties.detail.groups");
   const tDetail = useTranslations("properties.detail");
   const pathname = usePathname();
   const base = `/properties/${propertyId}`;
 
   return (
-    <nav
-      aria-label={tDetail("tabs_label")}
-      className="-mx-4 shrink-0 border-b bg-card px-4 md:-mx-8 md:px-8"
-    >
-      <div className="flex items-end gap-6 overflow-x-auto">
-        {PROPERTY_TAB_GROUPS.map((group) => (
-          <div
-            key={group.id}
-            role="group"
-            aria-label={tGroups(group.id)}
-            className="flex min-w-0 flex-col"
-          >
-            <p className="px-2.5 text-[11px] leading-4 text-muted-foreground/50">
-              {tGroups(group.id)}
-            </p>
-            <div className="flex">
-              {group.tabs.map((tab) => {
-                const href = `${base}/${tab}`;
-                const active =
-                  pathname === href || pathname.startsWith(`${href}/`);
-                const count = counts[tab as keyof PropertyTabCounts];
-                return (
-                  <Link
-                    key={tab}
-                    href={href}
-                    prefetch
-                    aria-current={active ? "page" : undefined}
-                    className={cn(
-                      "relative inline-flex h-9 shrink-0 items-center gap-1.5 px-2.5 text-sm font-medium whitespace-nowrap transition-colors",
-                      active
-                        ? "text-foreground after:absolute after:inset-x-0 after:-bottom-px after:h-[1.5px] after:bg-foreground"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {t(tab)}
-                    {count ? (
-                      <span className="text-[11px] font-normal text-muted-foreground tabular-nums">
-                        {count}
-                      </span>
-                    ) : null}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+    <nav aria-label={tDetail("tabs_label")} className="shrink-0 px-4 pt-5 pb-1">
+      <div className="inline-flex h-8 max-w-full items-center gap-0.5 overflow-x-auto rounded-lg bg-muted p-[3px]">
+        {PROPERTY_TABS.map((tab) => {
+          const href = `${base}/${tab}`;
+          const active = pathname === href || pathname.startsWith(`${href}/`);
+          const count =
+            tab === "people" || tab === "files"
+              ? undefined
+              : counts[tab as keyof PropertyTabCounts];
+          return (
+            <Link
+              key={tab}
+              href={href}
+              prefetch
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "inline-flex h-full shrink-0 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium whitespace-nowrap transition-colors",
+                active
+                  ? "bg-card text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.04)]"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {t(tab)}
+              {count ? (
+                <span className="text-[11px] font-normal text-muted-foreground tabular-nums">
+                  {count}
+                </span>
+              ) : null}
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

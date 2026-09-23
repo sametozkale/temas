@@ -247,6 +247,7 @@ export async function listActivity(tx: Tx, propertyId: string, limit = 100) {
       data: activityLog.data,
       createdAt: activityLog.createdAt,
       actorName: profiles.fullName,
+      actorAvatarUrl: profiles.avatarUrl,
     })
     .from(activityLog)
     .leftJoin(profiles, eq(profiles.id, activityLog.actorId))

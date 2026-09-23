@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { getTranslations } from "next-intl/server";
 
 import { EventChip } from "@/components/event-chip";
@@ -22,7 +23,7 @@ import {
   type WeekCell,
 } from "@/lib/viewings/week";
 
-import { loadProperty } from "../../load";
+import { loadProperty } from "../../../load";
 
 function weekFromWindows(
   windows: {
@@ -78,11 +79,14 @@ export default async function ViewingsPage({
   );
 
   if (calendar) {
-    try {
-      await enqueueMaterialize(calendar.id);
-    } catch (error) {
-      console.error("materializeCalendar failed", error);
-    }
+    const calendarId = calendar.id;
+    after(async () => {
+      try {
+        await enqueueMaterialize(calendarId);
+      } catch (error) {
+        console.error("materializeCalendar failed", error);
+      }
+    });
   }
 
   const publicUrl = calendar

@@ -14,6 +14,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
+import { FileInput } from "@/components/ui/file-input";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -92,14 +93,15 @@ export function PublicForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
+    <form
+      onSubmit={onSubmit}
+      className="space-y-6 p-1"
+    >
       <FieldGroup>
-        <Field>
-          <FieldLabel htmlFor="fullName">{t("full_name")}</FieldLabel>
+        <PublicField id="fullName" label={t("full_name")}>
           <Input id="fullName" name="fullName" required autoComplete="name" />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="email">{t("email")}</FieldLabel>
+        </PublicField>
+        <PublicField id="email" label={t("email")}>
           <Input
             id="email"
             name="email"
@@ -107,19 +109,42 @@ export function PublicForm({
             required
             autoComplete="email"
           />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="phone">{t("phone")}</FieldLabel>
+        </PublicField>
+        <PublicField id="phone" label={t("phone")}>
           <Input id="phone" name="phone" type="tel" autoComplete="tel" />
-        </Field>
+        </PublicField>
         {fields.map((field) => (
           <FormFieldControl key={field.key} field={field} />
         ))}
       </FieldGroup>
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" size="lg" disabled={pending}>
         {t("submit")}
       </Button>
     </form>
+  );
+}
+
+function PublicField({
+  id,
+  label,
+  helpText,
+  children,
+}: {
+  id?: string;
+  label: React.ReactNode;
+  helpText?: string | null;
+  children: React.ReactNode;
+}) {
+  return (
+    <Field>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      {children}
+      {helpText ? (
+        <FieldDescription className="text-xs leading-normal">
+          {helpText}
+        </FieldDescription>
+      ) : null}
+    </Field>
   );
 }
 
@@ -128,13 +153,9 @@ function FormFieldControl({ field }: { field: FormField }) {
   const required = Boolean(field.required);
   if (field.type === "textarea") {
     return (
-      <Field>
-        <FieldLabel htmlFor={name}>{field.label}</FieldLabel>
-        {field.helpText ? (
-          <FieldDescription>{field.helpText}</FieldDescription>
-        ) : null}
+      <PublicField id={name} label={field.label} helpText={field.helpText}>
         <Textarea id={name} name={name} required={required} />
-      </Field>
+      </PublicField>
     );
   }
   if (field.type === "boolean") {
@@ -146,26 +167,33 @@ function FormFieldControl({ field }: { field: FormField }) {
   if (field.type === "select") {
     return <PublicSelectField field={field} />;
   }
+  if (field.type === "file") {
+    return <PublicFileField field={field} />;
+  }
   const type =
     field.type === "number"
       ? "number"
       : field.type === "email"
         ? "email"
-        : field.type === "date"
+          : field.type === "date"
           ? "date"
-          : field.type === "file"
-            ? "file"
             : field.type === "phone"
               ? "tel"
               : "text";
   return (
-    <Field>
-      <FieldLabel htmlFor={name}>{field.label}</FieldLabel>
-      {field.helpText ? (
-        <FieldDescription>{field.helpText}</FieldDescription>
-      ) : null}
-      <Input id={name} name={name} type={type} required={required} />
-    </Field>
+    <PublicField id={name} label={field.label} helpText={field.helpText}>
+      <Input
+        id={name}
+        name={name}
+        type={type}
+        required={required}
+        className={
+          type === "date"
+            ? "tabular-nums [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-50 hover:[&::-webkit-calendar-picker-indicator]:opacity-80"
+            : undefined
+        }
+      />
+    </PublicField>
   );
 }
 
@@ -185,7 +213,9 @@ function PublicBooleanField({ field }: { field: FormField }) {
         {field.label}
       </label>
       {field.helpText ? (
-        <FieldDescription>{field.helpText}</FieldDescription>
+        <FieldDescription className="text-xs leading-normal">
+          {field.helpText}
+        </FieldDescription>
       ) : null}
     </Field>
   );
@@ -201,9 +231,6 @@ function PublicMultiSelectField({ field }: { field: FormField }) {
         <input key={opt} type="hidden" name={name} value={opt} />
       ))}
       <FieldLabel>{field.label}</FieldLabel>
-      {field.helpText ? (
-        <FieldDescription>{field.helpText}</FieldDescription>
-      ) : null}
       <div className="space-y-2">
         {(field.options ?? []).map((opt) => (
           <label key={opt} className="flex items-center gap-2 text-sm">
@@ -221,7 +248,30 @@ function PublicMultiSelectField({ field }: { field: FormField }) {
           </label>
         ))}
       </div>
+      {field.helpText ? (
+        <FieldDescription className="text-xs leading-normal">
+          {field.helpText}
+        </FieldDescription>
+      ) : null}
     </Field>
+  );
+}
+
+function PublicFileField({ field }: { field: FormField }) {
+  const tc = useTranslations("common");
+  const name = `field_${field.key}`;
+  const required = Boolean(field.required);
+
+  return (
+    <PublicField id={name} label={field.label} helpText={field.helpText}>
+      <FileInput
+        id={name}
+        name={name}
+        required={required}
+        buttonLabel={tc("choose_file")}
+        emptyLabel={tc("no_file_chosen")}
+      />
+    </PublicField>
   );
 }
 
@@ -232,11 +282,7 @@ function PublicSelectField({ field }: { field: FormField }) {
   const [value, setValue] = React.useState("");
 
   return (
-    <Field>
-      <FieldLabel htmlFor={name}>{field.label}</FieldLabel>
-      {field.helpText ? (
-        <FieldDescription>{field.helpText}</FieldDescription>
-      ) : null}
+    <PublicField id={name} label={field.label} helpText={field.helpText}>
       <input type="hidden" name={name} value={value} />
       <Select
         value={value || undefined}
@@ -258,7 +304,7 @@ function PublicSelectField({ field }: { field: FormField }) {
           ))}
         </SelectContent>
       </Select>
-    </Field>
+    </PublicField>
   );
 }
 

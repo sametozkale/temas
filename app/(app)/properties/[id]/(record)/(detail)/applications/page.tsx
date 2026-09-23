@@ -16,7 +16,7 @@ import {
 } from "@/lib/pipeline/household";
 import { listApplications } from "@/lib/pipeline/queries";
 
-import { loadProperty } from "../../load";
+import { loadProperty } from "../../../load";
 
 export default async function ApplicationsPage({
   params,
@@ -56,26 +56,20 @@ export default async function ApplicationsPage({
         canManage={canManage}
       />
       <section className="space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
             <h2 className="text-base font-medium">{t("title")}</h2>
             <p className="text-sm text-muted-foreground">{t("hint")}</p>
           </div>
-          <div className="flex w-full max-w-sm flex-col gap-3">
-            {can(ctx.membership.role, "contracts.manage") ? (
-              <Button size="sm" variant="outline" asChild>
-                <Link href={`/properties/${id}/contracts/new`}>
-                  {t("create_contract")}
-                </Link>
-              </Button>
-            ) : null}
-            <OwnerLinkCard
-              propertyId={id}
-              url={ownerUrl}
-              canManage={canManage}
-            />
-          </div>
+          {can(ctx.membership.role, "contracts.manage") ? (
+            <Button size="sm" variant="outline" asChild>
+              <Link href={`/properties/${id}/contracts/new`}>
+                {t("create_contract")}
+              </Link>
+            </Button>
+          ) : null}
         </div>
+        <OwnerLinkCard propertyId={id} url={ownerUrl} canManage={canManage} />
         <PipelineKanban
           propertyId={id}
           stages={stages.map((s) => ({

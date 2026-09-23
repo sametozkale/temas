@@ -405,6 +405,9 @@
     },
     "detail": {
       "tabs_label": "Property sections",
+      "inline_error": "Couldn't save that change.",
+      "edit_field": "Edit {label}",
+      "add_description": "Add a description",
       "groups": {
         "listing": "Listing",
         "letting": "Letting",
@@ -579,7 +582,8 @@
         "other": "Other"
       },
       "file": "File",
-      "choose_file": "Choose a file",
+      "choose_file": "Choose file",
+      "no_file_chosen": "No file chosen",
       "max_size": "Up to 50 MB",
       "save": "Upload",
       "uploaded": "Document uploaded",
@@ -609,6 +613,8 @@
       "title": "Activity",
       "description": "Everything that happened to this property, newest first.",
       "empty_title": "No activity yet",
+      "group_today": "Today",
+      "group_yesterday": "Yesterday",
       "by": "by {name}",
       "system": "System",
       "actions": {
@@ -1283,6 +1289,8 @@
     "loading": "Loading…",
     "delete": "Delete",
     "cancel": "Cancel",
+    "choose_file": "Choose file",
+    "no_file_chosen": "No file chosen",
     "save": "Save",
     "copy": "Copy",
     "optional": "Optional",

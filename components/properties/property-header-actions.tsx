@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
@@ -12,7 +11,6 @@ import {
 import {
   ArrowRight01Icon,
   Delete02Icon,
-  Edit02Icon,
   Icon,
   MoreHorizontalIcon,
 } from "@/components/icons";
@@ -62,7 +60,7 @@ export function PropertyHeaderActions({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="pill" size="sm" disabled={pending}>
+          <Button variant="outline" size="sm" className="bg-card" disabled={pending}>
             {t("change_status")}
             <Icon icon={ArrowRight01Icon} size={16} data-icon="inline-end" />
           </Button>
@@ -94,13 +92,6 @@ export function PropertyHeaderActions({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Button variant="pill" size="sm" asChild>
-        <Link href={`/properties/${propertyId}/edit`}>
-          <Icon icon={Edit02Icon} size={16} data-icon="inline-start" />
-          {t("edit")}
-        </Link>
-      </Button>
-
       {canDelete ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -113,12 +104,12 @@ export function PropertyHeaderActions({
               <Icon icon={MoreHorizontalIcon} size={16} />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="min-w-44 w-auto">
             <DropdownMenuItem
               variant="destructive"
               onSelect={() => setConfirmDelete(true)}
             >
-              <Icon icon={Delete02Icon} size={16} />
+              <Icon icon={Delete02Icon} size={16} data-icon="inline-start" />
               {t("delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>

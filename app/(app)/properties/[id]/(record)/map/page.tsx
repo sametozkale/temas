@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
 
-import { ArrowLeft01Icon, Icon } from "@/components/icons";
 import { PropertyMap } from "@/components/properties/property-map";
 import { withUserContext } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
@@ -16,7 +14,7 @@ import {
 import { listApplications } from "@/lib/pipeline/queries";
 import { listPeople } from "@/lib/properties/queries";
 
-import { loadProperty } from "../load";
+import { loadProperty } from "../../load";
 
 export default async function PropertyMapPage({
   params,
@@ -107,19 +105,7 @@ export default async function PropertyMapPage({
   }
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-center justify-between gap-2 pb-4">
-        <Link
-          href={`/properties/${id}/overview`}
-          className="inline-flex min-w-0 items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <Icon icon={ArrowLeft01Icon} size={16} />
-          <span className="truncate">{property.title}</span>
-        </Link>
-        <p className="text-xs tracking-[0.14em] text-muted-foreground uppercase">
-          {tMap("kicker")}
-        </p>
-      </div>
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col px-4 pb-4">
       <div className="min-h-0 flex-1 overflow-auto rounded-lg bg-muted/40 [background-image:radial-gradient(circle,var(--border)_1px,transparent_1px)] [background-size:16px_16px]">
         <PropertyMap
           property={{

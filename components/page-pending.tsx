@@ -293,37 +293,18 @@ function PropertiesPending() {
   );
 }
 
-function RecordHeader() {
-  return (
-    <header className="flex min-w-0 items-start gap-4">
-      <Bar className="size-20 shrink-0 rounded-xl sm:size-[5.5rem]" />
-      <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 space-y-1.5">
-          <div className="flex items-center gap-2">
-            <Bar className="h-7 w-48" />
-            <Bar className="h-5 w-14 rounded-full" />
-          </div>
-          <Bar className="h-4 w-56" />
-          <Bar className="h-4 w-64" />
-        </div>
-        <Bar className="h-7 w-28" />
-      </div>
-    </header>
-  );
-}
-
 function RecordTabs() {
   return (
-    <div className="-mx-4 shrink-0 border-b px-4 md:-mx-8 md:px-8">
-      <div className="flex items-end gap-6">
-        {["w-16", "w-20", "w-16", "w-14"].map((width, i) => (
-          <div key={i} className="flex min-w-0 flex-col">
-            <Bar className={cn("mx-2.5 mb-1 h-3", width)} />
-            <div className="flex h-9 items-center gap-1 px-2.5">
-              <Bar className="h-3.5 w-14" />
-              {i === 1 ? <Bar className="h-3.5 w-16" /> : null}
-            </div>
-          </div>
+    <div className="shrink-0 px-4 pt-5 pb-1">
+      <div className="inline-flex h-8 items-center gap-0.5 rounded-lg bg-muted p-[3px]">
+        {Array.from({ length: 5 }, (_, i) => (
+          <Bar
+            key={i}
+            className={cn(
+              "h-[calc(100%-0px)] w-16 rounded-md",
+              i === 0 && "bg-background",
+            )}
+          />
         ))}
       </div>
     </div>
@@ -445,39 +426,56 @@ function FilesPending() {
 
 function ActivityPending() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Bar className="h-4 w-64" />
-      <ol className="divide-y rounded-lg border">
-        {Array.from({ length: 5 }, (_, i) => (
-          <li key={i} className="flex items-center gap-3 px-4 py-3">
-            <Bar className="size-7 rounded-full" />
-            <Bar className="h-4 w-48" />
-            <Bar className="ml-auto h-3 w-20" />
-          </li>
-        ))}
-      </ol>
+      <div className="space-y-1">
+        <Bar className="mx-2 h-3 w-16" />
+        <ul className="space-y-1">
+          {Array.from({ length: 5 }, (_, i) => (
+            <li key={i} className="flex items-start gap-3 px-2 py-2.5">
+              <Bar className="size-8 shrink-0 rounded-full" />
+              <Bar className="mt-1 h-4 min-w-0 flex-1" />
+              <Bar className="mt-1 h-3 w-14 shrink-0" />
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
 
 function RecordPending({ tab }: { tab: Kind }) {
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-5">
-      <div className="flex shrink-0 items-center justify-between gap-2">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="flex h-12 shrink-0 items-center justify-between border-b px-4">
         <Bar className="h-4 w-20" />
         <div className="flex gap-2">
-          <Bar className="h-8 w-16 rounded-md" />
-          <Bar className="h-8 w-16 rounded-md" />
+          <Bar className="h-8 w-16 rounded-full" />
+          <Bar className="h-8 w-16 rounded-full" />
         </div>
       </div>
-      <div className="shrink-0">
-        <RecordHeader />
-      </div>
-      <RecordTabs />
-      <div className="min-h-0 flex-1 overflow-hidden pb-8">
-        <TabPending
-          kind={tab === "property-record" ? "property-overview" : tab}
-        />
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        <div className="shrink-0 space-y-4 border-b px-5 py-5 lg:w-[340px] lg:border-r lg:border-b-0">
+          <Bar className="size-10 rounded-lg" />
+          <Bar className="h-6 w-40" />
+          <Bar className="h-4 w-full" />
+          <div className="space-y-2">
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Bar className="h-3.5 w-24" />
+                <Bar className="h-3.5 w-20" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <RecordTabs />
+          <div className="min-h-0 flex-1 overflow-hidden px-5 py-5">
+            <TabPending
+              kind={tab === "property-record" ? "property-overview" : tab}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -745,11 +743,7 @@ function CanvasPendingInner({ scope }: { scope: "page" | "tab" }) {
  * Quiet in-canvas placeholder that follows the destination chrome
  * (docs/01: no illustrations, no spinner, plain pulse).
  */
-export function CanvasPending({
-  scope = "page",
-}: {
-  scope?: "page" | "tab";
-}) {
+export function CanvasPending({ scope = "page" }: { scope?: "page" | "tab" }) {
   return (
     <Suspense
       fallback={

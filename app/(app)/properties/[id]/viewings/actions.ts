@@ -6,13 +6,10 @@ import { z } from "zod";
 
 import { actionError, actionOk, type ActionResult } from "@/lib/action-result";
 import { logActivity } from "@/lib/activity";
-import { ensureMemberContact } from "@/lib/contacts/ensure";
 import { getAppContext } from "@/lib/auth";
 import { withUserContext } from "@/lib/db";
 import {
-  authUsers,
   availabilityWindows,
-  profiles,
   properties,
   viewingCalendars,
 } from "@/lib/db/schema";
@@ -21,6 +18,7 @@ import { uuidSchema } from "@/lib/properties/schema";
 import { secureToken } from "@/lib/slug";
 import { minutesToTime } from "@/lib/slots";
 import { revalidatePublicPropertyPages } from "@/lib/public-cache";
+import { ensureAssigneeContact } from "@/lib/viewings/assignee";
 import { enqueueMaterialize } from "@/lib/viewings/enqueue";
 import { getCalendarByProperty } from "@/lib/viewings/queries";
 import { calendarSettingsSchema, weekSchema } from "@/lib/viewings/schema";
@@ -143,24 +141,11 @@ export async function saveAgentWeek(
       .limit(1);
     const timezone = property?.timezone ?? ctx.workspace.timezone;
     const assigneeId = property?.assignedUserId ?? ctx.user.id;
-    const [assignee] = await tx
-      .select({
-        id: authUsers.id,
-        email: authUsers.email,
-        fullName: profiles.fullName,
-      })
-      .from(authUsers)
-      .leftJoin(profiles, eq(profiles.id, authUsers.id))
-      .where(eq(authUsers.id, assigneeId))
-      .limit(1);
-    const contactId = await ensureMemberContact(
+    const contactId = await ensureAssigneeContact(
       tx,
       ctx.workspace.id,
-      {
-        id: assignee?.id ?? ctx.user.id,
-        email: assignee?.email ?? ctx.user.email,
-      },
-      assignee?.fullName || assignee?.email || ctx.profile.fullName || "Agent",
+      assigneeId,
+      assigneeId === ctx.user.id ? ctx.user.email : null,
     );
     await tx
       .delete(availabilityWindows)
