@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import * as React from "react";
-import { useActionState } from "react";
+import { startTransition, useActionState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -73,7 +73,9 @@ export function NotificationsForm({
     setPrefs(next);
     const fd = new FormData();
     fd.set("prefs", JSON.stringify(next));
-    action(fd);
+    startTransition(() => {
+      action(fd);
+    });
   }
 
   return (
