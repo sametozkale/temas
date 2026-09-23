@@ -248,7 +248,7 @@ function ApplicantCard({
       {...attributes}
       onClick={() => onOpen(card.id)}
       className={cn(
-        "rounded-md border bg-background p-3 text-left transition-colors hover:border-foreground/20",
+        "cursor-pointer rounded-md border bg-background p-3 text-left transition-colors hover:border-foreground/20",
         isDragging && "opacity-50",
       )}
     >

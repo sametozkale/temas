@@ -101,6 +101,7 @@ export async function saveContractTemplate(
 
   if (!id) return actionError("not_found");
   revalidatePath("/settings/templates");
+  revalidatePath(`/settings/templates/${id}`);
   return actionOk({ id });
 }
 
@@ -150,5 +151,6 @@ export async function restoreContractTemplate(
 
   if (!result.ok) return actionError(result.error);
   revalidatePath("/settings/templates");
+  revalidatePath(`/settings/templates/${result.id}`);
   return actionOk({ id: result.id });
 }

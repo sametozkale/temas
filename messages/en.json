@@ -1174,11 +1174,9 @@
     "templates": {
       "title": "Contract templates",
       "description": "Markdown templates with placeholders used by contract mode.",
-      "intro_title": "A letting file, not a statute book",
-      "intro": "Starters follow the papers a letting agent actually prepares: authority to market, a reservation offer, the lease, a deposit receipt, the handover protocol, and a vacate undertaking. Contract mode fills them from the listing — owner and tenant, address and layout, rent, deposit, dues, inventory, the official company name and the assigned agent. Deposit caps, tenancy registration, rent-increase indices, cooling-off, notice periods, deposit-protection schemes and required annexes change by country and sometimes by city. Keep the jurisdiction placeholder in the draft and have a local lawyer review it before anyone signs.",
+      "back": "Templates",
       "list_title": "Templates",
       "list_description": "Edit a starter or add your own. Restore starter puts the product copy back without touching other templates.",
-      "new": "New",
       "new_title": "New template",
       "editor_hint": "Insert listing placeholders. Leave the jurisdiction clause in place. Empty fields stay visible in the draft so you do not invent facts.",
       "name": "Name",

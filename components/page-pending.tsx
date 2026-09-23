@@ -78,14 +78,19 @@ function kindFromPath(
 function TitleRow({
   action,
   description,
+  titleSuffix,
 }: {
   action?: boolean;
   description?: boolean;
+  titleSuffix?: boolean;
 }) {
   return (
     <header className="flex shrink-0 flex-col gap-1">
       <div className="flex items-center justify-between gap-3">
-        <Bar className="h-7 w-36" />
+        <div className="flex items-baseline gap-2">
+          <Bar className="h-7 w-36" />
+          {titleSuffix ? <Bar className="h-4 w-5" /> : null}
+        </div>
         {action ? <Bar className="h-8 w-24 rounded-md" /> : null}
       </div>
       {description ? <Bar className="h-4 w-52" /> : null}
@@ -264,7 +269,7 @@ function CalendarPending() {
 function PropertiesPending() {
   return (
     <div className="space-y-6">
-      <TitleRow action description />
+      <TitleRow action titleSuffix />
       <div className="flex h-8 items-center gap-2">
         <Bar className="h-8 w-[200px] max-w-[40%] rounded-md" />
         <Bar className="h-8 w-24 rounded-md" />
@@ -276,14 +281,18 @@ function PropertiesPending() {
         {Array.from({ length: 6 }, (_, i) => (
           <li key={i}>
             <div className="overflow-hidden rounded-xl border">
-              <Bar className="aspect-[4/3] w-full rounded-none" />
-              <div className="space-y-2 p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <Bar className="h-4 w-32" />
-                  <Bar className="h-5 w-14 rounded-full" />
+              <div className="relative">
+                <Bar className="aspect-[4/3] w-full rounded-none" />
+                <Bar className="absolute top-2.5 right-2.5 h-5 w-14 rounded-full" />
+              </div>
+              <div className="space-y-1.5 p-4">
+                <Bar className="h-4 w-3/4" />
+                <Bar className="h-3 w-1/2" />
+                <Bar className="h-3 w-2/5" />
+                <div className="flex items-center justify-between pt-1.5">
+                  <Bar className="h-4 w-16" />
+                  <Bar className="h-3 w-20" />
                 </div>
-                <Bar className="h-3 w-40" />
-                <Bar className="h-4 w-20" />
               </div>
             </div>
           </li>

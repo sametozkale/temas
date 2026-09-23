@@ -12,6 +12,7 @@ describe("plans catalog", () => {
   it("exposes per-workspace AI quotas", () => {
     expect(getPlan("free").aiMessagesPerMonth).toBe(100);
     expect(getPlan("pro").aiMessagesPerMonth).toBe(2000);
+    expect(PLANS.free.seats).toBe(1);
     expect(PLANS.free.seats).toBeLessThan(PLANS.pro.seats);
   });
 });

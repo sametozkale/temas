@@ -78,7 +78,7 @@ export function BillingPanel({
                 aria-current={selected ? "true" : undefined}
                 className={cn(
                   "flex flex-col gap-4 rounded-2xl border bg-card p-4",
-                  selected && "border-foreground/20 ring-1 ring-foreground/10",
+                  selected && "border-foreground/25",
                 )}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -108,7 +108,6 @@ export function BillingPanel({
                 {selected ? null : (
                   <Button
                     type="button"
-                    variant="soft"
                     size="sm"
                     className="mt-auto self-start"
                     disabled={pending}

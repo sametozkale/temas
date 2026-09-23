@@ -21,7 +21,7 @@ export type Plan = {
 export const PLANS: Record<PlanId, Plan> = {
   free: {
     id: "free",
-    seats: 3,
+    seats: 1,
     properties: 10,
     aiMessagesPerMonth: 100,
     integrations: true,

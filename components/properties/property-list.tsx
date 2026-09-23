@@ -67,40 +67,55 @@ export async function PropertyGrid({ items }: { items: PropertyListItem[] }) {
         const area = formatNumber(p.areaM2);
         return (
           <li key={p.id}>
-            <Link href={`/properties/${p.id}`} className="group block">
-              <Card className="gap-0 overflow-hidden py-0 transition-colors group-hover:border-foreground/20">
-                <Cover url={p.coverUrl} title={p.title} />
-                <div className="space-y-2 p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="line-clamp-1 text-sm font-medium">
-                      {p.title}
-                    </h3>
-                    <PropertyStatusBadge status={p.status} />
-                  </div>
+            <Link href={`/properties/${p.id}`} className="group block h-full">
+              <Card className="h-full gap-0 overflow-hidden py-0 transition-colors group-hover:border-foreground/20">
+                <div className="relative">
+                  <Cover url={p.coverUrl} title={p.title} />
+                  <PropertyStatusBadge
+                    status={p.status}
+                    className="absolute top-2.5 right-2.5"
+                  />
+                </div>
+                <div className="flex flex-1 flex-col gap-1.5 p-4">
+                  <h3 className="line-clamp-2 text-sm leading-snug font-medium">
+                    {p.title}
+                  </h3>
                   <p className="line-clamp-1 text-xs text-muted-foreground">
                     {formatAddress(p.address, { short: true }) ??
                       t("no_address")}
                   </p>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <PropertyTypeLabel type={p.type} />
-                    <span>
-                      {[p.rooms, area ? `${area} m²` : null]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </span>
-                  </div>
-                  <p className="text-sm font-medium">
-                    {rent ?? (
-                      <span className="text-muted-foreground">
-                        {t("no_rent")}
-                      </span>
-                    )}
+                  <p className="flex min-w-0 items-center gap-1.5 text-xs leading-none text-muted-foreground">
+                    <PropertyTypeLabel
+                      type={p.type}
+                      className="min-w-0 shrink"
+                    />
+                    {p.rooms ? (
+                      <>
+                        <span aria-hidden className="shrink-0">·</span>
+                        <span className="shrink-0 tabular-nums">{p.rooms}</span>
+                      </>
+                    ) : null}
+                    {area ? (
+                      <>
+                        <span aria-hidden className="shrink-0">·</span>
+                        <span className="shrink-0 tabular-nums">{area} m²</span>
+                      </>
+                    ) : null}
                   </p>
-                  {p.assignedAgentName ? (
-                    <p className="text-xs text-muted-foreground">
-                      {p.assignedAgentName}
+                  <div className="mt-auto flex items-baseline justify-between gap-3 pt-1.5">
+                    <p className="text-sm font-medium tabular-nums">
+                      {rent ?? (
+                        <span className="font-normal text-muted-foreground">
+                          {t("no_rent")}
+                        </span>
+                      )}
                     </p>
-                  ) : null}
+                    {p.assignedAgentName ? (
+                      <p className="truncate text-xs text-muted-foreground">
+                        {p.assignedAgentName}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
               </Card>
             </Link>

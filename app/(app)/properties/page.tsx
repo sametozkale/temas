@@ -103,10 +103,9 @@ export default async function PropertiesPage({
     <div className="space-y-6">
       <PageHeader
         title={t("title")}
+        titleSuffix={items.length}
         description={
-          items.length > 0
-            ? t("count", { count: items.length })
-            : t("description")
+          items.length === 0 && !hasFilters ? t("description") : undefined
         }
         actions={
           canWrite ? (

@@ -14,6 +14,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
+import { DatePicker } from "@/components/ui/date-picker";
 import { FileInput } from "@/components/ui/file-input";
 import { Input } from "@/components/ui/input";
 import {
@@ -46,13 +47,13 @@ export function PublicForm({
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    const missingRequiredSelect = fields.some(
-      (field) =>
-        field.type === "select" &&
-        field.required &&
-        !String(data.get(`field_${field.key}`) ?? "").trim(),
-    );
-    if (missingRequiredSelect) {
+    const missingRequired = fields.some((field) => {
+      if (!field.required) return false;
+      const val = String(data.get(`field_${field.key}`) ?? "").trim();
+      if (field.type === "select" || field.type === "date") return !val;
+      return false;
+    });
+    if (missingRequired) {
       toast.error(t("errors.invalid"));
       return;
     }
@@ -170,29 +171,24 @@ function FormFieldControl({ field }: { field: FormField }) {
   if (field.type === "file") {
     return <PublicFileField field={field} />;
   }
+  if (field.type === "date") {
+    return (
+      <PublicField id={name} label={field.label} helpText={field.helpText}>
+        <DatePicker id={name} name={name} required={required} />
+      </PublicField>
+    );
+  }
   const type =
     field.type === "number"
       ? "number"
       : field.type === "email"
         ? "email"
-          : field.type === "date"
-          ? "date"
-            : field.type === "phone"
-              ? "tel"
-              : "text";
+        : field.type === "phone"
+          ? "tel"
+          : "text";
   return (
     <PublicField id={name} label={field.label} helpText={field.helpText}>
-      <Input
-        id={name}
-        name={name}
-        type={type}
-        required={required}
-        className={
-          type === "date"
-            ? "tabular-nums [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-50 hover:[&::-webkit-calendar-picker-indicator]:opacity-80"
-            : undefined
-        }
-      />
+      <Input id={name} name={name} type={type} required={required} />
     </PublicField>
   );
 }

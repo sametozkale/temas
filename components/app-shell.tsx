@@ -155,12 +155,12 @@ export function AppShell({
                 fullBleed || propertyRecord
                   ? "overflow-hidden"
                   : homeCanvas
-                    ? "mx-auto max-w-[1080px] overflow-auto px-4 pt-6 pb-2 md:px-8"
+                    ? "mx-auto max-w-[1080px] overflow-auto px-6 pt-6 pb-2"
                     : wizardCanvas
-                      ? "mx-auto max-w-[1080px] overflow-hidden px-4 pt-6 pb-6 md:px-8"
+                      ? "mx-auto max-w-[1080px] overflow-hidden px-6 pt-6 pb-6"
                       : calendarCanvas
-                        ? "mx-auto max-w-[1080px] overflow-hidden px-4 pt-6 pb-4 md:px-8"
-                        : "mx-auto max-w-[1080px] overflow-auto px-4 pt-6 pb-8 md:px-8",
+                        ? "mx-auto max-w-[1080px] overflow-hidden px-6 pt-6 pb-4"
+                        : "mx-auto max-w-[1080px] overflow-auto px-6 pt-6 pb-8",
               )}
             >
               {children}

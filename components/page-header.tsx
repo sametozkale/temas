@@ -8,6 +8,8 @@ export const pageTitleClassName =
 
 type PageHeaderProps = React.ComponentProps<"header"> & {
   title: React.ReactNode;
+  /** Quiet figure beside the title (e.g. list length). */
+  titleSuffix?: React.ReactNode;
   description?: React.ReactNode;
   /** Top-right actions. Use `variant="pill"` buttons; one primary per screen. */
   actions?: React.ReactNode;
@@ -19,6 +21,7 @@ type PageHeaderProps = React.ComponentProps<"header"> & {
  */
 export function PageHeader({
   title,
+  titleSuffix,
   description,
   actions,
   className,
@@ -27,7 +30,19 @@ export function PageHeader({
   return (
     <header className={cn("flex flex-col gap-1", className)} {...props}>
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-        <h1 className={cn(pageTitleClassName, "min-w-0")}>{title}</h1>
+        <h1
+          className={cn(
+            pageTitleClassName,
+            "flex min-w-0 items-baseline gap-2",
+          )}
+        >
+          <span className="min-w-0 truncate">{title}</span>
+          {titleSuffix ? (
+            <span className="shrink-0 font-sans text-sm font-normal tabular-nums text-muted-foreground">
+              {titleSuffix}
+            </span>
+          ) : null}
+        </h1>
         {actions ? (
           <div className="flex shrink-0 items-center gap-2">{actions}</div>
         ) : null}
