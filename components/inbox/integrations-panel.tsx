@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { GmailMark, WhatsAppMark } from "@/components/brands";
-import { ArrowRight01Icon, Icon } from "@/components/icons";
+import { ArrowRight01Icon, Icon, Tick02Icon } from "@/components/icons";
 import {
   SettingsGroup,
   SettingsItem,
@@ -111,7 +111,14 @@ function IntegrationRowLink({
       >
         <span className="flex items-center gap-2">
           <SettingsStatus tone={connected ? "success" : "muted"}>
-            {connected ? connectedLabel : disconnectedLabel}
+            {connected ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Icon icon={Tick02Icon} size={16} />
+                {connectedLabel}
+              </span>
+            ) : (
+              disconnectedLabel
+            )}
           </SettingsStatus>
           <Icon
             icon={ArrowRight01Icon}

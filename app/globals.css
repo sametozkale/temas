@@ -52,6 +52,10 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
+  /* App frame around the light page panel. Matches the page in light/dark;
+     contrast pins it to the dark canvas. */
+  --color-frame: var(--frame);
+
   /* Sidebar (shadcn sidebar primitives) */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
@@ -113,6 +117,7 @@
   --input: #e9e6e0;
   --ring: #22211e;
   --radius: 0.625rem; /* 10px */
+  --frame: #fafaf7;
 
   /* Semantic extras (brand) */
   --brand: #2f5d50;
@@ -146,7 +151,8 @@
   --sidebar-ring: #22211e;
 }
 
-.dark {
+.dark,
+html.contrast .theme-chrome {
   --background: #191816;
   --foreground: #edede8;
   --card: #201f1c;
@@ -166,6 +172,7 @@
   --border: #34322d;
   --input: #34322d;
   --ring: #edede8;
+  --frame: #191816;
 
   --brand: #7fb3a3;
   --brand-soft: #243530;
@@ -194,6 +201,19 @@
   --sidebar-accent-foreground: #edede8;
   --sidebar-border: #34322d;
   --sidebar-ring: #edede8;
+}
+
+/* Contrast: dark frame + sidebar, light page. Page tokens stay on :root. */
+html.contrast {
+  --frame: #191816;
+}
+
+html.contrast body {
+  background-color: var(--frame);
+}
+
+html.contrast [data-slot="sheet-overlay"] {
+  background-color: color-mix(in oklab, var(--frame) 80%, transparent);
 }
 
 @layer base {

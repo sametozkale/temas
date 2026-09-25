@@ -1,8 +1,8 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Suspense } from "react";
+import * as React from "react";
 
 import { isPropertyRecordPath } from "@/components/properties/property-tabs";
 import { cn } from "@/lib/utils";
@@ -728,8 +728,14 @@ function PendingFrame({ kind }: { kind: Kind }) {
 function CanvasPendingInner({ scope }: { scope: "page" | "tab" }) {
   const t = useTranslations("common");
   const pathname = usePathname();
-  const search = useSearchParams();
-  const kind = kindFromPath(pathname, search.get("thread"), scope);
+  // `useSearchParams` suspends. This component is the `loading.tsx` fallback,
+  // so a second boundary hydrates as an empty box against the shell.
+  const [threadId, setThreadId] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("thread");
+    setThreadId(id);
+  }, [pathname]);
+  const kind = kindFromPath(pathname, threadId, scope);
 
   return (
     <div
@@ -753,19 +759,7 @@ function CanvasPendingInner({ scope }: { scope: "page" | "tab" }) {
  * (docs/01: no illustrations, no spinner, plain pulse).
  */
 export function CanvasPending({ scope = "page" }: { scope?: "page" | "tab" }) {
-  return (
-    <Suspense
-      fallback={
-        <div
-          role="status"
-          aria-busy="true"
-          className="flex min-h-0 min-w-0 flex-1 flex-col"
-        />
-      }
-    >
-      <CanvasPendingInner scope={scope} />
-    </Suspense>
-  );
+  return <CanvasPendingInner scope={scope} />;
 }
 
 /** @deprecated Use CanvasPending. Kept so older imports keep compiling. */

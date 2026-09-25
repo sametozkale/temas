@@ -3,7 +3,9 @@ import { getTranslations } from "next-intl/server";
 
 import { GmailMark, WhatsAppMark } from "@/components/brands";
 import { ConversationList } from "@/components/inbox/conversation-list";
-import { InboxMoreMenu } from "@/components/inbox/inbox-more-menu";
+import { InboxListPane } from "@/components/inbox/inbox-list-pane";
+import { InboxListHeader } from "@/components/inbox/inbox-list-header";
+import { InboxOlderMail } from "@/components/inbox/inbox-older-mail";
 import { Icon, InboxIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -14,11 +16,15 @@ export async function InboxSplit({
   items,
   selectedId,
   toolbar,
+  search = "",
+  hasOlder = false,
   children,
 }: {
   items: ConversationListItem[];
   selectedId?: string;
   toolbar?: React.ReactNode;
+  search?: string;
+  hasOlder?: boolean;
   children: React.ReactNode;
 }) {
   const t = await getTranslations("inbox");
@@ -31,22 +37,21 @@ export async function InboxSplit({
           selectedId || items.length === 0 ? "hidden md:flex" : "flex",
         )}
       >
-        <header className="flex h-11 shrink-0 items-center gap-0.5 px-2">
-          <h1 className="px-1.5 text-sm font-medium">{t("title")}</h1>
-          <div className="ml-auto flex items-center gap-0.5">
-            {toolbar}
-            <InboxMoreMenu />
-          </div>
-        </header>
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <InboxListHeader toolbar={toolbar} />
+        <InboxListPane>
           {items.length === 0 ? (
             <div className="flex h-full items-center justify-center px-6 text-center">
               <p className="text-sm text-muted-foreground">{t("empty_list")}</p>
             </div>
           ) : (
-            <ConversationList items={items} selectedId={selectedId} />
+            <ConversationList
+              items={items}
+              selectedId={selectedId}
+              search={search}
+            />
           )}
-        </div>
+          <InboxOlderMail hasMore={hasOlder} />
+        </InboxListPane>
       </aside>
       <section
         className={cn(

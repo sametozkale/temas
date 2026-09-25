@@ -34,6 +34,28 @@ export function parseInboxListFilters(
   };
 }
 
+/** Query string that keeps the inbox list filter across `/inbox` and a thread. */
+export function inboxListSearch(params: {
+  agent?: string;
+  channel?: string;
+  unanswered?: string;
+}) {
+  const search = new URLSearchParams();
+  if (
+    params.channel === "gmail" ||
+    params.channel === "email" ||
+    params.channel === "whatsapp"
+  ) {
+    search.set(
+      "channel",
+      params.channel === "email" ? "gmail" : params.channel,
+    );
+  }
+  if (params.unanswered === "1") search.set("unanswered", "1");
+  if (params.agent) search.set("agent", params.agent);
+  return search.toString();
+}
+
 export function inboxListFiltered(filters: InboxListFilters): boolean {
   return Boolean(
     filters.assignedUserId || filters.channel || filters.unanswered,

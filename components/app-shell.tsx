@@ -92,7 +92,7 @@ export function AppShell({
   };
 
   return (
-    <div className="flex h-svh bg-background">
+    <div className="flex h-svh bg-frame">
       {/* Desktop sidebar */}
       <aside
         className={cn(
@@ -112,7 +112,7 @@ export function AppShell({
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {/* Mobile header */}
-        <header className="flex h-12 shrink-0 items-center gap-2 px-3 lg:hidden">
+        <header className="theme-chrome flex h-12 shrink-0 items-center gap-2 px-3 text-foreground lg:hidden">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button
@@ -125,7 +125,7 @@ export function AppShell({
             </SheetTrigger>
             <SheetContent
               side="left"
-              className="w-[232px] p-0"
+              className="theme-chrome w-[232px] bg-sidebar p-0 text-sidebar-foreground"
               showCloseButton={false}
             >
               <SheetTitle className="sr-only">{t("open_menu")}</SheetTitle>

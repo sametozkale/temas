@@ -16,6 +16,7 @@ import {
 // Soft toasts: no richColors, hairline border, token colors only (docs/01 §4)
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme();
+  const toastTheme = theme === "contrast" ? "light" : theme;
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -24,7 +25,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
 
   return (
     <Sonner
-      theme={(mounted ? theme : "system") as ToasterProps["theme"]}
+      theme={(mounted ? toastTheme : "system") as ToasterProps["theme"]}
       className="toaster group"
       richColors={false}
       icons={{

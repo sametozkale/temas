@@ -175,7 +175,10 @@ conversations (
   workspace_id uuid, user_id uuid references auth.users not null,  -- mailbox owner
   integration_id uuid, channel text check (channel in ('email','whatsapp')),
   contact_id uuid references contacts, property_id uuid,    -- result of automatic matching
-  subject text, last_message_at timestamptz, ai_summary text, is_read bool default false
+  subject text, last_message_at timestamptz, -- latest message in the thread, not the first
+  ai_summary text, is_read bool default false,
+  mailbox_state text default 'inbox' check (mailbox_state in ('inbox','archived','trash','spam')),
+  starred bool default false
 )
 -- index (workspace_id, user_id)
 

@@ -9,6 +9,13 @@ export type GmailCredentials = {
   expiry?: string;
   historyId?: string;
   watchExpiration?: string;
+  /** Set after the first INBOX import so later syncs only pull the delta. */
+  bootstrapped?: boolean;
+  /**
+   * Gmail `nextPageToken` for older INBOX pages. Missing means page 2 has
+   * not been requested. `""` means the mailbox has no older page.
+   */
+  inboxPageToken?: string;
 };
 
 async function authedFetch(
@@ -60,35 +67,91 @@ export async function gmailProfile(credentials: GmailCredentials) {
   }>;
 }
 
+export function gmailThreadStarred(messages: { labelIds?: string[] }[]) {
+  return messages.some((message) => message.labelIds?.includes("STARRED"));
+}
+
 export async function gmailHistory(
   credentials: GmailCredentials,
   startHistoryId: string,
 ) {
+  const query = new URLSearchParams({ startHistoryId });
+  query.append("historyTypes", "messageAdded");
+  query.append("historyTypes", "labelAdded");
+  query.append("historyTypes", "labelRemoved");
   const data = (await authedFetch(
     credentials,
-    `/history?startHistoryId=${encodeURIComponent(startHistoryId)}&historyTypes=messageAdded`,
+    `/history?${query.toString()}`,
   )) as {
     history?: {
       messagesAdded?: { message: { id: string; threadId: string } }[];
+      labelsAdded?: {
+        message: { id: string; threadId: string };
+        labelIds?: string[];
+      }[];
+      labelsRemoved?: {
+        message: { id: string; threadId: string };
+        labelIds?: string[];
+      }[];
     }[];
     historyId?: string;
   };
   const ids = new Set<string>();
-  for (const h of data.history ?? []) {
-    for (const added of h.messagesAdded ?? []) {
+  const starThreadIds = new Set<string>();
+  for (const entry of data.history ?? []) {
+    for (const added of entry.messagesAdded ?? []) {
       if (added.message?.id) ids.add(added.message.id);
     }
+    for (const change of [
+      ...(entry.labelsAdded ?? []),
+      ...(entry.labelsRemoved ?? []),
+    ]) {
+      if (change.labelIds?.includes("STARRED") && change.message?.threadId) {
+        starThreadIds.add(change.message.threadId);
+      }
+    }
   }
-  return { ids: [...ids], historyId: data.historyId ?? startHistoryId };
+  return {
+    ids: [...ids],
+    starThreadIds: [...starThreadIds],
+    historyId: data.historyId ?? startHistoryId,
+  };
 }
 
-export async function gmailListInbox(credentials: GmailCredentials, max = 20) {
+export async function gmailGetThread(
+  credentials: GmailCredentials,
+  threadId: string,
+) {
+  return authedFetch(
+    credentials,
+    `/threads/${encodeURIComponent(threadId)}?format=minimal`,
+  ) as Promise<{
+    messages?: { id: string; labelIds?: string[] }[];
+  }>;
+}
+
+/** Newest INBOX messages, one page. Pass `pageToken` for the next older page. */
+export async function gmailListInbox(
+  credentials: GmailCredentials,
+  max = 50,
+  pageToken?: string,
+) {
+  const query = new URLSearchParams({
+    labelIds: "INBOX",
+    maxResults: String(max),
+  });
+  if (pageToken) query.set("pageToken", pageToken);
   const data = (await authedFetch(
     credentials,
-    `/messages?labelIds=INBOX&maxResults=${max}`,
-  )) as { messages?: { id: string }[]; historyId?: string };
+    `/messages?${query.toString()}`,
+  )) as {
+    messages?: { id: string }[];
+    nextPageToken?: string;
+    historyId?: string;
+  };
   return {
     ids: (data.messages ?? []).map((m) => m.id),
+    nextPageToken: data.nextPageToken ?? null,
     historyId: data.historyId,
   };
 }
@@ -101,6 +164,33 @@ export async function gmailGetMessage(
     credentials,
     `/messages/${encodeURIComponent(id)}?format=full`,
   ) as Promise<GmailMessage>;
+}
+
+export async function gmailModifyThread(
+  credentials: GmailCredentials,
+  threadId: string,
+  change: { addLabelIds?: string[]; removeLabelIds?: string[] },
+) {
+  return authedFetch(
+    credentials,
+    `/threads/${encodeURIComponent(threadId)}/modify`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(change),
+    },
+  );
+}
+
+export async function gmailTrashThread(
+  credentials: GmailCredentials,
+  threadId: string,
+) {
+  return authedFetch(
+    credentials,
+    `/threads/${encodeURIComponent(threadId)}/trash`,
+    { method: "POST" },
+  );
 }
 
 export async function gmailSend(

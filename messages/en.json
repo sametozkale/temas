@@ -160,6 +160,10 @@
     "connect_whatsapp": "Connect WhatsApp",
     "more": "Inbox actions",
     "select_thread": "No conversation selected",
+    "search": "Search inbox",
+    "search_placeholder": "Name, email, or subject",
+    "search_clear": "Clear search",
+    "search_empty": "No conversations match your search",
     "filter": "Filter inbox",
     "filter_channel": "Channel",
     "filter_channel_all": "All channels",
@@ -171,6 +175,10 @@
     "filter_agent_mine": "My listings",
     "unknown_contact": "Unknown contact",
     "channel_email": "Email",
+    "email_body": "Email message",
+    "show_trimmed": "Show trimmed content",
+    "hide_trimmed": "Hide trimmed content",
+    "trimmed_content": "Trimmed content",
     "channel_whatsapp": "WhatsApp",
     "unlinked_property": "Not linked to a property yet",
     "you": "You",
@@ -185,11 +193,29 @@
     "tone_friendly": "Friendly",
     "tone_short": "Short",
     "back": "All conversations",
+    "loading_older": "Loading older mail…",
+    "archive": "Archive",
+    "spam": "Report spam",
+    "trash": "Delete",
+    "unread": "Mark as unread",
+    "star": "Star",
+    "unstar": "Remove star",
+    "archived": "Archived",
+    "reported_spam": "Reported as spam",
+    "trashed": "Moved to trash",
+    "marked_unread": "Marked as unread",
+    "starred": "Starred",
+    "unstarred": "Star removed",
     "errors": {
       "body": "Write a message before sending.",
       "forbidden": "You don't have permission to reply.",
       "no_recipient": "This conversation has no email or phone number to reply to.",
-      "send_failed": "The reply could not be sent. Try again."
+      "send_failed": "The reply could not be sent. Try again.",
+      "not_found": "This conversation is no longer in your inbox.",
+      "mailbox_failed": "Gmail could not update this email. Try again.",
+      "load_older": "Older mail could not be loaded. Try again.",
+      "reconnect": "Reconnect Gmail to archive, delete, or star mail.",
+      "invalid": "That mailbox action is not available."
     }
   },
   "calendar": {
@@ -952,8 +978,11 @@
     },
     "appearance": {
       "title": "Appearance",
-      "theme": "Dark mode",
-      "description": "Use a dark appearance. Saved on this browser."
+      "theme": "Theme",
+      "description": "Contrast keeps this page light and darkens the sidebar and the frame around it. Saved on this browser.",
+      "light": "Light",
+      "contrast": "Contrast",
+      "dark": "Dark"
     },
     "general": {
       "workspace_title": "Workspace",

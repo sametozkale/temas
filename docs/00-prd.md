@@ -57,9 +57,10 @@ A **workspace** is an office / agency. An **account** (login) may belong to many
 
 ### 3.4 Unified Inbox
 1. Each practising agent connects **their own** Gmail/Outlook (OAuth) and WhatsApp from Settings > Integrations. Before a mailbox is linked, the Gmail and WhatsApp detail pages are setup views (steps; WhatsApp also shows a generated QR). The connection is **account-owned** (`unique(user_id, kind)`): one Gmail and one WhatsApp per login, reused across workspaces. `workspace_id` on the integration is only the home workspace (the one they connected from) for unmatched inbound. WhatsApp Cloud API (Meta) sends and receives once connected; pairing can also complete by scanning the QR (`/i/wa/[token]`).
-2. Inbox is **strictly private**. Only the connecting user sees those threads — not even a workspace owner. Conversations are still attributed to a workspace (contact/property match) so the Inbox in workspace A shows that agent’s threads for A. An empty Inbox (no threads) tells the agent to connect Gmail and WhatsApp and links to those setup pages.
+2. Inbox is **strictly private**. Only the connecting user sees those threads — not even a workspace owner. Conversations are still attributed to a workspace (contact/property match) so the Inbox in workspace A shows that agent’s threads for A. An empty Inbox (no threads) tells the agent to connect Gmail and WhatsApp and links to those setup pages. The list can be searched by subject, sender name, and sender email.
 3. Every conversation is automatically matched to the relevant property and contact (phone/email match across the agent’s memberships).
-4. Inline AI help:
+4. An open email can be archived, reported as spam, moved to trash, marked unread, or starred. The same change is applied in Gmail. Archived, spam, and trashed threads leave this inbox. A new message on an archived thread brings it back.
+5. Inline AI help:
    - **Draft with AI** — one-click draft from the conversation history + property context (language and tone selection)
    - Smart reminders ("You haven't heard back from Ahmet since yesterday's viewing; the rent negotiation was left open")
    - Conversation summary (for long threads)
@@ -84,7 +85,7 @@ A **workspace** is an office / agency. An **account** (login) may belong to many
 Sidebar (slim, icon + label), top to bottom:
 - **Workspace switcher** — first control: current workspace name (or mark when collapsed). Opens a menu of memberships (name + role + check) and **New workspace**. Switching sets `temas_ws` and lands on Home. The same control sits on the Settings rail so Members apply to the active workspace. Integrations on that rail are the **signed-in user’s** mailboxes (not the agency’s).
 - **Home** — centred ask, coming up, suggestion chips (optional `mine` filter)
-- **Inbox** — the signed-in user’s email + WhatsApp only (optional Gmail / WhatsApp / unanswered / assigned-agent filters over **their** threads)
+- **Inbox** — the signed-in user’s email + WhatsApp only (search by subject, sender name, or sender email, plus optional Gmail / WhatsApp / unanswered / assigned-agent filters over **their** threads)
 - **Calendar** — all viewings across the workspace (month/week views; property + assigned-agent filters)
 - **Tasks** — Linear-style list (All / Assigned / Suggested), grouped by property, plus private AI suggestions from the caller’s inbox
 - **Properties** — list/grid, status / type / assigned-agent filters, search

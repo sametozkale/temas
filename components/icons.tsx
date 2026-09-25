@@ -21,12 +21,7 @@ export type IconProps = Omit<HugeiconsIconProps, "size"> & {
 /** Thin wrapper that fixes the stroke width and default size. */
 export const Icon = React.forwardRef<SVGSVGElement, IconProps>(
   ({ size = 18, strokeWidth = 1.5, ...props }, ref) => (
-    <HugeiconsIcon
-      ref={ref}
-      size={size}
-      strokeWidth={strokeWidth}
-      {...props}
-    />
+    <HugeiconsIcon ref={ref} size={size} strokeWidth={strokeWidth} {...props} />
   ),
 );
 Icon.displayName = "Icon";
@@ -105,6 +100,8 @@ export {
   Clock01Icon,
   Calendar01Icon,
   Mail01Icon,
+  InboxUnreadIcon,
+  SpamIcon,
   WhatsappIcon,
   BubbleChatIcon,
   SmartPhone01Icon,
@@ -139,5 +136,6 @@ export {
   Tag01Icon,
   Sun03Icon,
   Moon02Icon,
+  ContrastIcon,
   ComputerIcon,
 } from "@hugeicons/core-free-icons";

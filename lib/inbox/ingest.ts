@@ -174,19 +174,30 @@ export async function ingestInboundEmail(input: InboundEmail) {
     conversationId = created!.id;
   } else {
     const [existing] = await db
-      .select({ propertyId: conversations.propertyId })
+      .select({
+        propertyId: conversations.propertyId,
+        lastMessageAt: conversations.lastMessageAt,
+      })
       .from(conversations)
       .where(eq(conversations.id, conversationId))
       .limit(1);
+    const newer =
+      !existing?.lastMessageAt ||
+      sentAt.getTime() > existing.lastMessageAt.getTime();
     await db
       .update(conversations)
       .set({
-        contactId,
         propertyId: propertyId ?? existing?.propertyId ?? null,
-        lastMessageAt: sentAt,
-        isRead: false,
         ...(input.integrationId ? { integrationId: input.integrationId } : {}),
-        ...(input.subject ? { subject: input.subject } : {}),
+        ...(newer
+          ? {
+              contactId,
+              lastMessageAt: sentAt,
+              isRead: false,
+              mailboxState: "inbox" as const,
+              ...(input.subject ? { subject: input.subject } : {}),
+            }
+          : {}),
       })
       .where(eq(conversations.id, conversationId));
   }

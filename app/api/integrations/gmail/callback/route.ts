@@ -7,13 +7,15 @@ import { publicAppUrl } from "@/lib/app-url";
 import { getMembership, getUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { integrations } from "@/lib/db/schema";
-import { enqueueInboxSync } from "@/lib/inbox/enqueue";
 import { exchangeCode } from "@/lib/integrations/gmail/oauth";
 import {
   gmailProfile,
   type GmailCredentials,
 } from "@/lib/integrations/gmail/client";
-import { enableGmailWatch } from "@/lib/integrations/gmail/sync";
+import {
+  enableGmailWatch,
+  syncGmailIntegration,
+} from "@/lib/integrations/gmail/sync";
 import { requireAbility } from "@/lib/permissions";
 
 import { GMAIL_OAUTH_COOKIE, LEGACY_GMAIL_OAUTH_COOKIE } from "../start/route";
@@ -87,7 +89,6 @@ export async function GET(request: NextRequest) {
   }
 
   const profile = await gmailProfile(credentials);
-  credentials.historyId = profile.historyId;
 
   const [upserted] = await db
     .insert(integrations)
@@ -120,11 +121,15 @@ export async function GET(request: NextRequest) {
   });
 
   try {
+    await syncGmailIntegration(upserted!.id);
+  } catch {
+    // Connected either way. Opening Inbox retries the INBOX import.
+  }
+  try {
     await enableGmailWatch(upserted!.id);
   } catch {
     // Watch is optional; polling still works.
   }
-  await enqueueInboxSync({ integrationId: upserted!.id });
 
   return NextResponse.redirect(await settingsUrl());
 }

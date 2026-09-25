@@ -58,6 +58,9 @@ export const integrations = pgTable(
 export const CHANNELS = ["email", "whatsapp"] as const;
 export type Channel = (typeof CHANNELS)[number];
 
+export const MAILBOX_STATES = ["inbox", "archived", "trash", "spam"] as const;
+export type MailboxState = (typeof MAILBOX_STATES)[number];
+
 export const conversations = pgTable(
   "conversations",
   {
@@ -83,11 +86,20 @@ export const conversations = pgTable(
     lastMessageAt: timestamp("last_message_at", { withTimezone: true }),
     aiSummary: text("ai_summary"),
     isRead: boolean("is_read").notNull().default(false),
+    /** Where this thread sits in the mailbox. Inbox list shows `inbox` only. */
+    mailboxState: text("mailbox_state", { enum: MAILBOX_STATES })
+      .notNull()
+      .default("inbox"),
+    starred: boolean("starred").notNull().default(false),
   },
   (t) => [
     check(
       "conversations_channel_check",
       sql`${t.channel} in ('email','whatsapp')`,
+    ),
+    check(
+      "conversations_mailbox_state_check",
+      sql`${t.mailboxState} in ('inbox','archived','trash','spam')`,
     ),
     index("conversations_workspace_user_idx").on(t.workspaceId, t.userId),
     ...conversationOwnerPolicies("conversations", t.userId, t.workspaceId),

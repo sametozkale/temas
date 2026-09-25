@@ -10,9 +10,18 @@ import { getAppContext } from "@/lib/auth";
 import { withUserContext } from "@/lib/db";
 import {
   inboxListFiltered,
+  inboxListSearch,
   parseInboxListFilters,
 } from "@/lib/inbox/filters";
-import { listConversations, listIntegrations } from "@/lib/inbox/queries";
+import {
+  listConversations,
+  listIntegrations,
+  syncConversationRecency,
+} from "@/lib/inbox/queries";
+import {
+  gmailOlderAvailable,
+  refreshGmailInbox,
+} from "@/lib/integrations/gmail/sync";
 import { can } from "@/lib/permissions";
 import { listAssignableMembers } from "@/lib/properties/assignment";
 
@@ -32,16 +41,19 @@ export default async function InboxPage({
   ]);
   const filters = parseInboxListFilters(params, ctx.user.id);
 
+  try {
+    await refreshGmailInbox(ctx.user.id);
+  } catch {
+    // Inbox still renders. The next visit retries the first INBOX import.
+  }
+  const hasOlder = await gmailOlderAvailable(ctx.user.id).catch(() => false);
+
   const { items, agents, rows } = await withUserContext(
     ctx.user.id,
     async (tx) => {
+      await syncConversationRecency(tx, ctx.user.id);
       const [items, agents, rows] = await Promise.all([
-        listConversations(
-          tx,
-          ctx.workspace.id,
-          ctx.user.id,
-          filters,
-        ),
+        listConversations(tx, ctx.workspace.id, ctx.user.id, filters),
         listAssignableMembers(tx, ctx.workspace.id),
         listIntegrations(tx, ctx.user.id),
       ]);
@@ -54,13 +66,14 @@ export default async function InboxPage({
   const whatsappConnected =
     rows.find((row) => row.kind === "whatsapp")?.status === "connected";
   const canConnect = can(ctx.membership.role, "integrations.manage");
-  const showConnectEmpty =
-    items.length === 0 && !inboxListFiltered(filters);
+  const showConnectEmpty = items.length === 0 && !inboxListFiltered(filters);
   const waiting = gmailConnected && whatsappConnected;
 
   return (
     <InboxSplit
       items={items}
+      search={inboxListSearch(params)}
+      hasOlder={hasOlder}
       toolbar={
         <InboxAgentFilter
           currentUserId={ctx.user.id}

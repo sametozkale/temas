@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   inboxListFiltered,
+  inboxListSearch,
   parseInboxChannel,
   parseInboxListFilters,
 } from "./filters";
@@ -45,6 +46,19 @@ describe("parseInboxListFilters", () => {
       channel: undefined,
       unanswered: false,
     });
+  });
+});
+
+describe("inboxListSearch", () => {
+  it("keeps channel, unanswered and agent, and writes email as gmail", () => {
+    expect(
+      inboxListSearch({
+        channel: "email",
+        unanswered: "1",
+        agent: "me",
+      }),
+    ).toBe("channel=gmail&unanswered=1&agent=me");
+    expect(inboxListSearch({ channel: "sms" })).toBe("");
   });
 });
 

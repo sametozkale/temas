@@ -51,10 +51,28 @@ export async function countUnread(
       and(
         eq(conversations.workspaceId, workspaceId),
         eq(conversations.userId, userId),
+        eq(conversations.mailboxState, "inbox"),
         eq(conversations.isRead, false),
       ),
     );
   return row?.count ?? 0;
+}
+
+/** Point each thread at its latest message. Older imports must not rewind it. */
+export async function syncConversationRecency(tx: DbOrTx, userId: string) {
+  await tx.execute(sql`
+    update conversations as c
+    set last_message_at = latest.max_sent
+    from (
+      select conversation_id, max(sent_at) as max_sent
+      from messages
+      group by conversation_id
+    ) as latest
+    where c.id = latest.conversation_id
+      and c.user_id = ${userId}
+      and latest.max_sent is not null
+      and c.last_message_at is distinct from latest.max_sent
+  `);
 }
 
 export async function listConversations(
@@ -64,14 +82,17 @@ export async function listConversations(
   filters: InboxListFilters = {},
 ) {
   const lastBody = sql<string | null>`(
-    select ${messages.body} from ${messages}
-    where ${messages.conversationId} = ${conversations.id}
-    order by ${messages.sentAt} desc nulls last, ${messages.createdAt} desc
-    limit 1
+    case when ${conversations.channel} = 'whatsapp' then (
+      select ${messages.body} from ${messages}
+      where ${messages.conversationId} = ${conversations.id}
+      order by ${messages.sentAt} desc nulls last, ${messages.createdAt} desc
+      limit 1
+    ) else null end
   )`;
   const where = [
     eq(conversations.workspaceId, workspaceId),
     eq(conversations.userId, userId),
+    eq(conversations.mailboxState, "inbox"),
   ];
   if (filters.assignedUserId) {
     where.push(eq(properties.assignedUserId, filters.assignedUserId));

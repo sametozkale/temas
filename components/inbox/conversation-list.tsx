@@ -1,9 +1,18 @@
+"use client";
+
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import * as React from "react";
 
 import { GmailMark, WhatsAppMark } from "@/components/brands";
+import {
+  hydrateInboxSearch,
+  readInboxSearch,
+  subscribeInboxSearch,
+} from "@/components/inbox/inbox-search";
 import { cn } from "@/lib/utils";
 import { formatRelative } from "@/lib/format";
+import { conversationMatchesSearch } from "@/lib/inbox/search";
 
 export type ConversationListItem = {
   id: string;
@@ -18,14 +27,27 @@ export type ConversationListItem = {
   assignedAgentName?: string | null;
 };
 
-export async function ConversationList({
+export function ConversationList({
   items,
   selectedId,
+  search = "",
 }: {
   items: ConversationListItem[];
   selectedId?: string;
+  search?: string;
 }) {
-  const t = await getTranslations("inbox");
+  const t = useTranslations("inbox");
+  const query = React.useSyncExternalStore(
+    subscribeInboxSearch,
+    readInboxSearch,
+    () => "",
+  );
+  React.useLayoutEffect(() => {
+    hydrateInboxSearch();
+  }, []);
+  const visible = items.filter((item) =>
+    conversationMatchesSearch(item, query),
+  );
 
   if (items.length === 0) {
     return (
@@ -35,16 +57,27 @@ export async function ConversationList({
     );
   }
 
+  if (visible.length === 0) {
+    return (
+      <div className="flex h-full items-center justify-center px-6 py-10 text-center">
+        <p className="text-sm text-muted-foreground">{t("search_empty")}</p>
+      </div>
+    );
+  }
+
   return (
     <ul className="flex flex-col gap-px px-2 pb-2">
-      {items.map((item) => {
+      {visible.map((item) => {
         const active = item.id === selectedId;
         const title =
           item.contactName ?? item.contactEmail ?? t("unknown_contact");
         return (
           <li key={item.id}>
             <Link
-              href={`/inbox/${item.id}`}
+              href={
+                search ? `/inbox/${item.id}?${search}` : `/inbox/${item.id}`
+              }
+              scroll={false}
               className={cn(
                 "block rounded-md px-2.5 py-2 transition-colors hover:bg-muted/70",
                 active && "bg-muted",
@@ -89,7 +122,7 @@ export async function ConversationList({
                   {item.subject}
                 </p>
               ) : null}
-              {item.preview ? (
+              {item.channel !== "email" && item.preview ? (
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">
                   {item.preview}
                 </p>

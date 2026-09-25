@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { FilterIcon, Icon } from "@/components/icons";
@@ -27,6 +27,7 @@ export function InboxAgentFilter({
 }) {
   const t = useTranslations("inbox");
   const router = useRouter();
+  const pathname = usePathname();
   const params = useSearchParams();
   const channel = params.get("channel") ?? ALL;
   const unanswered = params.get("unanswered") === "1";
@@ -40,7 +41,7 @@ export function InboxAgentFilter({
       else search.set(key, next);
     }
     const qs = search.toString();
-    router.replace(qs ? `/inbox?${qs}` : "/inbox");
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
   }
 
   return (
@@ -51,10 +52,7 @@ export function InboxAgentFilter({
           variant="ghost"
           size="icon-sm"
           aria-label={t("filter")}
-          className={cn(
-            "text-muted-foreground",
-            active && "text-foreground",
-          )}
+          className={cn("text-muted-foreground", active && "text-foreground")}
         >
           <Icon icon={FilterIcon} size={16} />
         </Button>
@@ -78,9 +76,7 @@ export function InboxAgentFilter({
         <DropdownMenuSeparator />
         <DropdownMenuCheckboxItem
           checked={unanswered}
-          onCheckedChange={(next) =>
-            apply({ unanswered: next ? "1" : null })
-          }
+          onCheckedChange={(next) => apply({ unanswered: next ? "1" : null })}
         >
           {t("filter_unanswered")}
         </DropdownMenuCheckboxItem>

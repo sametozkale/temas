@@ -92,7 +92,11 @@ export async function ingestInboundWhatsApp(input: InboundWhatsApp) {
   if (!contactId) throw new Error("contact_failed");
 
   const [open] = await db
-    .select({ id: conversations.id, propertyId: conversations.propertyId })
+    .select({
+      id: conversations.id,
+      propertyId: conversations.propertyId,
+      lastMessageAt: conversations.lastMessageAt,
+    })
     .from(conversations)
     .where(
       and(
@@ -143,13 +147,14 @@ export async function ingestInboundWhatsApp(input: InboundWhatsApp) {
       .returning({ id: conversations.id });
     conversationId = created!.id;
   } else {
+    const newer =
+      !open?.lastMessageAt || sentAt.getTime() > open.lastMessageAt.getTime();
     await db
       .update(conversations)
       .set({
         propertyId: propertyId ?? open?.propertyId ?? null,
-        lastMessageAt: sentAt,
-        isRead: false,
         ...(input.integrationId ? { integrationId: input.integrationId } : {}),
+        ...(newer ? { lastMessageAt: sentAt, isRead: false } : {}),
       })
       .where(eq(conversations.id, conversationId));
   }

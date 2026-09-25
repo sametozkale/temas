@@ -1,11 +1,14 @@
 import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 
+import { InboxAgentFilter } from "@/components/inbox/inbox-agent-filter";
 import { ConversationThread } from "@/components/inbox/conversation-thread";
 import { InboxSplit } from "@/components/inbox/inbox-split";
 import { getAppContext } from "@/lib/auth";
 import { withUserContext } from "@/lib/db";
 import { conversations, profiles } from "@/lib/db/schema";
+import { inboxListSearch, parseInboxListFilters } from "@/lib/inbox/filters";
+import { gmailOlderAvailable } from "@/lib/integrations/gmail/sync";
 import {
   getConversation,
   listConversations,
@@ -13,15 +16,24 @@ import {
 } from "@/lib/inbox/queries";
 import { TONES } from "@/lib/ai/types";
 import { can } from "@/lib/permissions";
+import { listAssignableMembers } from "@/lib/properties/assignment";
 
 export default async function ConversationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{
+    agent?: string;
+    channel?: string;
+    unanswered?: string;
+  }>;
 }) {
-  const { id } = await params;
+  const [{ id }, query] = await Promise.all([params, searchParams]);
   const ctx = await getAppContext();
-  const { items, thread, tone } = await withUserContext(
+  const filters = parseInboxListFilters(query, ctx.user.id);
+  const hasOlder = await gmailOlderAvailable(ctx.user.id).catch(() => false);
+  const { items, thread, tone, agents } = await withUserContext(
     ctx.user.id,
     async (tx) => {
       const [prefs] = await tx
@@ -36,12 +48,11 @@ export default async function ConversationPage({
         id,
       );
       if (!found) {
-        const items = await listConversations(
-          tx,
-          ctx.workspace.id,
-          ctx.user.id,
-        );
-        return { items, thread: null, tone: prefs?.tone };
+        const [items, agents] = await Promise.all([
+          listConversations(tx, ctx.workspace.id, ctx.user.id, filters),
+          listAssignableMembers(tx, ctx.workspace.id),
+        ]);
+        return { items, thread: null, tone: prefs?.tone, agents };
       }
       if (!found.conversation.isRead) {
         await tx
@@ -55,36 +66,61 @@ export default async function ConversationPage({
             ),
           );
       }
-      const [items, messages] = await Promise.all([
-        listConversations(tx, ctx.workspace.id, ctx.user.id),
+      const [items, messages, agents] = await Promise.all([
+        listConversations(tx, ctx.workspace.id, ctx.user.id, filters),
         listMessages(tx, id),
+        listAssignableMembers(tx, ctx.workspace.id),
       ]);
-      return { items, thread: { ...found, messages }, tone: prefs?.tone };
+      return {
+        items,
+        thread: { ...found, messages },
+        tone: prefs?.tone,
+        agents,
+      };
     },
   );
   if (!thread) notFound();
   const defaultTone = TONES.find((value) => value === tone) ?? "friendly";
 
   return (
-    <InboxSplit items={items} selectedId={id}>
-        <ConversationThread
-          conversationId={id}
-          subject={thread.conversation.subject}
-          contactName={thread.contactName}
-          contactEmail={thread.contactEmail}
-          propertyId={thread.propertyId}
-          propertyTitle={thread.propertyTitle}
-          messages={thread.messages.map((m) => ({
-            id: m.id,
-            direction: m.direction,
-            body: m.body,
-            sentAt: m.sentAt,
-            createdAt: m.createdAt,
+    <InboxSplit
+      items={items}
+      selectedId={id}
+      search={inboxListSearch(query)}
+      hasOlder={hasOlder}
+      toolbar={
+        <InboxAgentFilter
+          currentUserId={ctx.user.id}
+          agents={agents.map((agent) => ({
+            userId: agent.userId,
+            name: agent.fullName ?? agent.userId,
           }))}
-          canReply={can(ctx.membership.role, "inbox.write")}
-          canDraft={can(ctx.membership.role, "ai.use")}
-          defaultTone={defaultTone}
         />
-      </InboxSplit>
+      }
+    >
+      <ConversationThread
+        conversationId={id}
+        subject={thread.conversation.subject}
+        channel={thread.conversation.channel}
+        contactName={thread.contactName}
+        contactEmail={thread.contactEmail}
+        propertyId={thread.propertyId}
+        propertyTitle={thread.propertyTitle}
+        messages={thread.messages.map((m) => ({
+          id: m.id,
+          direction: m.direction,
+          body: m.body,
+          bodyHtml: m.bodyHtml,
+          from: typeof m.meta.from === "string" ? m.meta.from : null,
+          sentAt: m.sentAt,
+          createdAt: m.createdAt,
+        }))}
+        canReply={can(ctx.membership.role, "inbox.write")}
+        canDraft={can(ctx.membership.role, "ai.use")}
+        canManage={can(ctx.membership.role, "inbox.write")}
+        starred={thread.conversation.starred}
+        defaultTone={defaultTone}
+      />
+    </InboxSplit>
   );
 }

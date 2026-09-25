@@ -341,7 +341,7 @@ export function Sidebar({
         aria-label={t("settings")}
         data-collapsed={collapsed}
         className={cn(
-          "flex h-full flex-col bg-sidebar px-2 py-3 text-sidebar-foreground",
+          "theme-chrome flex h-full flex-col bg-sidebar px-2 py-3 text-sidebar-foreground",
           className,
         )}
       >
@@ -364,7 +364,7 @@ export function Sidebar({
       aria-label="Primary"
       data-collapsed={collapsed}
       className={cn(
-        "flex h-full min-h-0 flex-col gap-4 bg-sidebar px-2 py-3 text-sidebar-foreground",
+        "theme-chrome flex h-full min-h-0 flex-col gap-4 bg-sidebar px-2 py-3 text-sidebar-foreground",
         className,
       )}
     >
