@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 
 import { InboxReplyEmail } from "@/emails/inbox-reply";
 import { logActivity } from "@/lib/activity";
@@ -11,6 +11,8 @@ import {
   conversations,
   integrations,
   messages,
+  properties,
+  propertyPeople,
 } from "@/lib/db/schema";
 import { env } from "@/lib/env";
 import { sendEmail } from "@/lib/integrations/resend";
@@ -21,7 +23,17 @@ import {
 import { asGmailCredentials } from "@/lib/integrations/gmail/sync";
 import { sendWhatsAppText } from "@/lib/integrations/whatsapp/client";
 import { digitsPhone } from "@/lib/integrations/whatsapp/parse";
-import { normalizeSubject } from "@/lib/inbox/match";
+import {
+  matchContactId,
+  matchPropertyId,
+  normalizeSubject,
+} from "@/lib/inbox/match";
+
+function encodeHeader(value: string) {
+  const single = value.replace(/[\r\n]+/g, " ").trim();
+  if (/^[\t\x20-\x7E]*$/.test(single)) return single;
+  return `=?UTF-8?B?${Buffer.from(single, "utf8").toString("base64")}?=`;
+}
 
 function buildRfc822(input: {
   from: string;
@@ -33,7 +45,7 @@ function buildRfc822(input: {
   const headers = [
     `From: ${input.from}`,
     `To: ${input.to}`,
-    `Subject: ${input.subject}`,
+    `Subject: ${encodeHeader(input.subject)}`,
     "MIME-Version: 1.0",
     "Content-Type: text/plain; charset=UTF-8",
   ];
@@ -221,6 +233,191 @@ export async function sendInboxReply(input: {
 
   await markDraftSent(input.conversationId, input.draftId, input.body);
   await enqueueExtractTasks(input.conversationId);
+}
+
+/** Start a new email thread from the agent's own Gmail. */
+export async function sendNewEmail(input: {
+  workspaceId: string;
+  actorId: string;
+  fromName: string | null;
+  to: string;
+  toName?: string | null;
+  subject: string;
+  body: string;
+}) {
+  const to = input.to.trim().toLowerCase();
+  const [found] = await db
+    .select({
+      id: integrations.id,
+      credentials: integrations.credentials,
+      externalId: integrations.externalId,
+    })
+    .from(integrations)
+    .where(
+      and(
+        eq(integrations.userId, input.actorId),
+        eq(integrations.kind, "gmail"),
+        eq(integrations.status, "connected"),
+      ),
+    )
+    .limit(1);
+  if (!found) throw new Error("no_mailbox");
+  const credentials = asGmailCredentials(found.credentials);
+  const mailbox = found.externalId?.trim().toLowerCase() ?? "";
+  if (mailbox && to === mailbox) throw new Error("own_address");
+
+  const fromAddress = mailbox || "noreply@temas.local";
+  const fromHeader = input.fromName
+    ? `${encodeHeader(input.fromName)} <${fromAddress}>`
+    : fromAddress;
+
+  let externalId: string | null = null;
+  let threadId: string | null = null;
+  if (credentials.mode !== "dev" && credentials.refreshToken) {
+    const sent = await gmailSend(
+      credentials,
+      buildRfc822({
+        from: fromHeader,
+        to,
+        subject: input.subject,
+        body: input.body,
+      }),
+    );
+    externalId = sent.id;
+    threadId = sent.threadId;
+    await db
+      .update(integrations)
+      .set({ credentials })
+      .where(eq(integrations.id, found.id));
+  } else {
+    await sendEmail({
+      to,
+      subject: input.subject,
+      replyTo: fromAddress,
+      react: InboxReplyEmail({
+        recipientName: input.toName?.trim() || to,
+        body: input.body,
+        subject: input.subject,
+      }),
+    });
+  }
+
+  const contactId = await ensureWorkspaceContact({
+    workspaceId: input.workspaceId,
+    email: to,
+    name: input.toName?.trim() || to,
+  });
+  const propertyId = await matchListedProperty(
+    input.workspaceId,
+    contactId,
+    `${input.subject} ${input.body}`,
+  );
+  const sentAt = new Date();
+  const [created] = await db
+    .insert(conversations)
+    .values({
+      workspaceId: input.workspaceId,
+      userId: input.actorId,
+      integrationId: found.id,
+      channel: "email",
+      contactId,
+      propertyId,
+      subject: input.subject,
+      lastMessageAt: sentAt,
+      isRead: true,
+    })
+    .returning({ id: conversations.id });
+  const conversationId = created!.id;
+  await db.insert(messages).values({
+    conversationId,
+    direction: "out",
+    body: input.body,
+    externalId,
+    sentAt,
+    meta: {
+      threadId,
+      from: fromHeader,
+      to,
+    },
+  });
+  await logActivity({
+    workspaceId: input.workspaceId,
+    actorId: input.actorId,
+    propertyId,
+    action: "inbox.reply_sent",
+    entity: "conversation",
+    entityId: conversationId,
+    data: { to, composed: true },
+  });
+  try {
+    await enqueueExtractTasks(conversationId);
+  } catch {
+    // The message is already sent and stored.
+  }
+  return { conversationId };
+}
+
+async function ensureWorkspaceContact(input: {
+  workspaceId: string;
+  email: string;
+  name: string;
+}) {
+  const rows = await db
+    .select({
+      id: contacts.id,
+      email: contacts.email,
+      phone: contacts.phone,
+    })
+    .from(contacts)
+    .where(eq(contacts.workspaceId, input.workspaceId));
+  const matched = matchContactId(rows, input.email, null);
+  if (matched) return matched;
+  try {
+    const [created] = await db
+      .insert(contacts)
+      .values({
+        workspaceId: input.workspaceId,
+        fullName: input.name,
+        email: input.email,
+      })
+      .returning({ id: contacts.id });
+    return created!.id;
+  } catch {
+    const [again] = await db
+      .select({ id: contacts.id })
+      .from(contacts)
+      .where(
+        and(
+          eq(contacts.workspaceId, input.workspaceId),
+          eq(contacts.email, input.email),
+        ),
+      )
+      .limit(1);
+    if (!again) throw new Error("contact_failed");
+    return again.id;
+  }
+}
+
+async function matchListedProperty(
+  workspaceId: string,
+  contactId: string,
+  haystack: string,
+) {
+  const linked = await db
+    .select({ propertyId: propertyPeople.propertyId })
+    .from(propertyPeople)
+    .where(eq(propertyPeople.contactId, contactId));
+  const listed = await db
+    .select({ id: properties.id, title: properties.title })
+    .from(properties)
+    .where(
+      and(eq(properties.workspaceId, workspaceId), isNull(properties.deletedAt)),
+    );
+  return matchPropertyId(
+    listed,
+    linked.map((row) => row.propertyId),
+    haystack,
+  );
 }
 
 async function sendWhatsAppReply(

@@ -17,6 +17,7 @@ import {
   parseFromHeader,
 } from "@/lib/inbox/match";
 import { resolveMailboxWorkspace } from "@/lib/inbox/resolve-workspace";
+import { counterpartyEmail } from "@/lib/integrations/gmail/thread-messages";
 
 export type InboundEmail = {
   userId: string;
@@ -234,4 +235,219 @@ export async function ingestInboundEmail(input: InboundEmail) {
   }
 
   return { conversationId, created: true };
+}
+
+/**
+ * Store a message the mailbox owner sent, on the same thread as the other
+ * person. Does not create a contact for the owner.
+ */
+export async function ingestOwnEmail(input: InboundEmail & { mailbox: string }) {
+  if (input.externalId) {
+    const [dup] = await db
+      .select({ conversationId: messages.conversationId })
+      .from(messages)
+      .innerJoin(conversations, eq(conversations.id, messages.conversationId))
+      .where(
+        and(
+          eq(conversations.userId, input.userId),
+          eq(messages.externalId, input.externalId),
+        ),
+      )
+      .limit(1);
+    if (dup) return { conversationId: dup.conversationId, created: false };
+  }
+
+  const sentAt = input.sentAt ?? new Date();
+  let conversationId = await findConversationByThread(
+    input.userId,
+    input.threadId,
+  );
+  let advanceThread = false;
+
+  if (!conversationId) {
+    const email = counterpartyEmail(input.to, input.mailbox);
+    if (!email) return { conversationId: null, created: false };
+
+    const haystack = `${input.subject ?? ""} ${input.body}`;
+    const resolved = await resolveMailboxWorkspace({
+      userId: input.userId,
+      homeWorkspaceId: input.homeWorkspaceId,
+      email,
+      haystack,
+    });
+    const contactId = await ensureContact(resolved.workspaceId, email, email);
+    conversationId = await findConversationBySubject(
+      input.userId,
+      resolved.workspaceId,
+      contactId,
+      input.subject,
+    );
+    if (!conversationId) {
+      const propertyId = await matchPropertyForContact(
+        resolved.workspaceId,
+        contactId,
+        haystack,
+      );
+      const [created] = await db
+        .insert(conversations)
+        .values({
+          workspaceId: resolved.workspaceId,
+          userId: input.userId,
+          integrationId: input.integrationId,
+          channel: "email",
+          contactId,
+          propertyId,
+          subject: input.subject,
+          lastMessageAt: sentAt,
+          isRead: true,
+        })
+        .returning({ id: conversations.id });
+      conversationId = created!.id;
+      advanceThread = true;
+    }
+  }
+
+  if (!advanceThread) {
+    const [existing] = await db
+      .select({ lastMessageAt: conversations.lastMessageAt })
+      .from(conversations)
+      .where(eq(conversations.id, conversationId))
+      .limit(1);
+    advanceThread =
+      !existing?.lastMessageAt ||
+      sentAt.getTime() > existing.lastMessageAt.getTime();
+    await db
+      .update(conversations)
+      .set({
+        ...(input.integrationId ? { integrationId: input.integrationId } : {}),
+        ...(advanceThread ? { lastMessageAt: sentAt, isRead: true } : {}),
+      })
+      .where(eq(conversations.id, conversationId));
+  }
+
+  await db.insert(messages).values({
+    conversationId,
+    direction: "out",
+    body: input.body,
+    bodyHtml: input.bodyHtml ?? null,
+    externalId: input.externalId ?? null,
+    sentAt,
+    meta: {
+      threadId: input.threadId ?? null,
+      messageId: input.messageId ?? null,
+      inReplyTo: input.inReplyTo ?? null,
+      from: input.from,
+      to: input.to ?? null,
+    },
+  });
+
+  if (advanceThread) {
+    try {
+      await enqueueExtractTasks(conversationId);
+    } catch {
+      // Extraction is best-effort; the message is already stored.
+    }
+  }
+
+  return { conversationId, created: true };
+}
+
+async function findConversationByThread(
+  userId: string,
+  threadId: string | null | undefined,
+) {
+  if (!threadId) return null;
+  const [threaded] = await db
+    .select({ conversationId: messages.conversationId })
+    .from(messages)
+    .innerJoin(conversations, eq(conversations.id, messages.conversationId))
+    .where(
+      and(
+        eq(conversations.userId, userId),
+        sql`${messages.meta}->>'threadId' = ${threadId}`,
+      ),
+    )
+    .limit(1);
+  return threaded?.conversationId ?? null;
+}
+
+async function findConversationBySubject(
+  userId: string,
+  workspaceId: string,
+  contactId: string,
+  subject: string | null,
+) {
+  const normalized = normalizeSubject(subject);
+  const open = await db
+    .select({ id: conversations.id, subject: conversations.subject })
+    .from(conversations)
+    .where(
+      and(
+        eq(conversations.userId, userId),
+        eq(conversations.workspaceId, workspaceId),
+        eq(conversations.contactId, contactId),
+        eq(conversations.channel, "email"),
+      ),
+    )
+    .orderBy(desc(conversations.lastMessageAt))
+    .limit(30);
+  return open.find((c) => normalizeSubject(c.subject) === normalized)?.id ?? null;
+}
+
+async function ensureContact(
+  workspaceId: string,
+  email: string,
+  name: string,
+) {
+  const workspaceContacts = await db
+    .select({
+      id: contacts.id,
+      email: contacts.email,
+      phone: contacts.phone,
+    })
+    .from(contacts)
+    .where(eq(contacts.workspaceId, workspaceId));
+  const matched = matchContactId(workspaceContacts, email, null);
+  if (matched) return matched;
+  try {
+    const [created] = await db
+      .insert(contacts)
+      .values({
+        workspaceId,
+        fullName: name,
+        email,
+      })
+      .returning({ id: contacts.id });
+    return created!.id;
+  } catch {
+    const [again] = await db
+      .select({ id: contacts.id })
+      .from(contacts)
+      .where(and(eq(contacts.workspaceId, workspaceId), eq(contacts.email, email)))
+      .limit(1);
+    if (!again) throw new Error("contact_failed");
+    return again.id;
+  }
+}
+
+async function matchPropertyForContact(
+  workspaceId: string,
+  contactId: string,
+  haystack: string,
+) {
+  const linked = await db
+    .select({ propertyId: propertyPeople.propertyId })
+    .from(propertyPeople)
+    .where(eq(propertyPeople.contactId, contactId));
+  const listed = await db
+    .select({ id: properties.id, title: properties.title })
+    .from(properties)
+    .where(
+      and(eq(properties.workspaceId, workspaceId), isNull(properties.deletedAt)),
+    );
+  return matchPropertyId(
+    listed,
+    linked.map((l) => l.propertyId),
+    haystack,
+  );
 }

@@ -74,6 +74,7 @@ export default async function InboxPage({
       items={items}
       search={inboxListSearch(params)}
       hasOlder={hasOlder}
+      canCompose={can(ctx.membership.role, "inbox.write")}
       toolbar={
         <InboxAgentFilter
           currentUserId={ctx.user.id}
@@ -102,6 +103,10 @@ export default async function InboxPage({
       ) : (
         <InboxDetailEmpty
           label={items.length === 0 ? t("empty_list") : t("select_thread")}
+          composeHref={
+            can(ctx.membership.role, "inbox.write") ? "/inbox/new" : undefined
+          }
+          composeLabel={t("compose")}
         />
       )}
     </InboxSplit>

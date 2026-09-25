@@ -48,6 +48,8 @@ export function ConversationList({
   const visible = items.filter((item) =>
     conversationMatchesSearch(item, query),
   );
+  const showChannel =
+    new Set(items.map((item) => item.channel)).size > 1;
 
   if (items.length === 0) {
     return (
@@ -93,20 +95,22 @@ export function ConversationList({
                   {title}
                 </p>
                 <div className="flex shrink-0 items-center gap-1.5">
-                  <span
-                    className="inline-flex"
-                    aria-label={
-                      item.channel === "whatsapp"
-                        ? t("channel_whatsapp")
-                        : t("channel_email")
-                    }
-                  >
-                    {item.channel === "whatsapp" ? (
-                      <WhatsAppMark className="size-3" />
-                    ) : (
-                      <GmailMark className="size-3" />
-                    )}
-                  </span>
+                  {showChannel ? (
+                    <span
+                      className="inline-flex"
+                      aria-label={
+                        item.channel === "whatsapp"
+                          ? t("channel_whatsapp")
+                          : t("channel_email")
+                      }
+                    >
+                      {item.channel === "whatsapp" ? (
+                        <WhatsAppMark className="size-3" />
+                      ) : (
+                        <GmailMark className="size-3" />
+                      )}
+                    </span>
+                  ) : null}
                   {item.lastMessageAt ? (
                     <time
                       dateTime={item.lastMessageAt.toISOString()}
@@ -118,12 +122,12 @@ export function ConversationList({
                 </div>
               </div>
               {item.channel === "email" && item.subject ? (
-                <p className="truncate text-xs text-muted-foreground">
+                <p className="mt-1 truncate text-xs text-muted-foreground">
                   {item.subject}
                 </p>
               ) : null}
               {item.channel !== "email" && item.preview ? (
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                <p className="mt-1 truncate text-xs text-muted-foreground">
                   {item.preview}
                 </p>
               ) : null}

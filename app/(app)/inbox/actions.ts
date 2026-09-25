@@ -7,8 +7,8 @@ import { generateDraft } from "@/lib/ai/drafts";
 import { TONES } from "@/lib/ai/types";
 import { getAppContext } from "@/lib/auth";
 import { applyMailboxAction, MAILBOX_ACTIONS } from "@/lib/inbox/mailbox";
-import { replySchema } from "@/lib/inbox/schema";
-import { sendInboxReply } from "@/lib/inbox/send";
+import { composeSchema, replySchema } from "@/lib/inbox/schema";
+import { sendInboxReply, sendNewEmail } from "@/lib/inbox/send";
 import { loadOlderGmail } from "@/lib/integrations/gmail/sync";
 import { ForbiddenError, requireAbility } from "@/lib/permissions";
 
@@ -55,6 +55,52 @@ export async function sendReply(
   revalidatePath(`/inbox/${conversationId}`);
   revalidatePath("/", "layout");
   return actionOk();
+}
+
+export async function sendNewMessage(
+  _prev: ActionResult<{ conversationId: string }> | undefined,
+  formData: FormData,
+): Promise<ActionResult<{ conversationId: string }>> {
+  const ctx = await getAppContext();
+  try {
+    requireAbility(ctx.membership, "inbox.write");
+  } catch (error) {
+    if (error instanceof ForbiddenError) return actionError("forbidden");
+    throw error;
+  }
+
+  const toName = formData.get("toName");
+  const parsed = composeSchema.safeParse({
+    to: formData.get("to"),
+    toName: typeof toName === "string" ? toName : undefined,
+    subject: formData.get("subject"),
+    body: formData.get("body"),
+  });
+  if (!parsed.success) {
+    return actionError("invalid", parsed.error.flatten().fieldErrors);
+  }
+
+  try {
+    const sent = await sendNewEmail({
+      workspaceId: ctx.workspace.id,
+      actorId: ctx.user.id,
+      fromName: ctx.profile.fullName,
+      to: parsed.data.to,
+      toName: parsed.data.toName,
+      subject: parsed.data.subject,
+      body: parsed.data.body,
+    });
+    revalidatePath("/inbox");
+    revalidatePath(`/inbox/${sent.conversationId}`);
+    revalidatePath("/", "layout");
+    return actionOk(sent);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "send_failed";
+    if (message === "no_mailbox") return actionError("no_mailbox");
+    if (message === "own_address") return actionError("own_address");
+    if (message.startsWith("gmail_403")) return actionError("reconnect");
+    return actionError("send_failed");
+  }
 }
 
 export async function manageMailbox(

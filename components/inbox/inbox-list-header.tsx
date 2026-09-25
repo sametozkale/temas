@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 
@@ -10,13 +12,21 @@ import {
   setInboxSearch,
   subscribeInboxSearch,
 } from "@/components/inbox/inbox-search";
-import { Cancel01Icon, Icon, Search01Icon } from "@/components/icons";
+import { Cancel01Icon, Icon, PencilEdit01Icon, Search01Icon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-export function InboxListHeader({ toolbar }: { toolbar?: React.ReactNode }) {
+export function InboxListHeader({
+  toolbar,
+  canCompose = false,
+}: {
+  toolbar?: React.ReactNode;
+  canCompose?: boolean;
+}) {
   const t = useTranslations("inbox");
+  const pathname = usePathname();
+  const composing = pathname === "/inbox/new";
   const query = React.useSyncExternalStore(
     subscribeInboxSearch,
     readInboxSearch,
@@ -66,6 +76,25 @@ export function InboxListHeader({ toolbar }: { toolbar?: React.ReactNode }) {
         <h1 className="px-1.5 text-sm font-medium">{t("title")}</h1>
       )}
       <div className={cn("flex items-center gap-0.5", !showField && "ml-auto")}>
+        {canCompose ? (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            asChild
+            className={cn(
+              composing ? "text-foreground" : "text-muted-foreground",
+            )}
+          >
+            <Link
+              href="/inbox/new"
+              scroll={false}
+              aria-label={t("compose")}
+              aria-current={composing ? "page" : undefined}
+            >
+              <Icon icon={PencilEdit01Icon} size={16} />
+            </Link>
+          </Button>
+        ) : null}
         {showField ? (
           <Button
             type="button"

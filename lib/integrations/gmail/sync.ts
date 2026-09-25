@@ -2,12 +2,13 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { conversations, integrations, messages } from "@/lib/db/schema";
-import { ingestInboundEmail } from "@/lib/inbox/ingest";
+import { ingestInboundEmail, ingestOwnEmail } from "@/lib/inbox/ingest";
 import { parseFromHeader } from "@/lib/inbox/match";
 import {
   type GmailCredentials,
   gmailGetMessage,
   gmailGetThread,
+  gmailGetThreadMessages,
   gmailHistory,
   gmailListInbox,
   gmailThreadStarred,
@@ -17,6 +18,10 @@ import {
   gmailWatch,
 } from "@/lib/integrations/gmail/client";
 import { parseGmailMessage } from "@/lib/integrations/gmail/parse";
+import {
+  isMailboxAddress,
+  visibleGmailThreadMessage,
+} from "@/lib/integrations/gmail/thread-messages";
 
 export function asGmailCredentials(
   raw: Record<string, unknown> | null | undefined,
@@ -84,53 +89,43 @@ export async function syncGmailIntegration(integrationId: string) {
   const mailbox = profile.emailAddress.toLowerCase();
 
   const bootstrap = credentials.bootstrapped !== true;
-  let ids: string[] = [];
+  let threadIds: string[] = [];
+  let fallbackIds: string[] = [];
   let starThreadIds: string[] = [];
   let historyId = credentials.historyId ?? profile.historyId;
   if (!bootstrap && credentials.historyId) {
     try {
       const delta = await gmailHistory(credentials, credentials.historyId);
-      ids = delta.ids;
+      threadIds = delta.threadIds;
+      fallbackIds = delta.ids;
       starThreadIds = delta.starThreadIds;
       historyId = delta.historyId;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (!message.startsWith("gmail_404")) throw error;
       const full = await gmailListInbox(credentials);
-      ids = full.ids;
+      threadIds = full.threadIds;
       historyId = full.historyId ?? profile.historyId;
     }
   } else {
     const full = await gmailListInbox(credentials);
-    ids = full.ids;
+    threadIds = full.threadIds;
     historyId = profile.historyId;
     credentials.inboxPageToken = full.nextPageToken ?? "";
   }
 
-  let ingested = 0;
-  for (const id of ids) {
-    const raw = await gmailGetMessage(credentials, id);
-    if (raw.labelIds && !raw.labelIds.includes("INBOX")) continue;
-    const parsed = parseGmailMessage(raw);
-    const from = parseFromHeader(parsed.from);
-    if (from.email && from.email === mailbox) continue;
-    const result = await ingestInboundEmail({
-      userId: row.userId,
-      homeWorkspaceId: row.workspaceId,
-      integrationId: row.id,
-      from: parsed.from,
-      to: parsed.to,
-      subject: parsed.subject || null,
-      body: parsed.body,
-      bodyHtml: parsed.bodyHtml,
-      externalId: parsed.externalId,
-      threadId: parsed.threadId,
-      messageId: parsed.messageId || null,
-      inReplyTo: parsed.inReplyTo || null,
-      sentAt: parsed.sentAt,
-    });
-    if (result.created) ingested += 1;
-  }
+  const resolvedThreads = await threadIdsForMessages(
+    credentials,
+    fallbackIds,
+    threadIds,
+  );
+  const ingested = await ingestGmailThreads(
+    row,
+    credentials,
+    mailbox,
+    resolvedThreads,
+    { requireInbox: true },
+  );
 
   if (!bootstrap) {
     await syncGmailStars(row.userId, credentials, starThreadIds);
@@ -202,28 +197,9 @@ export async function loadOlderGmail(userId: string) {
   const profile = await gmailProfile(credentials);
   const mailbox = profile.emailAddress.toLowerCase();
   const page = await gmailListInbox(credentials, 50, token);
-  for (const id of page.ids) {
-    const raw = await gmailGetMessage(credentials, id);
-    if (raw.labelIds && !raw.labelIds.includes("INBOX")) continue;
-    const parsed = parseGmailMessage(raw);
-    const from = parseFromHeader(parsed.from);
-    if (from.email && from.email === mailbox) continue;
-    await ingestInboundEmail({
-      userId: row.userId,
-      homeWorkspaceId: row.workspaceId,
-      integrationId: row.id,
-      from: parsed.from,
-      to: parsed.to,
-      subject: parsed.subject || null,
-      body: parsed.body,
-      bodyHtml: parsed.bodyHtml,
-      externalId: parsed.externalId,
-      threadId: parsed.threadId,
-      messageId: parsed.messageId || null,
-      inReplyTo: parsed.inReplyTo || null,
-      sentAt: parsed.sentAt,
-    });
-  }
+  await ingestGmailThreads(row, credentials, mailbox, page.threadIds, {
+    requireInbox: true,
+  });
 
   credentials.inboxPageToken = page.nextPageToken ?? "";
   await persistGmailCredentials(row.id, credentials, {
@@ -303,6 +279,128 @@ export async function bootstrapGmailIfNeeded(userId: string) {
   if (credentials.mode === "dev" || credentials.bootstrapped === true) return;
   if (!credentials.refreshToken) return;
   await syncGmailIntegration(row.id);
+}
+
+/** Store both sides of one Gmail thread already linked to a conversation. */
+export async function fillGmailConversation(
+  userId: string,
+  conversationId: string,
+) {
+  const [conversation] = await db
+    .select({
+      channel: conversations.channel,
+      userId: conversations.userId,
+    })
+    .from(conversations)
+    .where(
+      and(
+        eq(conversations.id, conversationId),
+        eq(conversations.userId, userId),
+      ),
+    )
+    .limit(1);
+  if (!conversation || conversation.channel !== "email") return;
+
+  const [anchor] = await db
+    .select({
+      threadId: sql<string | null>`${messages.meta}->>'threadId'`,
+    })
+    .from(messages)
+    .where(eq(messages.conversationId, conversationId))
+    .limit(1);
+  const threadId = anchor?.threadId;
+  if (!threadId) return;
+
+  const [row] = await db
+    .select()
+    .from(integrations)
+    .where(
+      and(
+        eq(integrations.userId, userId),
+        eq(integrations.kind, "gmail"),
+        eq(integrations.status, "connected"),
+      ),
+    )
+    .limit(1);
+  if (!row) return;
+  const credentials = asGmailCredentials(row.credentials);
+  if (credentials.mode === "dev" || !credentials.refreshToken) return;
+  const mailbox = (
+    row.externalId ?? (await gmailProfile(credentials)).emailAddress
+  ).toLowerCase();
+  await ingestGmailThreads(row, credentials, mailbox, [threadId]);
+}
+
+async function threadIdsForMessages(
+  credentials: GmailCredentials,
+  messageIds: string[],
+  known: string[],
+) {
+  const threadIds = new Set(known);
+  if (threadIds.size > 0 || messageIds.length === 0) return [...threadIds];
+  for (const id of messageIds) {
+    const raw = await gmailGetMessage(credentials, id);
+    if (raw.threadId) threadIds.add(raw.threadId);
+  }
+  return [...threadIds];
+}
+
+async function ingestGmailThreads(
+  row: { id: string; userId: string; workspaceId: string },
+  credentials: GmailCredentials,
+  mailbox: string,
+  threadIds: string[],
+  options: { requireInbox?: boolean } = {},
+) {
+  let ingested = 0;
+  const seen = new Set<string>();
+  for (const threadId of threadIds) {
+    if (!threadId || seen.has(threadId)) continue;
+    seen.add(threadId);
+    let thread: Awaited<ReturnType<typeof gmailGetThreadMessages>>;
+    try {
+      thread = await gmailGetThreadMessages(credentials, threadId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.startsWith("gmail_404")) continue;
+      throw error;
+    }
+    const rawMessages = thread.messages ?? [];
+    if (
+      options.requireInbox &&
+      !rawMessages.some((message) => message.labelIds?.includes("INBOX"))
+    ) {
+      continue;
+    }
+    const ordered = rawMessages
+      .filter((message) => visibleGmailThreadMessage(message.labelIds))
+      .map((message) => parseGmailMessage(message))
+      .sort((a, b) => a.sentAt.getTime() - b.sentAt.getTime());
+    for (const parsed of ordered) {
+      const from = parseFromHeader(parsed.from);
+      const own = isMailboxAddress(from.email, mailbox);
+      const payload = {
+        userId: row.userId,
+        homeWorkspaceId: row.workspaceId,
+        integrationId: row.id,
+        from: parsed.from,
+        to: parsed.to,
+        subject: parsed.subject || null,
+        body: parsed.body,
+        bodyHtml: parsed.bodyHtml,
+        externalId: parsed.externalId,
+        threadId: parsed.threadId,
+        messageId: parsed.messageId || null,
+        inReplyTo: parsed.inReplyTo || null,
+        sentAt: parsed.sentAt,
+      };
+      const result = own
+        ? await ingestOwnEmail({ ...payload, mailbox })
+        : await ingestInboundEmail(payload);
+      if (result.created) ingested += 1;
+    }
+  }
+  return ingested;
 }
 
 /** Pull new mail and Gmail star changes. Safe to call on each Inbox visit. */

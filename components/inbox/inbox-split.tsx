@@ -18,6 +18,7 @@ export async function InboxSplit({
   toolbar,
   search = "",
   hasOlder = false,
+  canCompose = false,
   children,
 }: {
   items: ConversationListItem[];
@@ -25,6 +26,7 @@ export async function InboxSplit({
   toolbar?: React.ReactNode;
   search?: string;
   hasOlder?: boolean;
+  canCompose?: boolean;
   children: React.ReactNode;
 }) {
   const t = await getTranslations("inbox");
@@ -37,7 +39,7 @@ export async function InboxSplit({
           selectedId || items.length === 0 ? "hidden md:flex" : "flex",
         )}
       >
-        <InboxListHeader toolbar={toolbar} />
+        <InboxListHeader toolbar={toolbar} canCompose={canCompose} />
         <InboxListPane>
           {items.length === 0 ? (
             <div className="flex h-full items-center justify-center px-6 text-center">
@@ -65,11 +67,24 @@ export async function InboxSplit({
   );
 }
 
-export function InboxDetailEmpty({ label }: { label: string }) {
+export function InboxDetailEmpty({
+  label,
+  composeHref,
+  composeLabel,
+}: {
+  label: string;
+  composeHref?: string;
+  composeLabel?: string;
+}) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
       <Icon icon={InboxIcon} size={48} className="text-muted-foreground/40" />
       <p className="text-sm text-muted-foreground">{label}</p>
+      {composeHref && composeLabel ? (
+        <Button variant="outline" size="sm" asChild>
+          <Link href={composeHref}>{composeLabel}</Link>
+        </Button>
+      ) : null}
     </div>
   );
 }

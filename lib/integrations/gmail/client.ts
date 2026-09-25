@@ -97,10 +97,12 @@ export async function gmailHistory(
     historyId?: string;
   };
   const ids = new Set<string>();
+  const threadIds = new Set<string>();
   const starThreadIds = new Set<string>();
   for (const entry of data.history ?? []) {
     for (const added of entry.messagesAdded ?? []) {
       if (added.message?.id) ids.add(added.message.id);
+      if (added.message?.threadId) threadIds.add(added.message.threadId);
     }
     for (const change of [
       ...(entry.labelsAdded ?? []),
@@ -113,6 +115,7 @@ export async function gmailHistory(
   }
   return {
     ids: [...ids],
+    threadIds: [...threadIds],
     starThreadIds: [...starThreadIds],
     historyId: data.historyId ?? startHistoryId,
   };
@@ -130,6 +133,17 @@ export async function gmailGetThread(
   }>;
 }
 
+/** Full messages in a thread, including ones the mailbox owner sent. */
+export async function gmailGetThreadMessages(
+  credentials: GmailCredentials,
+  threadId: string,
+) {
+  return authedFetch(
+    credentials,
+    `/threads/${encodeURIComponent(threadId)}?format=full`,
+  ) as Promise<{ messages?: GmailMessage[] }>;
+}
+
 /** Newest INBOX messages, one page. Pass `pageToken` for the next older page. */
 export async function gmailListInbox(
   credentials: GmailCredentials,
@@ -145,12 +159,20 @@ export async function gmailListInbox(
     credentials,
     `/messages?${query.toString()}`,
   )) as {
-    messages?: { id: string }[];
+    messages?: { id: string; threadId?: string }[];
     nextPageToken?: string;
     historyId?: string;
   };
+  const messages = data.messages ?? [];
   return {
-    ids: (data.messages ?? []).map((m) => m.id),
+    ids: messages.map((m) => m.id),
+    threadIds: [
+      ...new Set(
+        messages
+          .map((m) => m.threadId)
+          .filter((id): id is string => typeof id === "string" && id.length > 0),
+      ),
+    ],
     nextPageToken: data.nextPageToken ?? null,
     historyId: data.historyId,
   };

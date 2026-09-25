@@ -8,7 +8,10 @@ import { getAppContext } from "@/lib/auth";
 import { withUserContext } from "@/lib/db";
 import { conversations, profiles } from "@/lib/db/schema";
 import { inboxListSearch, parseInboxListFilters } from "@/lib/inbox/filters";
-import { gmailOlderAvailable } from "@/lib/integrations/gmail/sync";
+import {
+  fillGmailConversation,
+  gmailOlderAvailable,
+} from "@/lib/integrations/gmail/sync";
 import {
   getConversation,
   listConversations,
@@ -32,7 +35,10 @@ export default async function ConversationPage({
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const ctx = await getAppContext();
   const filters = parseInboxListFilters(query, ctx.user.id);
-  const hasOlder = await gmailOlderAvailable(ctx.user.id).catch(() => false);
+  const [, hasOlder] = await Promise.all([
+    fillGmailConversation(ctx.user.id, id).catch(() => undefined),
+    gmailOlderAvailable(ctx.user.id).catch(() => false),
+  ]);
   const { items, thread, tone, agents } = await withUserContext(
     ctx.user.id,
     async (tx) => {
@@ -88,6 +94,7 @@ export default async function ConversationPage({
       selectedId={id}
       search={inboxListSearch(query)}
       hasOlder={hasOlder}
+      canCompose={can(ctx.membership.role, "inbox.write")}
       toolbar={
         <InboxAgentFilter
           currentUserId={ctx.user.id}

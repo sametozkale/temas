@@ -16,3 +16,10 @@ export const whatsappInjectSchema = z.object({
 export const replySchema = z.object({
   body: z.string().trim().min(1).max(8000),
 });
+
+export const composeSchema = z.object({
+  to: z.string().trim().toLowerCase().email(),
+  toName: z.string().trim().max(120).optional(),
+  subject: z.string().trim().min(1).max(200),
+  body: z.string().trim().min(1).max(8000),
+});
