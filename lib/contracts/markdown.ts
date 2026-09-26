@@ -30,8 +30,10 @@ export function markdownToBlocks(markdown: string): MarkdownBlock[] {
       flush();
       blocks.push({ kind: "h2", text: line.slice(3).trim() });
     } else if (bullet) {
+      const item = bullet[1];
+      if (!item) continue;
       flushParagraph();
-      items.push(bullet[1].trim());
+      items.push(item.trim());
     } else if (line.trim() === "") {
       flush();
     } else {
