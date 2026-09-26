@@ -36,7 +36,7 @@ export function EntityChip({
       variant="outline"
       asChild
       className={cn(
-        "mx-px inline-flex h-auto max-w-[12rem] -translate-y-px align-middle border-foreground/10 bg-card px-1.5 py-[3px] text-[length:inherit] font-medium leading-none text-foreground hover:bg-muted [&>svg]:size-[0.875em]!",
+        "me-px inline-flex h-auto max-w-[12rem] -translate-y-px align-middle border-foreground/10 bg-card px-1.5 py-[3px] text-[length:inherit] font-medium leading-none text-foreground hover:bg-muted [&>svg]:size-[0.875em]!",
       )}
     >
       <Link href={href} title={title}>

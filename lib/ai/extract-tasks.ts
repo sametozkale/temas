@@ -189,7 +189,10 @@ export async function extractTasksFromConversation(conversationId: string) {
     subject: row.conversation.subject,
     contactName: row.contactName,
     propertyTitle: row.propertyTitle,
-    messages: thread,
+    messages: thread.map((message) => ({
+      from: message.direction === "out" ? "agent" : "contact",
+      body: message.body,
+    })),
     existingTasks: tracked,
   };
 

@@ -19,7 +19,9 @@ import type { AskUIMessage } from "@/lib/ai/types";
 import {
   classifyHref,
   mentionHrefs,
+  currentRecordTitle,
   parseMentions,
+  rememberRecordNames,
   type AskEntity,
 } from "@/lib/ai/mentions";
 import { cn } from "@/lib/utils";
@@ -54,19 +56,18 @@ function mergeEntities(
   catalog: AskEntity[],
   sources: AskUIMessage["parts"],
 ): AskEntity[] {
-  const extra: AskEntity[] = [];
+  const remembered = [];
   for (const part of sources) {
     if (part.type !== "data-source") continue;
     const classified = classifyHref(part.data.href);
-    extra.push({
+    remembered.push({
       kind: part.data.kind,
-      id: classified?.id ?? part.data.href,
-      title: part.data.title,
       href: part.data.href,
-      matchName: true,
+      title: part.data.title,
+      id: classified?.id,
     });
   }
-  return extra.length > 0 ? [...catalog, ...extra] : catalog;
+  return rememberRecordNames(catalog, remembered);
 }
 
 function sourceNotInlined(href: string, inlined: Set<string>) {
@@ -409,7 +410,14 @@ export function HomeAsk({
                           variant="outline"
                           asChild
                         >
-                          <Link href={part.data.href}>{part.data.title}</Link>
+                          <Link href={part.data.href}>
+                            {currentRecordTitle(
+                              entities,
+                              part.data.href,
+                              part.data.title,
+                              part.data.kind,
+                            )}
+                          </Link>
                         </Badge>
                       ))}
                     </div>

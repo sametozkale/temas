@@ -16,6 +16,8 @@ export type AskEntity = {
   href: string;
   /** When false, only URL/id matches chip this record — not the raw title. */
   matchName?: boolean;
+  /** Earlier names still in saved messages. The chip shows `title`. */
+  aliases?: string[];
 };
 
 export type MentionSegment =
@@ -111,26 +113,50 @@ function lookup(
         sensitivity: "accent",
       }) === 0,
   );
-  const match =
+  const personBound = boundPerson(catalog, href, classified.id, label);
+  const record =
     classified.kind === "person"
-      ? ((byLabel?.kind === "person" ? byLabel : byId) ?? byHref ?? byLabel)
-      : (byId ??
+      ? (personBound ??
+        (byLabel?.kind === "person" ? byLabel : byId) ??
         byHref ??
-        (byLabel?.kind === classified.kind ? byLabel : undefined));
-  const title = !isUrlLike(label)
-    ? label.trim()
-    : (match?.title ?? fallbackTitle(classified.kind));
-  const kind =
-    classified.kind === "person" || byLabel?.kind === "person"
-      ? (byLabel?.kind ?? classified.kind)
-      : (match?.kind ?? classified.kind);
+        byLabel)
+      : byLabel?.kind === "person"
+        ? byLabel
+        : (byId ??
+          byHref ??
+          (byLabel?.kind === classified.kind ? byLabel : undefined));
+  const title = record
+    ? record.title
+    : !isUrlLike(label)
+      ? label.trim()
+      : fallbackTitle(classified.kind);
   return {
     type: "mention",
-    kind,
+    kind: record?.kind ?? classified.kind,
     title,
-    href: match?.href ?? href,
-    id: match?.id ?? classified.id,
+    href: record?.href ?? href,
+    id: record?.id ?? classified.id,
   };
+}
+
+function sameName(a: string, b: string) {
+  return a.localeCompare(b, undefined, { sensitivity: "accent" }) === 0;
+}
+
+/** The record this link points at, when the catalog can name exactly one. */
+function boundPerson(
+  catalog: AskEntity[],
+  href: string,
+  id: string,
+  label: string,
+) {
+  const people = catalog.filter(
+    (entity) =>
+      entity.kind === "person" && (entity.href === href || entity.id === id),
+  );
+  const named = people.find((entity) => sameName(entity.title, label));
+  if (named) return named;
+  return people.length === 1 ? people[0] : undefined;
 }
 
 function fallbackTitle(kind: MentionKind) {
@@ -245,15 +271,25 @@ export function parseMentions(
   }
 
   const named = catalog
-    .filter(
-      (entity) => entity.matchName !== false && entity.title.trim().length >= 2,
-    )
-    .slice()
-    .sort((a, b) => b.title.length - a.title.length);
+    .filter((entity) => entity.matchName !== false)
+    .flatMap((entity) => {
+      const labels = [entity.title, ...(entity.aliases ?? [])];
+      return labels
+        .map((label) => label.trim())
+        .filter((label) => label.length >= 2)
+        .map((label) => ({
+          entity,
+          label,
+          live: sameName(label, entity.title),
+        }));
+    })
+    .sort(
+      (a, b) => b.label.length - a.label.length || Number(b.live) - Number(a.live),
+    );
 
-  for (const entity of named) {
+  for (const { entity, label } of named) {
     const pattern = new RegExp(
-      `(?<![\\p{L}\\p{N}])${escapeRegExp(entity.title)}(?![\\p{L}\\p{N}])`,
+      `(?<![\\p{L}\\p{N}])${escapeRegExp(label)}(?![\\p{L}\\p{N}])`,
       "giu",
     );
     for (const match of text.matchAll(pattern)) {
@@ -289,6 +325,55 @@ export function parseMentions(
   return segments.filter(
     (segment) => segment.type === "mention" || segment.text.length > 0,
   );
+}
+
+/** Saved citations keep their old wording, but the chip uses the live record name. */
+export function rememberRecordNames(
+  catalog: AskEntity[],
+  remembered: { kind: MentionKind; href: string; title: string; id?: string }[],
+): AskEntity[] {
+  if (remembered.length === 0) return catalog;
+  const next = catalog.map((entity) => ({
+    ...entity,
+    aliases: entity.aliases ? [...entity.aliases] : undefined,
+  }));
+  const extra: AskEntity[] = [];
+  for (const item of remembered) {
+    const title = item.title.trim();
+    if (!title) continue;
+    const matches = next.filter(
+      (entity) => entity.kind === item.kind && entity.href === item.href,
+    );
+    if (matches.length === 1) {
+      const live = matches[0];
+      if (!live || sameName(live.title, title)) continue;
+      const aliases = new Set(live.aliases ?? []);
+      aliases.add(title);
+      live.aliases = [...aliases];
+      continue;
+    }
+    if (matches.length > 0) continue;
+    extra.push({
+      kind: item.kind,
+      id: item.id ?? item.href,
+      title,
+      href: item.href,
+      matchName: true,
+    });
+  }
+  return extra.length > 0 ? [...next, ...extra] : next;
+}
+
+export function currentRecordTitle(
+  catalog: AskEntity[],
+  href: string,
+  fallback: string,
+  kind?: MentionKind,
+) {
+  const matches = catalog.filter(
+    (entity) => entity.href === href && (kind == null || entity.kind === kind),
+  );
+  return matches.length === 1 ? matches[0]!.title : fallback;
 }
 
 export function mentionHrefs(segments: MentionSegment[]) {
