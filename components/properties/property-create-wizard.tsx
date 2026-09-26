@@ -322,6 +322,28 @@ export function PropertyCreateWizard({
                 />
                 <FieldError>{messageFor("duesAmount")}</FieldError>
               </Field>
+              <Field data-invalid={invalid("summerUtilitiesAmount")}>
+                <FieldLabel htmlFor="summerUtilitiesAmount">
+                  {t("summer_utilities")}
+                </FieldLabel>
+                <Input
+                  id="summerUtilitiesAmount"
+                  inputMode="decimal"
+                  {...form.register("summerUtilitiesAmount")}
+                />
+                <FieldError>{messageFor("summerUtilitiesAmount")}</FieldError>
+              </Field>
+              <Field data-invalid={invalid("winterUtilitiesAmount")}>
+                <FieldLabel htmlFor="winterUtilitiesAmount">
+                  {t("winter_utilities")}
+                </FieldLabel>
+                <Input
+                  id="winterUtilitiesAmount"
+                  inputMode="decimal"
+                  {...form.register("winterUtilitiesAmount")}
+                />
+                <FieldError>{messageFor("winterUtilitiesAmount")}</FieldError>
+              </Field>
               <Field>
                 <FieldLabel htmlFor="currency">{t("currency")}</FieldLabel>
                 <Controller

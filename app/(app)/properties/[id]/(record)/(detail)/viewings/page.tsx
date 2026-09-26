@@ -2,10 +2,13 @@ import { after } from "next/server";
 import { getTranslations } from "next-intl/server";
 
 import { EventChip } from "@/components/event-chip";
+import { PersonAvatar } from "@/components/identity-marks";
 import { CopyInviteButton } from "@/components/viewings/copy-invite-button";
 import { ViewingsPanel } from "@/components/viewings/viewings-panel";
+import { initialsOf } from "@/lib/auth-utils";
 import { withUserContext } from "@/lib/db";
 import { publicAppUrl } from "@/lib/app-url";
+import { portraitFromEmail } from "@/lib/identity/portrait";
 import { formatDateTime } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { parseTimeToMinutes } from "@/lib/slots";
@@ -163,16 +166,27 @@ export default async function ViewingsPage({
           ) : (
             <ul className="divide-y">
               {people.map((p) => (
-                <li key={p.id} className="px-4 py-3 text-sm">
-                  <p className="font-medium">{p.fullName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {t(`relations.${p.relation}`)}
-                    {p.email ? ` · ${p.email}` : ""}
-                  </p>
+                <li
+                  key={p.id}
+                  className="flex items-center gap-3 px-4 py-3 text-sm"
+                >
+                  <PersonAvatar
+                    src={portraitFromEmail(p.email)}
+                    initials={initialsOf(p.fullName)}
+                    className="size-8 text-[11px]"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{p.fullName}</p>
+                    <p
+                      className="truncate text-xs text-muted-foreground"
+                      title={p.email ?? undefined}
+                    >
+                      {t(`relations.${p.relation}`)}
+                      {p.email ? ` · ${p.email}` : ""}
+                    </p>
+                  </div>
                   {p.inviteToken && canManage ? (
-                    <div className="pt-1">
-                      <CopyInviteButton token={p.inviteToken} />
-                    </div>
+                    <CopyInviteButton token={p.inviteToken} />
                   ) : null}
                 </li>
               ))}

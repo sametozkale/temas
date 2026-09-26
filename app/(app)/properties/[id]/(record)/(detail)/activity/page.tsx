@@ -5,6 +5,7 @@ import { Activity01Icon } from "@/components/icons";
 import { PropertyActivityFeed } from "@/components/properties/property-activity-feed";
 import { withUserContext } from "@/lib/db";
 import { listActivity } from "@/lib/properties/queries";
+import { avatarPublicUrl } from "@/lib/storage-constants";
 
 import { loadProperty } from "../../../load";
 
@@ -17,7 +18,12 @@ export default async function ActivityPage({
   const { ctx, property } = await loadProperty(id);
   const t = await getTranslations("properties.activity");
 
-  const rows = await withUserContext(ctx.user.id, (tx) => listActivity(tx, id));
+  const rows = (
+    await withUserContext(ctx.user.id, (tx) => listActivity(tx, id))
+  ).map((row) => ({
+    ...row,
+    actorAvatarUrl: avatarPublicUrl(row.actorAvatarUrl),
+  }));
 
   if (rows.length === 0) {
     return (

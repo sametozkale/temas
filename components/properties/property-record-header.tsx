@@ -11,7 +11,7 @@ import {
 import { CurrencySelect } from "@/components/currency-select";
 import { Icon, Image02Icon, Location01Icon } from "@/components/icons";
 import { pageTitleClassName } from "@/components/page-header";
-import { PropertyStatusBadge } from "@/components/properties/property-badges";
+import { PropertyStatusBadge, PropertyStatusDot } from "@/components/properties/property-badges";
 import { TimezoneSelect } from "@/components/timezone-select";
 import { Input } from "@/components/ui/input";
 import {
@@ -58,6 +58,8 @@ export type PropertyRailValues = {
   rentAmount: string;
   depositAmount: string;
   duesAmount: string;
+  summerUtilitiesAmount: string;
+  winterUtilitiesAmount: string;
   areaM2: string;
   rooms: string;
   bedrooms: string;
@@ -166,7 +168,12 @@ export function PropertyRecordRail({
               aria-label={tDetail("change_status")}
               className="w-fit shrink-0"
             >
-              <SelectValue>{tStatus(draft.status)}</SelectValue>
+              <SelectValue>
+                <span className="flex items-center gap-1.5">
+                  <PropertyStatusDot status={draft.status} />
+                  {tStatus(draft.status)}
+                </span>
+              </SelectValue>
             </SelectTrigger>
             <SelectContent align="start" className="w-56">
               {STATUS_ORDER.map((status, i) => {
@@ -183,7 +190,10 @@ export function PropertyRecordRail({
                       i < current ? "text-muted-foreground" : undefined
                     }
                   >
-                    {tStatus(status)}
+                    <span className="flex items-center gap-1.5">
+                      <PropertyStatusDot status={status} />
+                      {tStatus(status)}
+                    </span>
                   </SelectItem>
                 );
               })}
@@ -231,7 +241,7 @@ export function PropertyRecordRail({
           }
         />
       </div>
-      <dl className="grid grid-cols-[7.25rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1 text-sm">
+      <dl className="grid grid-cols-[9rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1 text-sm">
         <Fact label={t("rent")}>
           <RentField
             canWrite={canWrite}
@@ -268,6 +278,34 @@ export function PropertyRecordRail({
           ariaLabel={tDetail("edit_field", { label: t("dues") })}
           onCommit={(duesAmount) =>
             commit({ duesAmount }, { ...draft, duesAmount })
+          }
+        />
+        <MoneyFact
+          label={t("summer_utilities")}
+          canWrite={canWrite}
+          disabled={pending}
+          amount={draft.summerUtilitiesAmount}
+          currency={draft.currency}
+          ariaLabel={tDetail("edit_field", { label: t("summer_utilities") })}
+          onCommit={(summerUtilitiesAmount) =>
+            commit(
+              { summerUtilitiesAmount },
+              { ...draft, summerUtilitiesAmount },
+            )
+          }
+        />
+        <MoneyFact
+          label={t("winter_utilities")}
+          canWrite={canWrite}
+          disabled={pending}
+          amount={draft.winterUtilitiesAmount}
+          currency={draft.currency}
+          ariaLabel={tDetail("edit_field", { label: t("winter_utilities") })}
+          onCommit={(winterUtilitiesAmount) =>
+            commit(
+              { winterUtilitiesAmount },
+              { ...draft, winterUtilitiesAmount },
+            )
           }
         />
         <Fact label={t("rent_per_m2")}>

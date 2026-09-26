@@ -11,6 +11,31 @@ import { cn } from "@/lib/utils";
 
 export { PROPERTY_TYPE_ICONS };
 
+export function PropertyStatusDot({
+  status,
+  className,
+}: {
+  status: PropertyStatus;
+  className?: string;
+}) {
+  return (
+    <span
+      aria-hidden
+      className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[status], className)}
+    />
+  );
+}
+
+const STATUS_DOT: Record<PropertyStatus, string> = {
+  draft: "bg-muted-foreground/45",
+  active: "bg-brand",
+  viewing_in_progress: "bg-info",
+  application_review: "bg-info",
+  contract_pending: "bg-warning",
+  rented: "bg-success",
+  archived: "bg-muted-foreground/35",
+};
+
 export function PropertyStatusBadge({
   status,
   className,

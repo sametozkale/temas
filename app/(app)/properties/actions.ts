@@ -124,6 +124,8 @@ export async function createProperty(
         currency: v.currency,
         depositAmount: v.depositAmount?.toString() ?? null,
         duesAmount: v.duesAmount?.toString() ?? null,
+        summerUtilitiesAmount: v.summerUtilitiesAmount?.toString() ?? null,
+        winterUtilitiesAmount: v.winterUtilitiesAmount?.toString() ?? null,
         areaM2: v.areaM2?.toString() ?? null,
         rooms: v.rooms,
         bedrooms: v.bedrooms,
@@ -198,6 +200,8 @@ export async function updateProperty(
         currency: v.currency,
         depositAmount: v.depositAmount?.toString() ?? null,
         duesAmount: v.duesAmount?.toString() ?? null,
+        summerUtilitiesAmount: v.summerUtilitiesAmount?.toString() ?? null,
+        winterUtilitiesAmount: v.winterUtilitiesAmount?.toString() ?? null,
         areaM2: v.areaM2?.toString() ?? null,
         rooms: v.rooms,
         bedrooms: v.bedrooms,
@@ -246,6 +250,16 @@ export async function updateProperty(
       changed.push("deposit_amount");
     if ((current.duesAmount ?? null) !== (v.duesAmount?.toString() ?? null))
       changed.push("dues_amount");
+    if (
+      (current.summerUtilitiesAmount ?? null) !==
+      (v.summerUtilitiesAmount?.toString() ?? null)
+    )
+      changed.push("summer_utilities_amount");
+    if (
+      (current.winterUtilitiesAmount ?? null) !==
+      (v.winterUtilitiesAmount?.toString() ?? null)
+    )
+      changed.push("winter_utilities_amount");
     if (current.bedrooms !== v.bedrooms) changed.push("bedrooms");
     if (current.bathrooms !== v.bathrooms) changed.push("bathrooms");
     if (current.totalFloors !== v.totalFloors) changed.push("total_floors");
@@ -295,6 +309,8 @@ function propertyToFormInput(row: PropertyRow): PropertyFormInput {
     currency: row.currency,
     depositAmount: row.depositAmount ?? "",
     duesAmount: row.duesAmount ?? "",
+    summerUtilitiesAmount: row.summerUtilitiesAmount ?? "",
+    winterUtilitiesAmount: row.winterUtilitiesAmount ?? "",
     areaM2: row.areaM2 ?? "",
     rooms: row.rooms ?? "",
     bedrooms: row.bedrooms != null ? String(row.bedrooms) : "",

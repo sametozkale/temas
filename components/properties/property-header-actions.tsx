@@ -4,16 +4,8 @@ import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 
-import {
-  changePropertyStatus,
-  deleteProperty,
-} from "@/app/(app)/properties/actions";
-import {
-  ArrowRight01Icon,
-  Delete02Icon,
-  Icon,
-  MoreHorizontalIcon,
-} from "@/components/icons";
+import { deleteProperty } from "@/app/(app)/properties/actions";
+import { Delete02Icon, Icon, MoreHorizontalIcon } from "@/components/icons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,69 +21,27 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { PropertyStatus } from "@/lib/db/schema";
-import { nextStatuses } from "@/lib/properties/status";
 
 export function PropertyHeaderActions({
   propertyId,
-  status,
   canWrite,
   canDelete,
 }: {
   propertyId: string;
-  status: PropertyStatus;
   canWrite: boolean;
   canDelete: boolean;
 }) {
   const t = useTranslations("properties.detail");
-  const tStatus = useTranslations("properties.status");
   const tc = useTranslations("common");
   const [pending, startTransition] = React.useTransition();
   const [confirmDelete, setConfirmDelete] = React.useState(false);
-  const targets = nextStatuses(status);
 
   if (!canWrite) return null;
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="bg-card" disabled={pending}>
-            {t("change_status")}
-            <Icon icon={ArrowRight01Icon} size={16} data-icon="inline-end" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-52">
-          <DropdownMenuLabel className="text-xs text-muted-foreground">
-            {tStatus(status)}
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {targets.map((target) => (
-            <DropdownMenuItem
-              key={target}
-              onSelect={() =>
-                startTransition(async () => {
-                  const res = await changePropertyStatus(propertyId, target);
-                  if (res.ok) toast.success(t("status_updated"));
-                  else if (
-                    res.error === "invalid_transition" ||
-                    res.error === "not_found"
-                  )
-                    toast.error(t(`errors.${res.error}`));
-                  else toast.error(t("errors.forbidden"));
-                })
-              }
-            >
-              {tStatus(target)}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
       {canDelete ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

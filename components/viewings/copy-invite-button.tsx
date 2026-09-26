@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { Copy01Icon, Icon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 
 export function CopyInviteButton({ token }: { token: string }) {
@@ -10,8 +11,9 @@ export function CopyInviteButton({ token }: { token: string }) {
   return (
     <Button
       type="button"
-      variant="ghost"
-      size="xs"
+      variant="outline"
+      size="sm"
+      className="shrink-0 bg-card"
       onClick={() => {
         const url = `${window.location.origin}/p/${token}`;
         void navigator.clipboard.writeText(url).then(
@@ -20,6 +22,7 @@ export function CopyInviteButton({ token }: { token: string }) {
         );
       }}
     >
+      <Icon icon={Copy01Icon} size={16} data-icon="inline-start" />
       {t("copy_invite")}
     </Button>
   );

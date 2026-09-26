@@ -102,6 +102,8 @@ export const properties = pgTable(
     condition: text("condition", { enum: PROPERTY_CONDITIONS }),
     availableFrom: date("available_from"),
     duesAmount: numeric("dues_amount"),
+    summerUtilitiesAmount: numeric("summer_utilities_amount"),
+    winterUtilitiesAmount: numeric("winter_utilities_amount"),
     features: jsonb("features")
       .$type<Record<string, unknown>>()
       .notNull()

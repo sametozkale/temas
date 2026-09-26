@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 import { useActionState } from "react";
@@ -12,19 +13,43 @@ import {
   removePropertyPerson,
   type PropertyActionResult,
 } from "@/app/(app)/properties/actions";
+import { moveApplication } from "@/app/(app)/properties/[id]/applications/actions";
 import { EmptyState } from "@/components/empty-state";
 import {
+  ArrowRight01Icon,
+  Cancel01Icon,
   Copy01Icon,
   Delete02Icon,
   Icon,
   Link01Icon,
+  Mail01Icon,
+  MoreHorizontalIcon,
   PlusSignIcon,
+  SmartPhone01Icon,
+  Tick02Icon,
   UserAdd01Icon,
 } from "@/components/icons";
 import { PersonAvatar } from "@/components/identity-marks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -74,19 +99,40 @@ export type PersonRow = {
   };
 };
 
+export type ProspectRow = {
+  applicationId: string;
+  stageName: string | null;
+  score: number | null;
+  memberLine: string | null;
+  canShortlist: boolean;
+  canReject: boolean;
+  canMakeTenant: boolean;
+  contact: {
+    fullName: string;
+    email: string | null;
+    phone: string | null;
+  };
+};
+
 export function PeopleSection({
   propertyId,
   people,
+  prospects,
   canEdit,
+  canManagePipeline,
+  shortlistStageId,
+  rejectStageId,
 }: {
   propertyId: string;
   people: PersonRow[];
+  prospects: ProspectRow[];
   canEdit: boolean;
+  canManagePipeline: boolean;
+  shortlistStageId: string | null;
+  rejectStageId: string | null;
 }) {
   const t = useTranslations("properties.people");
-  const router = useRouter();
   const [open, setOpen] = React.useState(false);
-  const [, startTransition] = React.useTransition();
 
   return (
     <div className="space-y-4">
@@ -100,7 +146,7 @@ export function PeopleSection({
         ) : null}
       </div>
 
-      {people.length === 0 ? (
+      {people.length === 0 && prospects.length === 0 ? (
         <EmptyState
           icon={UserAdd01Icon}
           title={t("empty_title")}
@@ -116,28 +162,25 @@ export function PeopleSection({
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
           {people.map((p) => (
-            <PersonCard
-              key={p.id}
-              person={p}
-              canEdit={canEdit}
-              onUnlink={() =>
-                startTransition(async () => {
-                  const res = await removePropertyPerson(propertyId, p.id);
-                  if (res.ok) toast.success(t("removed"));
-                  router.refresh();
-                })
-              }
-              onInvite={async () => {
-                const res = await generatePersonInviteLink(propertyId, p.id);
-                if (res.ok && res.data) {
-                  await copyToClipboard(res.data.url, t("copied"));
-                  router.refresh();
-                  return res.data.url;
-                }
-                toast.error(t("errors.duplicate"));
-                return null;
-              }}
-            />
+            <li key={p.id} className="min-w-0">
+              <PersonCard
+                propertyId={propertyId}
+                person={p}
+                canEdit={canEdit}
+              />
+            </li>
+          ))}
+          {prospects.map((prospect) => (
+            <li key={prospect.applicationId} className="min-w-0">
+              <ProspectCard
+                propertyId={propertyId}
+                prospect={prospect}
+                canEdit={canEdit}
+                canManagePipeline={canManagePipeline}
+                shortlistStageId={shortlistStageId}
+                rejectStageId={rejectStageId}
+              />
+            </li>
           ))}
         </ul>
       )}
@@ -152,18 +195,87 @@ export function PeopleSection({
   );
 }
 
-function PersonCard({
-  person,
-  canEdit,
-  onUnlink,
-  onInvite,
+/** Shared people-card frame: name owns the title row, contact stacks, meta sits on the foot. */
+function PeopleCard({
+  name,
+  email,
+  phone,
+  memberLine,
+  badge,
+  meta,
+  menu,
 }: {
-  person: PersonRow;
-  canEdit: boolean;
-  onUnlink: () => void;
-  onInvite: () => Promise<string | null>;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  memberLine?: string | null;
+  badge: React.ReactNode;
+  meta?: React.ReactNode;
+  menu?: React.ReactNode;
 }) {
   const t = useTranslations("properties.people");
+  return (
+    <Card className="h-full py-0">
+      <CardContent className="flex h-full items-start gap-3 p-4">
+        <PersonAvatar
+          initials={initialsOf(name)}
+          className="size-9 shrink-0 text-[13px]"
+        />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex h-9 items-center gap-1">
+            <p
+              className="min-w-0 flex-1 truncate text-sm font-medium"
+              title={name}
+            >
+              {name}
+            </p>
+            {menu}
+          </div>
+          <div className="space-y-0.5">
+            {email ? (
+              <p
+                className="truncate text-xs text-muted-foreground"
+                title={email}
+              >
+                {email}
+              </p>
+            ) : null}
+            {phone ? (
+              <p className="truncate text-xs text-muted-foreground">{phone}</p>
+            ) : null}
+            {!email && !phone ? (
+              <p className="text-xs text-muted-foreground">{t("no_account")}</p>
+            ) : null}
+            {memberLine ? (
+              <p
+                className="truncate text-xs text-muted-foreground"
+                title={memberLine}
+              >
+                {memberLine}
+              </p>
+            ) : null}
+          </div>
+          <div className="mt-auto flex flex-wrap items-center gap-x-1.5 gap-y-1 pt-2">
+            {badge}
+            {meta}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PersonCard({
+  propertyId,
+  person,
+  canEdit,
+}: {
+  propertyId: string;
+  person: PersonRow;
+  canEdit: boolean;
+}) {
+  const t = useTranslations("properties.people");
+  const router = useRouter();
   const [pending, startTransition] = React.useTransition();
   const hasInvite = Boolean(person.inviteToken);
   const expired =
@@ -178,10 +290,26 @@ function PersonCard({
     );
   }
 
-  const contactLine =
-    [person.contact.email, person.contact.phone]
-      .filter(Boolean)
-      .join(" · ") || t("no_account");
+  function createInvite() {
+    startTransition(async () => {
+      const res = await generatePersonInviteLink(propertyId, person.id);
+      if (res.ok && res.data) {
+        await copyToClipboard(res.data.url, t("copied"));
+        router.refresh();
+        return;
+      }
+      toast.error(t("errors.duplicate"));
+    });
+  }
+
+  function unlink() {
+    startTransition(async () => {
+      const res = await removePropertyPerson(propertyId, person.id);
+      if (res.ok) toast.success(t("removed"));
+      router.refresh();
+    });
+  }
+
   const statusLine = person.joinedAt
     ? t("joined")
     : person.inviteToken
@@ -193,71 +321,240 @@ function PersonCard({
       : t("pending");
 
   return (
-    <Card className="py-0">
-      <CardContent className="flex items-start gap-3 p-4">
-        <PersonAvatar
-          initials={initialsOf(person.contact.fullName)}
-          className="size-9 text-[13px]"
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <p className="truncate text-sm font-medium">
-              {person.contact.fullName}
-            </p>
-            <Badge variant={person.relation === "owner" ? "brand" : "info"}>
-              {t(`relations.${person.relation}`)}
-            </Badge>
-          </div>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">
-            {contactLine}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground/70">
-            {statusLine}
-          </p>
-          {canEdit ? (
-            <div className="-ml-2 mt-2 flex flex-wrap items-center">
+    <PeopleCard
+      name={person.contact.fullName}
+      email={person.contact.email}
+      phone={person.contact.phone}
+      badge={
+        <Badge variant={person.relation === "owner" ? "brand" : "info"}>
+          {t(`relations.${person.relation}`)}
+        </Badge>
+      }
+      meta={
+        <span className="text-xs text-muted-foreground">{statusLine}</span>
+      }
+      menu={
+        canEdit ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={t("more")}
+                disabled={pending}
+              >
+                <Icon icon={MoreHorizontalIcon} size={16} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-44">
               {hasInvite && !expired ? (
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  className="text-muted-foreground"
-                  onClick={() => void copyExisting()}
-                >
+                <DropdownMenuItem onSelect={() => void copyExisting()}>
                   <Icon icon={Copy01Icon} size={16} data-icon="inline-start" />
                   {t("copy_link")}
-                </Button>
+                </DropdownMenuItem>
               ) : (
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  className="text-muted-foreground"
-                  disabled={pending || Boolean(person.joinedAt)}
-                  onClick={() =>
-                    startTransition(async () => {
-                      await onInvite();
-                    })
-                  }
+                <DropdownMenuItem
+                  disabled={Boolean(person.joinedAt)}
+                  onSelect={createInvite}
                 >
                   <Icon icon={Link01Icon} size={16} data-icon="inline-start" />
                   {person.inviteToken
                     ? t("regenerate_link")
                     : t("generate_link")}
-                </Button>
+                </DropdownMenuItem>
               )}
-              <Button
-                variant="ghost"
-                size="xs"
-                className="text-muted-foreground"
-                onClick={onUnlink}
-              >
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onSelect={unlink}>
                 <Icon icon={Delete02Icon} size={16} data-icon="inline-start" />
                 {t("remove")}
-              </Button>
-            </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null
+      }
+    />
+  );
+}
+
+function ProspectCard({
+  propertyId,
+  prospect,
+  canEdit,
+  canManagePipeline,
+  shortlistStageId,
+  rejectStageId,
+}: {
+  propertyId: string;
+  prospect: ProspectRow;
+  canEdit: boolean;
+  canManagePipeline: boolean;
+  shortlistStageId: string | null;
+  rejectStageId: string | null;
+}) {
+  const t = useTranslations("properties.people");
+  const router = useRouter();
+  const [pending, startTransition] = React.useTransition();
+  const [confirmReject, setConfirmReject] = React.useState(false);
+  const contact = prospect.contact;
+
+  function move(stageId: string, done: string) {
+    startTransition(async () => {
+      const res = await moveApplication(
+        propertyId,
+        prospect.applicationId,
+        stageId,
+      );
+      if (res.ok) toast.success(done);
+      else toast.error(t("errors.stage"));
+      router.refresh();
+    });
+  }
+
+  function makeTenant() {
+    startTransition(async () => {
+      const form = new FormData();
+      form.set("relation", "current_tenant");
+      form.set("fullName", contact.fullName);
+      if (contact.email) form.set("email", contact.email);
+      if (contact.phone) form.set("phone", contact.phone);
+      const res = await addPropertyPerson(propertyId, undefined, form);
+      if (res.ok) toast.success(t("made_tenant"));
+      else toast.error(t("errors.duplicate"));
+      router.refresh();
+    });
+  }
+
+  const canMakeTenant = canEdit && prospect.canMakeTenant;
+
+  return (
+    <>
+      <PeopleCard
+        name={contact.fullName}
+        email={contact.email}
+        phone={contact.phone}
+        memberLine={prospect.memberLine}
+        badge={<Badge variant="secondary">{t("relations.prospect")}</Badge>}
+      meta={
+        <span className="inline-flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">
+            {prospect.stageName ?? t("prospect_status")}
+          </span>
+          {prospect.score != null ? (
+            <Badge variant="info">{prospect.score}</Badge>
           ) : null}
-        </div>
-      </CardContent>
-    </Card>
+        </span>
+      }
+        menu={
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={t("more")}
+                disabled={pending}
+              >
+                <Icon icon={MoreHorizontalIcon} size={16} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-52">
+              <DropdownMenuItem asChild>
+                <Link href={`/properties/${propertyId}/pipeline`}>
+                  <Icon
+                    icon={ArrowRight01Icon}
+                    size={16}
+                    data-icon="inline-start"
+                  />
+                  {t("open_pipeline")}
+                </Link>
+              </DropdownMenuItem>
+              {contact.email ? (
+                <DropdownMenuItem
+                  onSelect={() =>
+                    void copyToClipboard(contact.email!, t("email_copied"))
+                  }
+                >
+                  <Icon icon={Mail01Icon} size={16} data-icon="inline-start" />
+                  {t("copy_email")}
+                </DropdownMenuItem>
+              ) : null}
+              {contact.phone ? (
+                <DropdownMenuItem
+                  onSelect={() =>
+                    void copyToClipboard(contact.phone!, t("phone_copied"))
+                  }
+                >
+                  <Icon
+                    icon={SmartPhone01Icon}
+                    size={16}
+                    data-icon="inline-start"
+                  />
+                  {t("copy_phone")}
+                </DropdownMenuItem>
+              ) : null}
+              {canManagePipeline &&
+              prospect.canShortlist &&
+              shortlistStageId ? (
+                <DropdownMenuItem
+                  onSelect={() =>
+                    move(shortlistStageId, t("shortlisted_toast"))
+                  }
+                >
+                  <Icon icon={Tick02Icon} size={16} data-icon="inline-start" />
+                  {t("shortlist")}
+                </DropdownMenuItem>
+              ) : null}
+              {canMakeTenant ? (
+                <DropdownMenuItem onSelect={makeTenant}>
+                  <Icon
+                    icon={UserAdd01Icon}
+                    size={16}
+                    data-icon="inline-start"
+                  />
+                  {t("make_tenant")}
+                </DropdownMenuItem>
+              ) : null}
+              {canManagePipeline && prospect.canReject && rejectStageId ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onSelect={() => setConfirmReject(true)}
+                  >
+                    <Icon
+                      icon={Cancel01Icon}
+                      size={16}
+                      data-icon="inline-start"
+                    />
+                    {t("reject")}
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
+      />
+      <AlertDialog open={confirmReject} onOpenChange={setConfirmReject}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("reject_title")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("reject_description")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (rejectStageId) move(rejectStageId, t("rejected_toast"));
+              }}
+            >
+              {t("reject")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 

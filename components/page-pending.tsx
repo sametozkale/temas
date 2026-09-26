@@ -4,6 +4,16 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 
+import {
+  MAP_CANVAS_CLASS,
+  MAP_DOT_STYLE,
+  MAP_LINK_OWNER,
+  MAP_LINK_X,
+  MAP_LINK_Y,
+  MAP_PARTY_WIDTH,
+  MAP_PROPERTY_WIDTH,
+  MAP_STAGE_WIDTH,
+} from "@/components/properties/map-layout";
 import { isPropertyRecordPath } from "@/components/properties/property-tabs";
 import { cn } from "@/lib/utils";
 
@@ -498,7 +508,7 @@ function RecordPending({ tab }: { tab: Kind }) {
         </div>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <RecordTabs />
-          <div className="min-h-0 flex-1 overflow-hidden px-5 py-5">
+          <div className="min-h-0 flex-1 overflow-hidden px-4 py-5">
             <TabPending
               kind={tab === "property-record" ? "property-overview" : tab}
             />
@@ -561,25 +571,148 @@ function WizardPending() {
   );
 }
 
-function MapPending() {
+function MapNode({ featured }: { featured?: boolean }) {
   return (
-    <div className="flex min-h-full flex-col">
-      <Bar className="mb-6 h-4 w-20" />
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-8">
-        <div className="relative w-full max-w-3xl">
-          <Bar className="mx-auto h-24 w-56 rounded-xl border border-dashed bg-transparent" />
-          <div className="mt-8 grid grid-cols-3 gap-4">
-            <Bar className="h-20 rounded-xl border border-dashed bg-transparent" />
-            <Bar className="h-20 rounded-xl border border-dashed bg-transparent" />
-            <Bar className="h-20 rounded-xl border border-dashed bg-transparent" />
+    <div
+      className={cn(
+        "relative flex w-max items-center gap-2.5 rounded-xl rounded-tl-none border-[0.5px] border-border bg-card p-3",
+        featured ? MAP_PROPERTY_WIDTH : MAP_PARTY_WIDTH,
+      )}
+    >
+      <div className="absolute bottom-full -left-[0.5px] h-6 w-20 rounded-t-md border-[0.5px] border-b-0 border-border bg-card p-1.5">
+        <Bar className="h-full w-full rounded-sm" />
+      </div>
+      <Bar
+        className={cn(
+          "size-9 shrink-0",
+          featured ? "rounded-md" : "rounded-full",
+        )}
+      />
+      <div className="space-y-1.5">
+        <Bar className={cn("h-3.5", featured ? "w-44" : "w-28")} />
+        <Bar className={cn("h-3", featured ? "w-32" : "w-36")} />
+      </div>
+    </div>
+  );
+}
+
+function MapLink({
+  axis,
+  chips = 0,
+  length,
+}: {
+  axis: "x" | "y";
+  chips?: number;
+  length?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative shrink-0",
+        axis === "y"
+          ? cn(length ?? MAP_LINK_Y, "w-px")
+          : cn(length ?? MAP_LINK_X, "h-px"),
+      )}
+    >
+      <span
+        className={cn(
+          "absolute border-dashed border-foreground/15",
+          axis === "y"
+            ? "inset-y-0 left-0 border-l"
+            : "inset-x-0 top-0 border-t",
+        )}
+      />
+      {chips > 0 ? (
+        <div className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 gap-1.5">
+          {Array.from({ length: chips }, (_, i) => (
+            <Bar
+              key={i}
+              className="h-7 w-28 rounded-full border border-border bg-card"
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+const MAP_PENDING_STAGES = [2, 2, 3, 1, 1, 1, 1];
+
+function MapPending({ withTopBar }: { withTopBar?: boolean }) {
+  return (
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      {withTopBar ? (
+        <div className="flex h-12 shrink-0 items-center justify-between border-b border-foreground/6 px-4">
+          <Bar className="h-4 w-20" />
+          <div className="flex items-center gap-2">
+            <Bar className="h-7 w-24 rounded-full" />
+            <Bar className="size-7 rounded-md" />
           </div>
-          <div className="mt-10 grid grid-cols-4 gap-3">
-            {Array.from({ length: 4 }, (_, i) => (
-              <Bar
-                key={i}
-                className="h-28 rounded-xl border border-dashed bg-transparent"
-              />
-            ))}
+        </div>
+      ) : null}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col p-4">
+        <div
+          className={MAP_CANVAS_CLASS}
+          style={{ ...MAP_DOT_STYLE, backgroundSize: "16px 16px" }}
+        >
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex shrink-0 flex-col items-center px-4 pt-10 pb-4">
+              <MapNode />
+              <MapLink axis="y" chips={1} length={MAP_LINK_OWNER} />
+              <div className="flex items-center">
+                <MapNode />
+                <MapLink axis="x" />
+                <MapNode featured />
+                <MapLink axis="x" chips={1} />
+                <MapNode />
+              </div>
+              <MapLink axis="y" chips={1} />
+              <div className="h-5 w-px border-l border-dashed border-foreground/15" />
+              <div className="relative">
+                <Bar className="absolute top-0 left-1/2 z-10 h-6 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border bg-card" />
+                <div
+                  className="grid"
+                  style={{
+                    gridTemplateColumns: `repeat(${MAP_PENDING_STAGES.length}, ${MAP_STAGE_WIDTH})`,
+                  }}
+                >
+                  {MAP_PENDING_STAGES.map((count, index) => (
+                    <div key={index} className="flex min-w-0 flex-col px-1">
+                      <div className="relative -mx-1 h-5">
+                        {index > 0 ? (
+                          <span className="absolute top-0 right-1/2 left-0 border-t border-dashed border-foreground/15" />
+                        ) : null}
+                        {index < MAP_PENDING_STAGES.length - 1 ? (
+                          <span className="absolute top-0 right-0 left-1/2 border-t border-dashed border-foreground/15" />
+                        ) : null}
+                        <span className="absolute inset-y-0 left-1/2 border-l border-dashed border-foreground/15" />
+                      </div>
+                      <div className="flex min-h-10 items-center justify-center pt-1 pb-1.5">
+                        <Bar className="h-3.5 w-16" />
+                      </div>
+                      <div className="flex min-h-20 flex-1 flex-col gap-1.5 rounded-xl border border-foreground/5 bg-muted/80 p-1.5">
+                        {Array.from({ length: count }, (_, i) => (
+                          <div
+                            key={i}
+                            className="space-y-2 rounded-lg border-[0.5px] border-border bg-card p-2"
+                          >
+                            <div className="flex items-center justify-between">
+                              <Bar className="size-6 rounded-full" />
+                              <Bar className="h-4 w-6 rounded-full" />
+                            </div>
+                            <Bar className="h-3.5 w-4/5" />
+                            <Bar className="h-2.5 w-3/5" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="absolute bottom-3 left-3">
+            <Bar className="h-8 w-40 rounded-lg border border-border bg-card" />
           </div>
         </div>
       </div>
@@ -769,6 +902,8 @@ function CanvasPendingInner({ scope }: { scope: "page" | "tab" }) {
       <span className="sr-only">{t("loading")}</span>
       {kind === "property-record" ? (
         <RecordPending tab={tabKind(pathname)} />
+      ) : kind === "property-map" ? (
+        <MapPending withTopBar={scope === "page"} />
       ) : (
         <PendingFrame kind={kind} />
       )}

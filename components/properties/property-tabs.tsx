@@ -29,7 +29,12 @@ export type PropertyTabCounts = Partial<
   Record<
     Exclude<
       PropertyTab,
-      "overview" | "activity" | "people" | "files" | "applications"
+      | "overview"
+      | "activity"
+      | "people"
+      | "files"
+      | "applications"
+      | "pipeline"
     >,
     number
   >
@@ -55,9 +60,7 @@ export function PropertyTabs({
           const href = `${base}/${tab}`;
           const active = pathname === href || pathname.startsWith(`${href}/`);
           const count =
-            tab === "people" || tab === "files"
-              ? undefined
-              : counts[tab as keyof PropertyTabCounts];
+            tab === "viewings" || tab === "inventory" ? counts[tab] : undefined;
           return (
             <Link
               key={tab}

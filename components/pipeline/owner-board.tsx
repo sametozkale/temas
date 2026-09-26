@@ -11,7 +11,7 @@ import { PersonAvatar } from "@/components/identity-marks";
 import { UserGroupIcon } from "@/components/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader } from "@/components/ui/card";
 import { initialsOf } from "@/lib/auth-utils";
 
 export type OwnerCard = {
@@ -73,20 +73,22 @@ export function OwnerBoard({
     <div className="grid w-full items-stretch gap-4 md:grid-cols-2">
       {cards.map((card) => (
         <Card key={card.id} className="flex flex-col">
-          <CardHeader className="flex-row items-start gap-3">
-            <PersonAvatar
-              initials={initialsOf(card.fullName)}
-              className="size-9 shrink-0"
-            />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{card.fullName}</p>
-              {card.memberLine || card.email ? (
-                <p className="truncate text-xs text-muted-foreground">
-                  {card.memberLine ?? card.email}
-                </p>
-              ) : null}
+          <CardHeader className="items-start">
+            <div className="flex min-w-0 items-start gap-3">
+              <PersonAvatar
+                initials={initialsOf(card.fullName)}
+                className="size-9 shrink-0"
+              />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{card.fullName}</p>
+                {card.memberLine || card.email ? (
+                  <p className="truncate text-xs text-muted-foreground">
+                    {card.memberLine ?? card.email}
+                  </p>
+                ) : null}
+              </div>
             </div>
-            <div className="flex shrink-0 flex-col items-end gap-1">
+            <CardAction className="flex flex-row items-center gap-1 self-start">
               {card.stageName ? (
                 <Badge variant="secondary">{card.stageName}</Badge>
               ) : null}
@@ -95,7 +97,7 @@ export function OwnerBoard({
                   {t("score")} {card.score}
                 </Badge>
               ) : null}
-            </div>
+            </CardAction>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col gap-4">
             {card.summary ? (

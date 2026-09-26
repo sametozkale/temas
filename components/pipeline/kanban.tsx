@@ -2,15 +2,18 @@
 
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   closestCorners,
+  pointerWithin,
   useDraggable,
   useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import * as React from "react";
@@ -24,6 +27,7 @@ import {
 import { PersonAvatar } from "@/components/identity-marks";
 import { Add01Icon, Icon } from "@/components/icons";
 import { ApplicantSheet } from "@/components/pipeline/applicant-sheet";
+import { stageToneDot } from "@/components/pipeline/stage-tone";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,10 +45,16 @@ export type KanbanCard = {
   id: string;
   stageId: string | null;
   fullName: string;
-  memberLine: string | null;
   email: string | null;
   summary: string | null;
   score: number | null;
+};
+
+/** Prefer the column under the pointer; fall back when the pointer is in a gap. */
+const stageCollision: CollisionDetection = (args) => {
+  const underPointer = pointerWithin(args);
+  if (underPointer.length > 0) return underPointer;
+  return closestCorners(args);
 };
 
 export function PipelineKanban({
@@ -64,21 +74,34 @@ export function PipelineKanban({
   const [openId, setOpenId] = React.useState<string | null>(null);
   const [adding, setAdding] = React.useState(false);
   const [newName, setNewName] = React.useState("");
+  const [board, setBoard] = React.useState(cards);
+  const [activeId, setActiveId] = React.useState<string | null>(null);
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
+
+  React.useEffect(() => {
+    setBoard(cards);
+  }, [cards]);
 
   const byStage = React.useMemo(() => {
     const map = new Map<string, KanbanCard[]>();
     for (const stage of stages) map.set(stage.id, []);
-    for (const card of cards) {
+    for (const card of board) {
       const list = card.stageId ? map.get(card.stageId) : undefined;
       if (list) list.push(card);
     }
     return map;
-  }, [stages, cards]);
+  }, [stages, board]);
+
+  const activeCard = board.find((card) => card.id === activeId) ?? null;
+
+  function onDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id));
+  }
 
   function onDragEnd(event: DragEndEvent) {
+    setActiveId(null);
     if (!canManage) return;
     const overId = event.over?.id ? String(event.over.id) : null;
     const appId = String(event.active.id);
@@ -86,11 +109,20 @@ export function PipelineKanban({
     if (!overId) return;
     const overStage = stages.some((s) => s.id === overId)
       ? overId
-      : (cards.find((c) => c.id === overId)?.stageId ?? null);
+      : (board.find((c) => c.id === overId)?.stageId ?? null);
     if (!overStage || overStage === from) return;
+    const previous = board;
+    setBoard((current) =>
+      current.map((card) =>
+        card.id === appId ? { ...card, stageId: overStage } : card,
+      ),
+    );
     startTransition(async () => {
       const res = await moveApplication(propertyId, appId, overStage);
-      if (!res.ok) toast.error(t("errors.generic"));
+      if (!res.ok) {
+        setBoard(previous);
+        toast.error(t("errors.generic"));
+      }
       router.refresh();
     });
   }
@@ -101,11 +133,14 @@ export function PipelineKanban({
         <p className="text-sm text-muted-foreground">{t("empty")}</p>
       ) : null}
       <DndContext
+        id={`pipeline-${propertyId}`}
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={stageCollision}
+        onDragStart={onDragStart}
+        onDragCancel={() => setActiveId(null)}
         onDragEnd={onDragEnd}
       >
-        <div className="flex items-start gap-2 overflow-x-auto pb-1">
+        <div className="flex items-stretch gap-2 overflow-x-auto pb-1">
           {stages.map((stage) => (
             <StageColumn
               key={stage.id}
@@ -186,6 +221,9 @@ export function PipelineKanban({
             )
           ) : null}
         </div>
+        <DragOverlay dropAnimation={{ duration: 180, easing: "ease" }}>
+          {activeCard ? <CardFace card={activeCard} floating /> : null}
+        </DragOverlay>
       </DndContext>
       <ApplicantSheet
         propertyId={propertyId}
@@ -242,13 +280,16 @@ function StageColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex w-52 shrink-0 flex-col rounded-lg border bg-muted/30",
+        "flex w-52 shrink-0 flex-col rounded-lg border bg-muted/30 transition-[border-color,background-color] duration-150",
         isOver && "border-brand bg-brand-soft/50",
       )}
     >
       <div className="flex items-center gap-2 px-2.5 py-2">
         <span
-          className={cn("size-1.5 shrink-0 rounded-full", toneDot(stage.color))}
+          className={cn(
+            "size-1.5 shrink-0 rounded-full",
+            stageToneDot(stage.color),
+          )}
         />
         {editing && canManage ? (
           <input
@@ -295,7 +336,7 @@ function StageColumn({
           ))}
         </div>
       ) : (
-        <div className="min-h-8" />
+        <div className={cn("min-h-8 flex-1", isOver && "min-h-24")} />
       )}
     </div>
   );
@@ -310,28 +351,46 @@ function ApplicantCard({
   canDrag: boolean;
   onOpen: (id: string) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({
-      id: card.id,
-      data: { stageId: card.stageId },
-      disabled: !canDrag,
-    });
-  const style = transform
-    ? { transform: CSS.Translate.toString(transform) }
-    : undefined;
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: card.id,
+    data: { stageId: card.stageId },
+    disabled: !canDrag,
+  });
 
   return (
     <button
       type="button"
       ref={setNodeRef}
-      style={style}
       {...listeners}
       {...attributes}
       onClick={() => onOpen(card.id)}
       className={cn(
-        "flex w-full items-start gap-2 rounded-md border bg-card p-2 text-left transition-colors hover:border-foreground/15",
+        "w-full rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
         canDrag && "cursor-grab active:cursor-grabbing",
-        isDragging && "opacity-50",
+      )}
+    >
+      <CardFace card={card} muted={isDragging} />
+    </button>
+  );
+}
+
+function CardFace({
+  card,
+  muted,
+  floating,
+}: {
+  card: KanbanCard;
+  muted?: boolean;
+  floating?: boolean;
+}) {
+  const detail = card.summary;
+  return (
+    <span
+      className={cn(
+        "flex w-full items-center gap-2 rounded-lg border-[0.5px] border-border bg-card p-2 text-left shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-colors hover:bg-muted",
+        muted && "opacity-40 hover:bg-card",
+        floating &&
+          "w-[12.25rem] cursor-grabbing hover:bg-card shadow-[0_8px_20px_rgb(0_0_0/0.08)]",
       )}
     >
       <PersonAvatar
@@ -349,34 +408,12 @@ function ApplicantCard({
             </Badge>
           ) : null}
         </span>
-        {card.memberLine || card.email ? (
+        {detail ? (
           <span className="block truncate text-xs text-muted-foreground">
-            {card.memberLine ?? card.email}
-          </span>
-        ) : null}
-        {card.summary ? (
-          <span className="mt-0.5 line-clamp-2 block text-xs text-muted-foreground">
-            {card.summary}
+            {detail}
           </span>
         ) : null}
       </span>
-    </button>
+    </span>
   );
-}
-
-function toneDot(color: string | null) {
-  switch (color) {
-    case "brand":
-      return "bg-brand";
-    case "success":
-      return "bg-success";
-    case "warning":
-      return "bg-warning";
-    case "info":
-      return "bg-info";
-    case "destructive":
-      return "bg-destructive";
-    default:
-      return "bg-muted-foreground/40";
-  }
 }

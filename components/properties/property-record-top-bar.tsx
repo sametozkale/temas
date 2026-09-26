@@ -1,19 +1,16 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
-import { ArrowLeft01Icon, Icon, Share08Icon } from "@/components/icons";
+import { ArrowLeft01Icon, Icon } from "@/components/icons";
 import { PropertyHeaderActions } from "@/components/properties/property-header-actions";
-import { Button } from "@/components/ui/button";
-import type { PropertyStatus } from "@/lib/db/schema";
+import { PropertyViewSwitch } from "@/components/properties/property-view-switch";
 
 export async function PropertyRecordTopBar({
   propertyId,
-  status,
   canWrite,
   canDelete,
 }: {
   propertyId: string;
-  status: PropertyStatus;
   canWrite: boolean;
   canDelete: boolean;
 }) {
@@ -29,15 +26,13 @@ export async function PropertyRecordTopBar({
         {t("title")}
       </Link>
       <div className="flex shrink-0 items-center gap-2">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/properties/${propertyId}/map`}>
-            <Icon icon={Share08Icon} size={16} data-icon="inline-start" />
-            {t("detail.map")}
-          </Link>
-        </Button>
+        <PropertyViewSwitch
+          propertyId={propertyId}
+          mapLabel={t("detail.map")}
+          detailLabel={t("detail.detail_view")}
+        />
         <PropertyHeaderActions
           propertyId={propertyId}
-          status={status}
           canWrite={canWrite}
           canDelete={canDelete}
         />

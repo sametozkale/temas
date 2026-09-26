@@ -117,6 +117,8 @@ export const propertyFormSchema = z.object({
   currency: z.string().refine(isValidCurrency).default("TRY"),
   depositAmount: optionalDecimal,
   duesAmount: optionalDecimal,
+  summerUtilitiesAmount: optionalDecimal,
+  winterUtilitiesAmount: optionalDecimal,
   areaM2: optionalDecimal,
   rooms: optionalText(20),
   bedrooms: optionalBoundedInt(0, 30),
@@ -201,6 +203,8 @@ export function propertyToFormInput(p: {
   currency: string;
   depositAmount: string | null;
   duesAmount: string | null;
+  summerUtilitiesAmount: string | null;
+  winterUtilitiesAmount: string | null;
   areaM2: string | null;
   rooms: string | null;
   bedrooms: number | null;
@@ -228,6 +232,8 @@ export function propertyToFormInput(p: {
     currency: isValidCurrency(p.currency) ? p.currency : "TRY",
     depositAmount: p.depositAmount ?? "",
     duesAmount: p.duesAmount ?? "",
+    summerUtilitiesAmount: p.summerUtilitiesAmount ?? "",
+    winterUtilitiesAmount: p.winterUtilitiesAmount ?? "",
     areaM2: p.areaM2 ?? "",
     rooms: p.rooms ?? "",
     bedrooms: p.bedrooms?.toString() ?? "",
@@ -259,6 +265,8 @@ export const EMPTY_PROPERTY_FORM: PropertyFormInput = {
   currency: "TRY",
   depositAmount: "",
   duesAmount: "",
+  summerUtilitiesAmount: "",
+  winterUtilitiesAmount: "",
   areaM2: "",
   rooms: "",
   bedrooms: "",

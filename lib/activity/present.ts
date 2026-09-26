@@ -15,6 +15,16 @@ type TActivity = ReturnType<typeof useTranslations<"properties.activity">>;
 type TStatus = ReturnType<typeof useTranslations<"properties.status">>;
 type TRel = ReturnType<typeof useTranslations<"properties.people.relations">>;
 
+type MessageLookup = {
+  has: (key: string) => boolean;
+  (key: string): string;
+};
+
+/** Translate a stored key when it exists. Stage names and other free text stay as stored. */
+function messageOrRaw(lookup: MessageLookup, value: string) {
+  return lookup.has(value) ? lookup(value) : value;
+}
+
 export function formatActivityCopy(
   row: Pick<ActivityRow, "action" | "data">,
   t: TActivity,
@@ -29,25 +39,13 @@ export function formatActivityCopy(
     }
   }
   if (typeof data.from === "string") {
-    try {
-      vars.from = tStatus(data.from);
-    } catch {
-      vars.from = data.from;
-    }
+    vars.from = messageOrRaw(tStatus, data.from);
   }
   if (typeof data.to === "string") {
-    try {
-      vars.to = tStatus(data.to);
-    } catch {
-      vars.to = data.to;
-    }
+    vars.to = messageOrRaw(tStatus, data.to);
   }
   if (typeof data.relation === "string") {
-    try {
-      vars.relation = tRel(data.relation);
-    } catch {
-      vars.relation = data.relation;
-    }
+    vars.relation = messageOrRaw(tRel, data.relation);
   }
   const actionKey = `actions.${row.action}`;
   if (t.has(actionKey)) {

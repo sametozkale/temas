@@ -16,11 +16,22 @@ function IdentityMark({
   shape: "circle" | "square";
 }) {
   const [failed, setFailed] = React.useState(false);
+  const [loaded, setLoaded] = React.useState(false);
+  const imageRef = React.useRef<HTMLImageElement>(null);
   const showImage = Boolean(src) && !failed;
 
   React.useEffect(() => {
     setFailed(false);
+    setLoaded(false);
   }, [src]);
+
+  // The image can settle before hydration attaches onLoad / onError.
+  React.useEffect(() => {
+    const image = imageRef.current;
+    if (!image?.complete) return;
+    if (image.naturalWidth === 0) setFailed(true);
+    else setLoaded(true);
+  }, [src, showImage]);
 
   return (
     <span
@@ -31,17 +42,21 @@ function IdentityMark({
         "bg-muted leading-none text-muted-foreground",
       )}
     >
+      {showImage && loaded ? null : initials}
       {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
+          ref={imageRef}
           src={src!}
           alt=""
-          className="absolute inset-0 size-full object-cover"
+          className={cn(
+            "absolute inset-0 size-full object-cover",
+            !loaded && "invisible",
+          )}
+          onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
         />
-      ) : (
-        initials
-      )}
+      ) : null}
     </span>
   );
 }

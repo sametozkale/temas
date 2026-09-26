@@ -231,6 +231,7 @@ export async function loadApplicant(
     score: number | null;
     aiSummary: string | null;
     answers: Record<string, unknown>;
+    fields: { key: string; label: string; type: string }[];
     attachments: { key: string; name: string; url: string | null }[];
     history: {
       id: string;
@@ -248,6 +249,7 @@ export async function loadApplicant(
   const payload = await withUserContext(ctx.user.id, async (tx) => {
     const row = await getApplicationDetail(tx, pid, aid);
     if (!row) return null;
+    const form = await getFormByProperty(tx, pid);
     const history = await listApplicationActivity(tx, pid, aid);
     const attachments = row.submission?.attachments ?? [];
     const urls = await Promise.all(
@@ -273,6 +275,11 @@ export async function loadApplicant(
       score: row.application.score,
       aiSummary: row.application.aiSummary,
       answers: row.submission?.answers ?? {},
+      fields: (form?.schema ?? []).map((field) => ({
+        key: field.key,
+        label: field.label,
+        type: field.type,
+      })),
       attachments: urls,
       history: history.map((h) => ({
         id: h.id,

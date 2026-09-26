@@ -44,6 +44,8 @@ export default async function PropertyLayout({
     rentAmount: property.rentAmount ?? "",
     depositAmount: property.depositAmount ?? "",
     duesAmount: property.duesAmount ?? "",
+    summerUtilitiesAmount: property.summerUtilitiesAmount ?? "",
+    winterUtilitiesAmount: property.winterUtilitiesAmount ?? "",
     areaM2: property.areaM2 ?? "",
     rooms: property.rooms ?? "",
     bedrooms: property.bedrooms != null ? String(property.bedrooms) : "",
@@ -60,7 +62,7 @@ export default async function PropertyLayout({
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
         <aside className="flex shrink-0 flex-col border-b border-foreground/6 lg:min-h-0 lg:w-[340px] lg:border-r lg:border-b-0">
-          <DetailScrollRegion>
+          <DetailScrollRegion inset="px-5 py-5">
             <PropertyRecordRail
               propertyId={property.id}
               coverUrl={coverUrl}
@@ -74,11 +76,10 @@ export default async function PropertyLayout({
             propertyId={property.id}
             counts={{
               viewings: meta.viewings,
-              pipeline: meta.applications,
               inventory: meta.inventory,
             }}
           />
-          <DetailScrollRegion className="@container">
+          <DetailScrollRegion className="@container" inset="px-4 py-5">
             {children}
           </DetailScrollRegion>
         </div>

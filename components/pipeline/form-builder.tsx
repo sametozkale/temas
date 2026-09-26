@@ -208,7 +208,7 @@ export function FormBuilder({
             </span>
             <Button
               type="button"
-              variant="soft"
+              variant="outline"
               size="xs"
               className="shrink-0"
               onClick={() => void copyLink()}

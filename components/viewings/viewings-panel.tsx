@@ -11,14 +11,22 @@ import {
   updateCalendarSettings,
 } from "@/app/(app)/properties/[id]/viewings/actions";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { NumberField } from "@/components/ui/number-field";
 import { Switch } from "@/components/ui/switch";
-import { Icon, Copy01Icon, Link01Icon } from "@/components/icons";
+import { Icon, Copy01Icon } from "@/components/icons";
 import { WeekGrid } from "@/components/viewings/week-grid";
 import type { WeekCell } from "@/lib/viewings/week";
 import { emptyWeek } from "@/lib/viewings/week";
+
+const SLOT_LENGTHS = [15, 30, 45, 60] as const;
 
 export function ViewingsPanel({
   propertyId,
@@ -119,26 +127,28 @@ export function ViewingsPanel({
     );
   }
 
+  const slotLengths = (SLOT_LENGTHS as readonly number[]).includes(
+    settings.slotDurationMin,
+  )
+    ? [...SLOT_LENGTHS]
+    : [settings.slotDurationMin, ...SLOT_LENGTHS];
+  const settingsDirty =
+    settings.slotDurationMin !== calendar.slotDurationMin ||
+    settings.bufferMin !== calendar.bufferMin ||
+    settings.minNoticeHours !== calendar.minNoticeHours ||
+    settings.maxDaysAhead !== calendar.maxDaysAhead;
+  const weekDirty =
+    JSON.stringify(cells) !== JSON.stringify(week.length ? week : emptyWeek());
+
   return (
-    <div className="min-w-0 space-y-6">
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
+    <div className="min-w-0 space-y-4">
+      <Card className="hover:border-border">
+        <CardHeader>
           <CardTitle>{t("link_title")}</CardTitle>
-          {publicUrl ? (
-            <Button variant="ghost" size="sm" onClick={() => void copyLink()}>
-              <Icon icon={Copy01Icon} size={16} data-icon="inline-start" />
-              {t("copy_link")}
-            </Button>
-          ) : null}
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <label className="flex items-center justify-between gap-4 text-sm">
-            <span>
-              {t("published")}
-              <span className="mt-0.5 block text-xs text-muted-foreground">
-                {t("published_hint")}
-              </span>
-            </span>
+          <CardDescription className="text-xs">
+            {t("published_hint")}
+          </CardDescription>
+          <CardAction>
             <Switch
               checked={settings.isPublished}
               disabled={!canManage || pending}
@@ -152,14 +162,31 @@ export function ViewingsPanel({
                 });
               }}
             />
-          </label>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="space-y-4">
           {publicUrl ? (
-            <p className="flex items-center gap-2 truncate text-xs text-muted-foreground">
-              <Icon icon={Link01Icon} size={16} />
-              {publicUrl}
-            </p>
+            <div className="flex min-w-0 items-center gap-2 rounded-lg border bg-muted/40 px-3 py-1.5">
+              <p className="min-w-0 flex-1 truncate text-sm text-foreground">
+                {publicUrl}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-card"
+                onClick={() => void copyLink()}
+              >
+                <Icon icon={Copy01Icon} size={16} data-icon="inline-start" />
+                {t("copy_link")}
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <a href={publicUrl} target="_blank" rel="noreferrer">
+                  {t("preview")}
+                </a>
+              </Button>
+            </div>
           ) : null}
-          <label className="flex items-center justify-between gap-4 text-sm">
+          <label className="flex items-center justify-between gap-4 border-t pt-4 text-sm">
             <span>
               {t("require_form")}
               <span className="mt-0.5 block text-xs text-muted-foreground">
@@ -187,99 +214,136 @@ export function ViewingsPanel({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="hover:border-border">
         <CardHeader>
           <CardTitle>{t("settings_title")}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <FieldGroup>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field>
-                <FieldLabel>{t("duration")}</FieldLabel>
-                <Input
-                  type="number"
-                  min={15}
-                  value={settings.slotDurationMin}
-                  disabled={!canManage}
-                  onChange={(e) =>
-                    setSettings((s) => ({
-                      ...s,
-                      slotDurationMin: Number(e.target.value),
-                    }))
-                  }
-                />
-              </Field>
-              <Field>
-                <FieldLabel>{t("buffer")}</FieldLabel>
-                <Input
-                  type="number"
-                  min={0}
-                  value={settings.bufferMin}
-                  disabled={!canManage}
-                  onChange={(e) =>
-                    setSettings((s) => ({
-                      ...s,
-                      bufferMin: Number(e.target.value),
-                    }))
-                  }
-                />
-              </Field>
-              <Field>
-                <FieldLabel>{t("min_notice")}</FieldLabel>
-                <Input
-                  type="number"
-                  min={0}
-                  value={settings.minNoticeHours}
-                  disabled={!canManage}
-                  onChange={(e) =>
-                    setSettings((s) => ({
-                      ...s,
-                      minNoticeHours: Number(e.target.value),
-                    }))
-                  }
-                />
-              </Field>
-              <Field>
-                <FieldLabel>{t("horizon")}</FieldLabel>
-                <Input
-                  type="number"
-                  min={1}
-                  value={settings.maxDaysAhead}
-                  disabled={!canManage}
-                  onChange={(e) =>
-                    setSettings((s) => ({
-                      ...s,
-                      maxDaysAhead: Number(e.target.value),
-                    }))
-                  }
-                />
-              </Field>
+        <CardContent className="space-y-0">
+          <div className="flex flex-col gap-3 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm">{t("duration")}</p>
+            <div className="flex flex-wrap gap-1">
+              {slotLengths.map((minutes) => {
+                const selected = settings.slotDurationMin === minutes;
+                return (
+                  <button
+                    key={minutes}
+                    type="button"
+                    disabled={!canManage}
+                    aria-pressed={selected}
+                    className={
+                      selected
+                        ? "h-7 rounded-full bg-primary px-2.5 text-xs text-primary-foreground"
+                        : "h-7 rounded-full bg-secondary px-2.5 text-xs text-secondary-foreground hover:bg-muted disabled:opacity-50"
+                    }
+                    onClick={() =>
+                      setSettings((s) => ({ ...s, slotDurationMin: minutes }))
+                    }
+                  >
+                    {t("duration_option", { minutes })}
+                  </button>
+                );
+              })}
             </div>
-          </FieldGroup>
+          </div>
+          <NumberRow
+            label={t("buffer")}
+            min={0}
+            max={120}
+            value={settings.bufferMin}
+            disabled={!canManage}
+            onChange={(bufferMin) => setSettings((s) => ({ ...s, bufferMin }))}
+          />
+          <NumberRow
+            label={t("min_notice")}
+            min={0}
+            max={72}
+            value={settings.minNoticeHours}
+            disabled={!canManage}
+            onChange={(minNoticeHours) =>
+              setSettings((s) => ({ ...s, minNoticeHours }))
+            }
+          />
+          <NumberRow
+            label={t("horizon")}
+            min={1}
+            max={90}
+            value={settings.maxDaysAhead}
+            disabled={!canManage}
+            onChange={(maxDaysAhead) =>
+              setSettings((s) => ({ ...s, maxDaysAhead }))
+            }
+          />
           {canManage ? (
-            <Button variant="soft" onClick={saveSettings} disabled={pending}>
-              {t("save_settings")}
-            </Button>
+            <div className="flex justify-end pt-4">
+              <Button
+                variant={settingsDirty ? "default" : "soft"}
+                onClick={saveSettings}
+                disabled={pending || !settingsDirty}
+              >
+                {t("save_settings")}
+              </Button>
+            </div>
           ) : null}
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="hover:border-border">
         <CardHeader>
           <CardTitle>{t("agent_windows")}</CardTitle>
+          <CardDescription className="text-xs">
+            {t("agent_windows_hint")}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            {t("agent_windows_hint")}
-          </p>
           <WeekGrid value={cells} onChange={setCells} disabled={!canManage} />
           {canManage ? (
-            <Button onClick={saveWeek} disabled={pending}>
-              {t("save_windows")}
-            </Button>
+            <div className="flex justify-end">
+              <Button
+                variant={weekDirty ? "default" : "soft"}
+                onClick={saveWeek}
+                disabled={pending || !weekDirty}
+              >
+                {t("save_windows")}
+              </Button>
+            </div>
           ) : null}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function NumberRow({
+  label,
+  value,
+  min,
+  max,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  disabled: boolean;
+  onChange: (next: number) => void;
+}) {
+  const t = useTranslations("common");
+  const id = React.useId();
+
+  return (
+    <div className="flex items-center justify-between gap-4 border-b py-3 text-sm last:border-b-0">
+      <span id={id}>{label}</span>
+      <NumberField
+        aria-labelledby={id}
+        value={value}
+        min={min}
+        max={max}
+        disabled={disabled}
+        decreaseLabel={t("decrease")}
+        increaseLabel={t("increase")}
+        onChange={onChange}
+      />
     </div>
   );
 }

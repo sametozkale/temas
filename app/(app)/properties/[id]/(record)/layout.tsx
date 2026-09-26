@@ -17,7 +17,6 @@ export default async function PropertyRecordLayout({
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <PropertyRecordTopBar
         propertyId={property.id}
-        status={property.status}
         canWrite={can(ctx.membership.role, "properties.write")}
         canDelete={can(ctx.membership.role, "properties.delete")}
       />

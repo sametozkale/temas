@@ -68,6 +68,12 @@ export async function embedProperty(propertyId: string) {
     row.availableFrom ? `available from ${row.availableFrom}` : "",
     row.rentAmount ? `${row.rentAmount} ${row.currency}` : "",
     row.duesAmount ? `dues ${row.duesAmount} ${row.currency}` : "",
+    row.summerUtilitiesAmount
+      ? `summer utilities ${row.summerUtilitiesAmount} ${row.currency}`
+      : "",
+    row.winterUtilitiesAmount
+      ? `winter utilities ${row.winterUtilitiesAmount} ${row.currency}`
+      : "",
     row.description ?? "",
   ]
     .filter(Boolean)

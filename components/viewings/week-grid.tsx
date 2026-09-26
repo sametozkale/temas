@@ -2,8 +2,8 @@
 
 import { useTranslations } from "next-intl";
 
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { TimePicker } from "@/components/ui/time-picker";
 import {
   DEFAULT_END_MIN,
   DEFAULT_START_MIN,
@@ -11,7 +11,6 @@ import {
   type WeekCell,
 } from "@/lib/viewings/week";
 import { minutesToTime, parseTimeToMinutes } from "@/lib/slots";
-import { cn } from "@/lib/utils";
 
 export function WeekGrid({
   value,
@@ -23,6 +22,7 @@ export function WeekGrid({
   disabled?: boolean;
 }) {
   const t = useTranslations("viewings.weekdays");
+  const tViewings = useTranslations("viewings");
 
   function patch(day: (typeof WEEKDAYS)[number], next: Partial<WeekCell>) {
     onChange(
@@ -31,7 +31,7 @@ export function WeekGrid({
   }
 
   return (
-    <div className="divide-y rounded-lg border">
+    <div className="divide-y">
       {WEEKDAYS.map((day) => {
         const cell = value.find((c) => c.weekday === day) ?? {
           weekday: day,
@@ -40,39 +40,39 @@ export function WeekGrid({
           endMin: DEFAULT_END_MIN,
         };
         return (
-          <div
-            key={day}
-            className={cn(
-              "flex flex-wrap items-center gap-3 px-4 py-3",
-              !cell.enabled && "bg-secondary/40",
-            )}
-          >
+          <div key={day} className="flex flex-wrap items-center gap-3 py-2.5">
+            <span className="w-10 text-sm font-medium">{t(day)}</span>
             <Switch
               checked={cell.enabled}
               disabled={disabled}
               onCheckedChange={(v) => patch(day, { enabled: v === true })}
               aria-label={t(day)}
             />
-            <span className="w-20 text-sm font-medium">{t(day)}</span>
-            <Input
-              type="time"
-              className="min-w-0 flex-1 sm:w-32 sm:flex-none"
-              disabled={disabled || !cell.enabled}
-              value={minutesToTime(cell.startMin)}
-              onChange={(e) =>
-                patch(day, { startMin: parseTimeToMinutes(e.target.value) })
-              }
-            />
-            <span className="text-xs text-muted-foreground">–</span>
-            <Input
-              type="time"
-              className="min-w-0 flex-1 sm:w-32 sm:flex-none"
-              disabled={disabled || !cell.enabled}
-              value={minutesToTime(cell.endMin)}
-              onChange={(e) =>
-                patch(day, { endMin: parseTimeToMinutes(e.target.value) })
-              }
-            />
+            {cell.enabled ? (
+              <>
+                <TimePicker
+                  ariaLabel={tViewings("start_time")}
+                  disabled={disabled}
+                  value={minutesToTime(cell.startMin)}
+                  onValueChange={(next) =>
+                    patch(day, { startMin: parseTimeToMinutes(next) })
+                  }
+                />
+                <span className="text-xs text-muted-foreground">–</span>
+                <TimePicker
+                  ariaLabel={tViewings("end_time")}
+                  disabled={disabled}
+                  value={minutesToTime(cell.endMin)}
+                  onValueChange={(next) =>
+                    patch(day, { endMin: parseTimeToMinutes(next) })
+                  }
+                />
+              </>
+            ) : (
+              <span className="text-sm text-muted-foreground">
+                {tViewings("unavailable")}
+              </span>
+            )}
           </div>
         );
       })}

@@ -70,6 +70,7 @@ properties (
   timezone text default 'Europe/Istanbul',
   rent_amount numeric, currency text default 'TRY',  -- ISO 4217; app list is Intl.supportedValuesOf('currency')
   deposit_amount numeric, dues_amount numeric,
+  summer_utilities_amount numeric, winter_utilities_amount numeric,
   area_m2 numeric, rooms text, bedrooms int, bathrooms int,
   floor int, total_floors int, year_built int,
   condition text check (condition in ('new','renovated','good','fair','needs_work')),

@@ -100,6 +100,8 @@ export function createAskTools(
             rentAmount: properties.rentAmount,
             depositAmount: properties.depositAmount,
             duesAmount: properties.duesAmount,
+            summerUtilitiesAmount: properties.summerUtilitiesAmount,
+            winterUtilitiesAmount: properties.winterUtilitiesAmount,
             areaM2: properties.areaM2,
             rooms: properties.rooms,
             bedrooms: properties.bedrooms,

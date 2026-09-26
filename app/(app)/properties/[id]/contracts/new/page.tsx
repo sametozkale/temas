@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { listContractTemplates } from "@/lib/contracts/queries";
 import { withUserContext } from "@/lib/db";
 import { requireAbility } from "@/lib/permissions";
+import {
+  householdLabel,
+  householdOf,
+} from "@/lib/pipeline/household";
 import { listApplications } from "@/lib/pipeline/queries";
 
 import { loadProperty } from "../../load";
@@ -23,6 +27,7 @@ export default async function NewContractPage({
   const { ctx, property } = await loadProperty(id);
   requireAbility(ctx.membership, "contracts.manage");
   const t = await getTranslations("contracts");
+  const tHousehold = await getTranslations("pipeline.sheet");
 
   const { templates, applications } = await withUserContext(
     ctx.user.id,
@@ -46,10 +51,20 @@ export default async function NewContractPage({
       <ContractWizardForm
         propertyId={id}
         templates={templates.map((row) => ({ id: row.id, name: row.name }))}
-        applications={applications.map((row) => ({
-          id: row.application.id,
-          name: row.contact.fullName,
-        }))}
+        applications={applications.map((row) => {
+          const household = householdOf(
+            row.contact.fullName,
+            row.submission?.answers ?? null,
+          );
+          const label = householdLabel(household, {
+            family: (name) => tHousehold("family", { name }),
+            plus: (name, count) => tHousehold("plus", { name, count }),
+          });
+          return {
+            id: row.application.id,
+            name: row.stage?.name ? `${label} · ${row.stage.name}` : label,
+          };
+        })}
         defaultApplicationId={applicationId}
         defaults={{
           rent: property.rentAmount ?? "",
