@@ -52,35 +52,55 @@ export async function ConversationThread({
   const t = await getTranslations("inbox");
   const title = contactName ?? contactEmail ?? t("unknown_contact");
 
+  const emailSubject = channel === "email" ? subject : null;
+  const showActions = channel === "email" && canManage;
+
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
-      <div className="flex h-11 shrink-0 items-center gap-2 px-3">
-        <Button variant="ghost" size="sm" asChild className="md:hidden">
-          <Link href="/inbox">{t("back")}</Link>
-        </Button>
-        <p className="min-w-0 flex-1 truncate text-sm font-medium">{title}</p>
-        {propertyId && propertyTitle ? (
-          <Link
-            href={`/properties/${propertyId}`}
-            className="hidden max-w-[30%] truncate text-xs text-muted-foreground underline-offset-4 hover:underline md:inline"
+      <div className="flex shrink-0 items-start">
+        <div className="min-w-0 flex-1">
+          <div
+            className={cn(
+              "flex h-11 items-center gap-2",
+              showActions ? "pr-2 pl-3" : "px-3",
+            )}
           >
-            {propertyTitle}
-          </Link>
-        ) : channel !== "email" && subject ? (
-          <p className="hidden max-w-[40%] truncate text-xs text-muted-foreground md:block">
-            {subject}
-          </p>
-        ) : null}
-        {channel === "email" && canManage ? (
-          <ThreadActions conversationId={conversationId} starred={starred} />
+            <Button variant="ghost" size="sm" asChild className="md:hidden">
+              <Link href="/inbox">{t("back")}</Link>
+            </Button>
+            <p className="min-w-0 flex-1 truncate text-sm font-medium">{title}</p>
+            {propertyId && propertyTitle ? (
+              <Link
+                href={`/properties/${propertyId}`}
+                className="hidden max-w-[30%] truncate text-xs text-muted-foreground underline-offset-4 hover:underline md:inline"
+              >
+                {propertyTitle}
+              </Link>
+            ) : channel !== "email" && subject ? (
+              <p className="hidden max-w-[40%] truncate text-xs text-muted-foreground md:block">
+                {subject}
+              </p>
+            ) : null}
+          </div>
+          {emailSubject ? (
+            <p
+              className={cn(
+                "-mt-3 truncate pb-2 text-xs text-muted-foreground",
+                showActions ? "pr-2 pl-3" : "px-3",
+              )}
+            >
+              {emailSubject}
+            </p>
+          ) : null}
+        </div>
+        {showActions ? (
+          <div className="flex h-11 shrink-0 items-center pr-3">
+            <ThreadActions conversationId={conversationId} starred={starred} />
+          </div>
         ) : null}
       </div>
       {channel === "email" ? (
-        <EmailThread
-          subject={subject}
-          contactName={title}
-          messages={messages}
-        />
+        <EmailThread contactName={title} messages={messages} />
       ) : (
         <ol className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
           {messages.map((message) => {

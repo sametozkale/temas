@@ -81,7 +81,7 @@ export function ConversationList({
               }
               scroll={false}
               className={cn(
-                "block rounded-md px-2.5 py-2 transition-colors hover:bg-muted/70",
+                "group block rounded-md px-2.5 py-2 transition-colors hover:bg-muted/70",
                 active && "bg-muted",
               )}
             >
@@ -114,7 +114,7 @@ export function ConversationList({
                   {item.lastMessageAt ? (
                     <time
                       dateTime={item.lastMessageAt.toISOString()}
-                      className="text-[11px] text-muted-foreground"
+                      className="hidden text-[11px] text-muted-foreground group-hover:inline group-focus-visible:inline"
                     >
                       {formatRelative(item.lastMessageAt)}
                     </time>

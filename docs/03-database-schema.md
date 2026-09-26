@@ -9,16 +9,24 @@
 ```sql
 profiles ( id uuid pk references auth.users, full_name text, phone text, avatar_url text, locale text default 'en',
            notification_prefs jsonb,
-           support_plan text default 'included' check (support_plan in ('included','founder','priority')) )
+           support_plan text default 'included' check (support_plan in ('included','founder','priority')),
+           support_billing text default 'none' check (support_billing in ('none','month','subscribe')),
+           support_period_ends_at timestamptz,
+           stripe_customer_id text, support_subscription_id text )
                                 -- avatar_url is a storage path in the public `avatars` bucket: profiles/{userId}/{uuid}.ext
                                 -- notification_prefs: per-type `{ email, whatsapp }` matrix (digest, viewings, viewing_reminders, applications, owner_decisions). Settings > Notifications.
+                                -- Support is per account. month is one payment; subscribe is monthly. Empty Stripe ids until checkout.
 
 workspaces (
   name text, slug text unique, logo_url text, timezone text default 'Europe/Istanbul',
   legal_name text,                    -- official company name on contracts; optional; team still sees `name`
-  plan text default 'free'            -- catalog key in lib/plans.ts (free|pro); billed per workspace, not per account
+  plan text default 'free',            -- catalog key in lib/plans.ts (free|pro); billed per workspace, not per account
+  billing_interval text default 'month' check (billing_interval in ('month','year')),
+  billing_status text default 'none' check (billing_status in ('none','active','past_due','canceled')),
+  stripe_customer_id text, stripe_subscription_id text
   -- logo_url is a storage path: workspaces/{workspaceId}/{uuid}.ext
-  -- Settings > Billing (owner) reads `plan`. later: stripe_customer_id text, stripe_subscription_id text
+  -- Settings > Billing (owner) reads `plan` and `billing_interval`. Current is that interval only.
+  -- The webhook sets billing_status. none means Stripe has not confirmed a subscription yet.
 )
 
 workspace_members (
@@ -215,7 +223,8 @@ tasks (
 
 ```sql
 ai_threads ( workspace_id uuid, user_id uuid, title text )
-ai_messages ( thread_id uuid, role text check (role in ('user','assistant','tool')), content text, tool_calls jsonb )
+ai_messages ( thread_id uuid, role text check (role in ('user','assistant','tool')), content text, tool_calls jsonb,
+              credits integer not null default 0 )
 
 embeddings (                        -- RAG corpus: property, document text, conversation summary
   workspace_id uuid, entity text, entity_id uuid, chunk text,

@@ -3,6 +3,7 @@ import {
   boolean,
   check,
   index,
+  integer,
   jsonb,
   pgPolicy,
   pgTable,
@@ -54,6 +55,8 @@ export const aiMessages = pgTable(
       .references(() => aiThreads.id, { onDelete: "cascade" }),
     role: text("role", { enum: AI_MESSAGE_ROLES }).notNull(),
     content: text("content"),
+    /** Credits this row spends. Ask user turns are 1. Assistant and tool rows are 0. */
+    credits: integer("credits").notNull().default(0),
     toolCalls: jsonb("tool_calls").$type<unknown[]>(),
   },
   (t) => [

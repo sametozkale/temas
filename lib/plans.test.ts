@@ -5,6 +5,7 @@ import {
   formatUsd,
   getPlan,
   listingCap,
+  parseBillingInterval,
   parsePlanId,
   planCredits,
   planListings,
@@ -16,6 +17,8 @@ describe("plans catalog", () => {
     expect(parsePlanId(undefined)).toBe("free");
     expect(parsePlanId("enterprise")).toBe("free");
     expect(parsePlanId("pro")).toBe("pro");
+    expect(parseBillingInterval(undefined)).toBe("month");
+    expect(parseBillingInterval("year")).toBe("year");
   });
 
   it("exposes per-workspace AI quotas", () => {

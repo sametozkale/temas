@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
@@ -6,6 +7,7 @@ import { TZDate } from "@date-fns/tz";
 import { addMonths, startOfMonth } from "date-fns";
 
 import { CalendarBoard } from "@/components/calendar/calendar-board";
+import { RememberCalendarView } from "@/components/calendar/remember-view";
 import { CalendarFilters } from "@/components/calendar/calendar-property-filter";
 import { CalendarList } from "@/components/calendar/calendar-list";
 import { GoogleCalendarMenu } from "@/components/calendar/google-calendar-menu";
@@ -17,8 +19,10 @@ import { Button } from "@/components/ui/button";
 import { getAppContext } from "@/lib/auth";
 import { loadGoogleOverlay } from "@/lib/calendar/google";
 import {
+  CALENDAR_VIEW_COOKIE,
   monthKey,
   monthKeyFromIso,
+  parseCalendarView,
   parseYearMonth,
   timeLabelInZone,
   weekDays,
@@ -50,10 +54,11 @@ export default async function CalendarPage({
     getAppContext(),
     searchParams,
   ]);
-  const view: CalendarView =
-    params.view === "week" || params.view === "list" || params.view === "month"
-      ? params.view
-      : "month";
+  const requested = parseCalendarView(params.view);
+  const saved = parseCalendarView(
+    (await cookies()).get(CALENDAR_VIEW_COOKIE)?.value,
+  );
+  const view: CalendarView = requested ?? saved ?? "month";
   const zoned = TZDate.tz(ctx.workspace.timezone);
   const now = new Date(zoned.getFullYear(), zoned.getMonth(), zoned.getDate());
   const parsed = parseYearMonth(params.month, now);
@@ -140,6 +145,7 @@ export default async function CalendarPage({
       labels={overlay.canColor ? overlay.labels : {}}
     >
     <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <RememberCalendarView view={view} />
       <PageHeader
         className="shrink-0"
         title={t("title")}

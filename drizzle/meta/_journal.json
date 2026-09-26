@@ -176,6 +176,20 @@
       "when": 1790421084132,
       "tag": "0024_support_plan",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790423396607,
+      "tag": "0025_billing_interval",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1790423877325,
+      "tag": "0026_billing_stripe",
+      "breakpoints": true
     }
   ]
 }

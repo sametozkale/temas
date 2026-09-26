@@ -324,7 +324,7 @@ export function PromptBar({
           if (!disabled) addFiles(event.dataTransfer.files);
         }}
         className={cn(
-          "relative flex w-full flex-col overflow-hidden rounded-[22px] border bg-card shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-[box-shadow,border-color] duration-200 ease-out outline-none",
+          "relative flex w-full flex-col overflow-hidden rounded-[22px] border-[0.5px] bg-card shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-[box-shadow,border-color] duration-200 ease-out outline-none",
           dragging
             ? "border-foreground/25"
             : focused

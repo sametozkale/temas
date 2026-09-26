@@ -45,6 +45,7 @@ import { selectWorkspacePlan } from "../actions";
 
 export function BillingPanel({
   plan,
+  billingInterval,
   seatsUsed,
   listingsUsed,
   creditsRemaining,
@@ -52,6 +53,7 @@ export function BillingPanel({
   resetsLabel,
 }: {
   plan: PlanId;
+  billingInterval: BillingInterval;
   seatsUsed: number;
   listingsUsed: number;
   creditsRemaining: number;
@@ -62,13 +64,17 @@ export function BillingPanel({
   const tCommon = useTranslations("common");
   const router = useRouter();
   const [pending, startTransition] = React.useTransition();
-  const [interval, setInterval] = React.useState<BillingInterval>("year");
+  const [interval, setInterval] = React.useState<BillingInterval>(billingInterval);
   const current = PLANS[plan];
-  const listingLimit = listingCap(current, seatsUsed);
+  const listingLimit = listingCap(current, seatsUsed, billingInterval);
 
-  function switchTo(next: PlanId) {
+  React.useEffect(() => {
+    setInterval(billingInterval);
+  }, [billingInterval]);
+
+  function switchTo(next: PlanId, nextInterval: BillingInterval) {
     startTransition(async () => {
-      const result = await selectWorkspacePlan(next);
+      const result = await selectWorkspacePlan(next, nextInterval);
       if (result.ok) {
         toast.success(t("switched"));
         router.refresh();
@@ -96,14 +102,15 @@ export function BillingPanel({
             const quote = planQuote(catalog, interval);
             const amount = formatUsd(quote.monthlyCents);
             const listings = planListings(catalog, interval);
-            const selected = id === plan;
+            const owned = id === plan;
+            const currentHere = owned && interval === billingInterval;
             return (
               <div
                 key={id}
-                aria-current={selected ? "true" : undefined}
+                aria-current={currentHere ? "true" : undefined}
                 className={cn(
                   "flex flex-col gap-4 rounded-2xl border bg-card p-4",
-                  selected && "border-foreground/25",
+                  currentHere && "border-brand/25",
                 )}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -114,19 +121,19 @@ export function BillingPanel({
                         ? t("price_seat", { amount })
                         : t("price_month", { amount })}
                     </p>
-                    <p className="mt-1 min-h-4 text-xs text-muted-foreground">
-                      {quote.annualCents
-                        ? quote.perSeat
+                    {quote.annualCents ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {quote.perSeat
                           ? t("billed_yearly_seat", {
                               amount: formatUsd(quote.annualCents),
                             })
                           : t("billed_yearly", {
                               amount: formatUsd(quote.annualCents),
-                            })
-                        : null}
-                    </p>
+                            })}
+                      </p>
+                    ) : null}
                   </div>
-                  {selected ? (
+                  {currentHere ? (
                     <Badge variant="brand">{t("current")}</Badge>
                   ) : null}
                 </div>
@@ -149,15 +156,19 @@ export function BillingPanel({
                     })}
                   </li>
                 </ul>
-                {selected ? null : (
+                {currentHere ? null : (
                   <Button
                     type="button"
                     size="sm"
                     className="mt-auto"
                     disabled={pending}
-                    onClick={() => switchTo(id)}
+                    onClick={() => switchTo(id, interval)}
                   >
-                    {t("switch_to", { plan: t(`plan_${id}`) })}
+                    {owned
+                      ? interval === "year"
+                        ? t("switch_to_yearly")
+                        : t("switch_to_monthly")
+                      : t("switch_to", { plan: t(`plan_${id}`) })}
                   </Button>
                 )}
               </div>

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  calendarViewCookie,
   monthGrid,
   monthKey,
+  parseCalendarView,
   parseYearMonth,
   shiftIsoDate,
   shiftMonth,
@@ -11,6 +13,14 @@ import {
 } from "./grid";
 
 describe("calendar grid", () => {
+  it("keeps only month, week, and list as a saved view", () => {
+    expect(parseCalendarView("week")).toBe("week");
+    expect(parseCalendarView("month")).toBe("month");
+    expect(parseCalendarView("list")).toBe("list");
+    expect(parseCalendarView("day")).toBeNull();
+    expect(calendarViewCookie("week")).toContain("calendar_view=week");
+  });
+
   it("parses and shifts YYYY-MM", () => {
     expect(parseYearMonth("2026-09", new Date("2026-01-01T00:00:00Z"))).toEqual(
       {

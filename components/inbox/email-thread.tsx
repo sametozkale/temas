@@ -25,11 +25,9 @@ type EmailMessage = {
 };
 
 export function EmailThread({
-  subject,
   contactName,
   messages,
 }: {
-  subject: string | null;
   contactName: string;
   messages: EmailMessage[];
 }) {
@@ -71,10 +69,7 @@ export function EmailThread({
 
   return (
     <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto">
-      {subject ? (
-        <p className="px-5 pt-4 text-sm font-medium">{subject}</p>
-      ) : null}
-      <ol className={cn("flex flex-col px-3", subject ? "pt-2" : "py-2")}>
+      <ol className="flex flex-col px-3 py-2">
         {messages.map((message) => {
           const expanded = open.has(message.id);
           const outbound = message.direction === "out";

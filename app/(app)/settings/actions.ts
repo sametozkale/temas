@@ -373,10 +373,12 @@ export async function updateNotificationPreferences(
 
 const workspacePlanSchema = z.object({
   plan: z.enum(PLAN_IDS),
+  interval: z.enum(["month", "year"]),
 });
 
 export async function selectWorkspacePlan(
   plan: string,
+  interval: string,
 ): Promise<SettingsState> {
   const ctx = await getAppContext();
   try {
@@ -386,13 +388,16 @@ export async function selectWorkspacePlan(
     throw error;
   }
 
-  const parsed = workspacePlanSchema.safeParse({ plan });
+  const parsed = workspacePlanSchema.safeParse({ plan, interval });
   if (!parsed.success) return actionError("invalid");
 
   await withUserContext(ctx.user.id, async (tx) => {
     await tx
       .update(workspaces)
-      .set({ plan: parsed.data.plan })
+      .set({
+        plan: parsed.data.plan,
+        billingInterval: parsed.data.interval,
+      })
       .where(eq(workspaces.id, ctx.workspace.id));
     await logActivity(
       {
@@ -401,7 +406,7 @@ export async function selectWorkspacePlan(
         action: "workspace.updated",
         entity: "workspace",
         entityId: ctx.workspace.id,
-        data: { plan: parsed.data.plan },
+        data: { plan: parsed.data.plan, interval: parsed.data.interval },
       },
       tx,
     );

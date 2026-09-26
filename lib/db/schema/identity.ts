@@ -49,6 +49,14 @@ export const profiles = pgTable(
     aiTone: text("ai_tone").notNull().default("friendly"),
     /** Settings > Support. included | founder | priority. Charged later via Stripe. */
     supportPlan: text("support_plan").notNull().default("included"),
+    /** none | month (one invoice) | subscribe (monthly). */
+    supportBilling: text("support_billing").notNull().default("none"),
+    /** End of a one-month purchase or the current subscribe period. */
+    supportPeriodEndsAt: timestamp("support_period_ends_at", {
+      withTimezone: true,
+    }),
+    stripeCustomerId: text("stripe_customer_id"),
+    supportSubscriptionId: text("support_subscription_id"),
     /** Settings > Notifications: per-type email / WhatsApp matrix. */
     notificationPrefs: jsonb("notification_prefs")
       .$type<NotificationPrefs>()
@@ -60,6 +68,10 @@ export const profiles = pgTable(
     check(
       "profiles_support_plan_check",
       sql`${t.supportPlan} in ('included','founder','priority')`,
+    ),
+    check(
+      "profiles_support_billing_check",
+      sql`${t.supportBilling} in ('none','month','subscribe')`,
     ),
     // Own row, plus co-members of any shared workspace (Members list).
     pgPolicy("profiles_select_self_or_comember", {
@@ -87,8 +99,24 @@ export const workspaces = pgTable(
     /** Legal / official company name on contracts; team still sees `name`. */
     legalName: text("legal_name"),
     plan: text("plan").notNull().default("free"),
+    /** Settings > Billing. month | year. Checkout still does not charge. */
+    billingInterval: text("billing_interval").notNull().default("month"),
+    /** Stripe customer for this workspace. Empty until checkout. */
+    stripeCustomerId: text("stripe_customer_id"),
+    /** Active workspace subscription. Empty until checkout. */
+    stripeSubscriptionId: text("stripe_subscription_id"),
+    /** none until Stripe reports a subscription. */
+    billingStatus: text("billing_status").notNull().default("none"),
   },
   (t) => [
+    check(
+      "workspaces_billing_interval_check",
+      sql`${t.billingInterval} in ('month','year')`,
+    ),
+    check(
+      "workspaces_billing_status_check",
+      sql`${t.billingStatus} in ('none','active','past_due','canceled')`,
+    ),
     pgPolicy("workspaces_select_members", {
       for: "select",
       to: authenticatedRole,

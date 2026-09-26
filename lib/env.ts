@@ -41,6 +41,10 @@ const serverSchema = z.object({
 
   INNGEST_EVENT_KEY: z.string().optional(),
   INNGEST_SIGNING_KEY: z.string().optional(),
+
+  /** Empty until the Stripe account and webhook exist. Checkout stays off. */
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverSchema>;
@@ -81,6 +85,7 @@ export const integrations = {
   anthropic: () => Boolean(env().ANTHROPIC_API_KEY),
   openai: () => Boolean(env().OPENAI_API_KEY),
   inngestCloud: () => Boolean(env().INNGEST_EVENT_KEY),
+  stripe: () => Boolean(env().STRIPE_SECRET_KEY && env().STRIPE_WEBHOOK_SECRET),
 } as const;
 
 export const isProduction = () => process.env.NODE_ENV === "production";

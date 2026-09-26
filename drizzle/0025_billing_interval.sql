@@ -1,0 +1,2 @@
+ALTER TABLE "workspaces" ADD COLUMN "billing_interval" text DEFAULT 'month' NOT NULL;--> statement-breakpoint
+ALTER TABLE "workspaces" ADD CONSTRAINT "workspaces_billing_interval_check" CHECK ("workspaces"."billing_interval" in ('month','year'));

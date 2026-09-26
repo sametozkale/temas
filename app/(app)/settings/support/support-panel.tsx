@@ -91,7 +91,7 @@ export function SupportPanel({
                 aria-current={selected ? "true" : undefined}
                 className={cn(
                   "flex flex-col gap-4 rounded-2xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between",
-                  selected && "border-brand/40",
+                  selected && "border-brand/25",
                 )}
               >
                 <div className="min-w-0">

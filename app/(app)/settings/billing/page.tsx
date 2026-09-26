@@ -7,7 +7,7 @@ import { getAppContext } from "@/lib/auth";
 import { withUserContext } from "@/lib/db";
 import { invites, properties, workspaceMembers } from "@/lib/db/schema";
 import { formatDate } from "@/lib/format";
-import { parsePlanId } from "@/lib/plans";
+import { parseBillingInterval, parsePlanId } from "@/lib/plans";
 import { requireAbility } from "@/lib/permissions";
 
 import { BillingPanel } from "./billing-panel";
@@ -55,6 +55,7 @@ export default async function SettingsBillingPage() {
     <SettingsPage title={t("title")}>
       <BillingPanel
         plan={parsePlanId(ctx.workspace.plan)}
+        billingInterval={parseBillingInterval(ctx.workspace.billingInterval)}
         seatsUsed={usage.seatsUsed}
         listingsUsed={usage.listingsUsed}
         creditsRemaining={usage.quota.remaining}

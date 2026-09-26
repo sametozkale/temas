@@ -63,7 +63,7 @@ Signals (all deterministic pre-filters; the AI only writes the copy):
 
 ## 7. Cost & Limits
 
-- Plan-based quota is **per workspace** (`workspaces.plan` + `lib/plans.ts`), counted on `ai_messages` for threads in that workspace. **Solo**: 500 credits/month, or 750/month when billed annually. **Team**: 750 credits/month, or 1,000/month when billed annually. An account on several workspaces does not share one quota. Until a yearly subscription is stored, the allowance in force is the monthly figure. Limits are not hard-enforced beyond AI in this phase. Settings > AI shows remaining credits, used / limit, a quiet meter, and the reset date.
+- Plan-based quota is **per workspace** (`workspaces.plan` + `workspaces.billing_interval` + `lib/plans.ts`). The month's spend is the sum of `ai_messages.credits` in that workspace. **Solo**: 500 credits/month, or 750/month when billed annually. **Team**: 750 credits/month, or 1,000/month when billed annually. An account on several workspaces does not share one quota. Costs (`lib/ai/credits.ts`): Ask **1**, inbox draft **3**, applicant summary **2**, contract **8**. Thread title, task extract, auto-link, embeddings and reminder copy are **0**. Ask refuses when the next question would pass the allowance. Limits are not hard-enforced beyond AI in this phase. Settings > AI shows remaining credits, used / limit, a quiet meter, and the reset date.
 - Model routing: short classification (auto-link, intent, inbox task extract, thread title) → haiku class; draft/contract/ask → sonnet class. Provider config in a single file (`lib/ai/models.ts`). When no API key is configured, a deterministic mock model is used and the UI shows an "AI not configured" badge.
 
 ## 7.1 Inbox task extract

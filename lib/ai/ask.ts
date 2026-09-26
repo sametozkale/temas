@@ -14,6 +14,7 @@ import { revalidatePath } from "next/cache";
 import type { DbOrTx } from "@/lib/db";
 import { db } from "@/lib/db";
 import { aiMessages, aiThreads, profiles } from "@/lib/db/schema";
+import { creditCost } from "@/lib/ai/credits";
 import { selectAskTools } from "@/lib/ai/intent";
 import { languageInstruction, normalizeAiLanguage } from "@/lib/ai/languages";
 import { isTextConfigured, modelLabel, textModel } from "@/lib/ai/models";
@@ -136,6 +137,7 @@ export async function persistUserTurn(input: {
     threadId,
     role: "user",
     content: input.question,
+    credits: creditCost("ask"),
   });
   await db
     .update(aiThreads)

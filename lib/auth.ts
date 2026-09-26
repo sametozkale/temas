@@ -59,6 +59,7 @@ export type CurrentWorkspace = {
   slug: string;
   timezone: string;
   plan: string;
+  billingInterval: string;
   logoUrl: string | null;
 };
 
@@ -129,6 +130,7 @@ const loadMemberships = cache(async (userId: string) => {
       slug: workspaces.slug,
       timezone: workspaces.timezone,
       plan: workspaces.plan,
+      billingInterval: workspaces.billingInterval,
       logoUrl: workspaces.logoUrl,
     })
     .from(workspaceMembers)
@@ -182,6 +184,7 @@ export const getAppContext = cache(async (): Promise<AppContext> => {
       slug: active.slug,
       timezone: active.timezone,
       plan: active.plan,
+      billingInterval: active.billingInterval,
       logoUrl: avatarPublicUrl(active.logoUrl),
     },
     membership: {

@@ -130,7 +130,7 @@ export function WeekTimeGrid({
                       className="absolute z-10 overflow-hidden [&_a]:h-full [&_button]:flex [&_button]:h-full [&_button]:items-start [&_button]:justify-start"
                       style={{
                         top: item.top,
-                        height: item.height,
+                        height: Math.max(item.height - 2, 1),
                         left: `calc(${item.column} * (100% / ${item.columns}) + 2px)`,
                         width: `calc(100% / ${item.columns} - 4px)`,
                       }}

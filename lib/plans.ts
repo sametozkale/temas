@@ -4,16 +4,23 @@
  * Limits and USD prices are the source of truth for quota and billing UI.
  * `free` is the Solo plan (one agent); `pro` is Team (per agent). Hard
  * enforcement (except AI messages) and Stripe checkout are deferred, so the
- * Monthly / Yearly switch changes the price, the credit line, and the listing
- * line shown. The allowance in force stays the monthly credit and listing
- * count until a yearly subscription is stored. Settings > Billing
- * already shows the selected plan, this-cycle usage and invoices.
+ * Monthly / Yearly switch stores `workspaces.billing_interval`. Current is
+ * that interval only. The other interval of the same plan offers a switch.
+ * Checkout still does not charge. AI quota and the listing cap follow the
+ * stored interval. Settings > Billing already shows the selected plan,
+ * this-cycle usage and invoices.
  */
 
 export const PLAN_IDS = ["free", "pro"] as const;
 export type PlanId = (typeof PLAN_IDS)[number];
 
 export type BillingInterval = "month" | "year";
+
+export function parseBillingInterval(
+  value: string | null | undefined,
+): BillingInterval {
+  return value === "year" ? "year" : "month";
+}
 
 export type PlanPrice = {
   /** USD cents per month when billed month to month. */
@@ -50,7 +57,7 @@ export type Plan = {
   price: PlanPrice;
 };
 
-/** Credits per month for an interval. The live quota uses `"month"` until yearly billing is stored. */
+/** Credits per month for the interval stored on the workspace. */
 export function planCredits(plan: Plan, interval: BillingInterval = "month") {
   return interval === "year" ? plan.credits.year : plan.credits.month;
 }
@@ -65,7 +72,7 @@ export function planListings(plan: Plan, interval: BillingInterval = "month") {
 
 /**
  * Listings the workspace may hold. Team monthly multiplies by occupied seats.
- * Null is unlimited. Defaults to the monthly cap until a yearly subscription is stored.
+ * Null is unlimited. Pass the interval stored on the workspace.
  */
 export function listingCap(
   plan: Plan,

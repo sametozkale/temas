@@ -13,6 +13,20 @@ import { civilDate } from "@/lib/slots/time";
 
 export type CalendarView = "month" | "week" | "list";
 
+/** Last Month / Week / List choice. Read on the server when `/calendar` has no view. */
+export const CALENDAR_VIEW_COOKIE = "calendar_view";
+
+export function parseCalendarView(
+  value: string | null | undefined,
+): CalendarView | null {
+  if (value === "month" || value === "week" || value === "list") return value;
+  return null;
+}
+
+export function calendarViewCookie(view: CalendarView) {
+  return `${CALENDAR_VIEW_COOKIE}=${view}; Path=/; Max-Age=31536000; SameSite=Lax`;
+}
+
 export function parseYearMonth(value: string | undefined, now: Date) {
   const match = value?.match(/^(\d{4})-(\d{2})$/);
   if (!match) {
