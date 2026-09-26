@@ -74,7 +74,7 @@ export default async function PropertyLayout({
             propertyId={property.id}
             counts={{
               viewings: meta.viewings,
-              applications: meta.applications,
+              pipeline: meta.applications,
               inventory: meta.inventory,
             }}
           />

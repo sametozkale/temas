@@ -35,6 +35,8 @@ export type FormField = {
   required?: boolean;
   options?: string[];
   helpText?: string;
+  /** When true, the question stays on the form but applicants do not see it. */
+  hidden?: boolean;
 };
 
 export const forms = pgTable(
@@ -45,7 +47,7 @@ export const forms = pgTable(
       .notNull()
       .references(() => properties.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
-    /** Field definitions: [{key,label,type,required,options}] */
+    /** Field definitions: [{key,label,type,required,options,hidden}] */
     schema: jsonb("schema").$type<FormField[]>().notNull(),
     publicToken: text("public_token").unique(),
     isPublished: boolean("is_published").notNull().default(false),

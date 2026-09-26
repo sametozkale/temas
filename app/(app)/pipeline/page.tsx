@@ -30,7 +30,7 @@ export default async function PipelineIndexPage() {
           {rows.map((row) => (
             <li key={row.id}>
               <Link
-                href={`/properties/${row.id}/applications`}
+                href={`/properties/${row.id}/pipeline`}
                 className="flex items-center justify-between gap-4 px-4 py-3 text-sm transition-colors hover:bg-accent"
               >
                 <span className="font-medium">{row.title}</span>

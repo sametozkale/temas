@@ -40,6 +40,7 @@ export function PublicForm({
 }) {
   const t = useTranslations("public_form");
   const router = useRouter();
+  const visibleFields = fields.filter((field) => !field.hidden);
   const [pending, startTransition] = React.useTransition();
   const [done, setDone] = React.useState(false);
   const [bookingUrl, setBookingUrl] = React.useState<string | null>(null);
@@ -47,7 +48,7 @@ export function PublicForm({
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    const missingRequired = fields.some((field) => {
+    const missingRequired = visibleFields.some((field) => {
       if (!field.required) return false;
       const val = String(data.get(`field_${field.key}`) ?? "").trim();
       if (field.type === "select" || field.type === "date") return !val;
@@ -114,7 +115,7 @@ export function PublicForm({
         <PublicField id="phone" label={t("phone")}>
           <Input id="phone" name="phone" type="tel" autoComplete="tel" />
         </PublicField>
-        {fields.map((field) => (
+        {visibleFields.map((field) => (
           <FormFieldControl key={field.key} field={field} />
         ))}
       </FieldGroup>

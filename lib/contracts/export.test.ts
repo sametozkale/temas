@@ -15,6 +15,14 @@ describe("contract export", () => {
     ]);
   });
 
+  it("keeps bullet lines as a list", () => {
+    expect(markdownToBlocks("# Title\n\n- Owner\n- Agency\n\nDone.")).toEqual([
+      { kind: "h1", text: "Title" },
+      { kind: "ul", items: ["Owner", "Agency"] },
+      { kind: "p", text: "Done." },
+    ]);
+  });
+
   it("builds DOCX and PDF buffers", async () => {
     const files = await exportContractDocuments(
       "Rental agreement",

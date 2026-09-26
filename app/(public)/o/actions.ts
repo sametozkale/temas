@@ -102,6 +102,7 @@ export async function submitOwnerDecision(
 
   revalidatePath(`/o/${token}`);
   revalidatePath(`/properties/${found.property.id}/applications`);
+  revalidatePath(`/properties/${found.property.id}/pipeline`);
   revalidatePath("/pipeline");
   return actionOk();
 }

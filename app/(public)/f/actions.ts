@@ -226,6 +226,7 @@ export async function submitPublicForm(
 
   revalidatePath(`/f/${token}`);
   revalidatePath(`/properties/${found.property.id}/applications`);
+  revalidatePath(`/properties/${found.property.id}/pipeline`);
   revalidatePath("/pipeline");
 
   const calendar = await getCalendarByProperty(db, found.property.id);

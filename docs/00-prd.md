@@ -34,10 +34,10 @@ A **workspace** is an office / agency. An **account** (login) may belong to many
 2. Properties under a workspace: **apartment, house, office, shop, warehouse, land** etc. Each listing has an **assigned agent** (owner or agent member). Everyone in the workspace can still see and edit every listing. **New property** is a short stepped wizard (type → name → address → rent → extras) with a progress bar; optional steps can be left blank. Editing stays the full sectioned form.
 3. Property detail screen tabs (grouped like a CRM listing record):
    - **Listing** — Overview (photos, status, key facts, price, m², rooms / bedrooms / bathrooms, floor of building, address/map)
-   - **Letting** — Viewings (calendar + booking history), Applications (applicants who landed in the pipeline)
+   - **Letting** — Viewings (calendar + booking history), Applications (the form), Pipeline (households by stage)
    - **Record** — People (owner, current tenant, linked prospects), Files (contracts, deed/utility bill scans, insurance etc. — Supabase Storage), Inventory (fixtures list: item, quantity, condition note, photo)
    - **History** — Activity (audit log)
-4. From the property record, **Map** opens a full-panel wireframe canvas of the parties around the listing (assigned agent, owner, current tenant). Open applications sit **under the property as a pipeline**: one column per stage, each card a **household** (the lead applicant plus anyone else who will live there — partner, children, other occupants). It is a presentation view the agent walks the owner through, not a tab — People and Applications stay the editable lists. Empty roles and empty stages stay as dashed placeholders so the diagram shape holds.
+4. From the property record, **Map** opens a full-panel wireframe canvas of the parties around the listing (assigned agent, owner, current tenant). Open applications sit **under the property as a pipeline**: one column per stage, each card a **household** (the lead applicant plus anyone else who will live there — partner, children, other occupants). It is a presentation view the agent walks the owner through, not a tab — People, Applications and Pipeline stay the editable surfaces. Empty roles and empty stages stay as dashed placeholders so the diagram shape holds.
 
 ### 3.2 Multi-Party Viewing Calendar (core differentiator)
 1. The agent opens a **viewing calendar** for the property and generates a public booking link.
@@ -49,7 +49,7 @@ A **workspace** is an office / agency. An **account** (login) may belong to many
 7. Optional: the owner can also enter windows → the intersection is computed across 3 sets (for properties that require owner presence).
 
 ### 3.3 Form Builder & Applicant Pipeline
-1. The agent creates a form attached to a property (not drag-and-drop; a predefined field set + custom questions: income, employment, move-in date, pets, references, document upload).
+1. The agent creates a form attached to a property (not drag-and-drop; a predefined field set + custom questions: income, employment, move-in date, pets, references, document upload). Each question can be edited, reordered, or hidden. A hidden question stays on the form but is not shown to applicants.
 2. The form is shared via a public link and can also be embedded into the public booking page ("Fill in the form before viewing this property").
 3. Every **household** that submits lands in the pipeline at the **New** stage. The form contact is the lead applicant; other people who will live there are occupants on that same application (not separate pipeline cards).
 4. Pipeline stages (customizable): New → Reviewing → Viewing Scheduled → Viewed → Shortlisted → Approved by Owner → Contract → Rented / Rejected.

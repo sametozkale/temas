@@ -48,7 +48,7 @@ async function buildDocx(title: string, blocks: MarkdownBlock[]) {
   const children =
     blocks.length === 0
       ? [new Paragraph({ text: title })]
-      : blocks.map((block) => {
+      : blocks.flatMap((block) => {
           if (block.kind === "h1") {
             return new Paragraph({
               text: block.text,
@@ -60,6 +60,15 @@ async function buildDocx(title: string, blocks: MarkdownBlock[]) {
               text: block.text,
               heading: HeadingLevel.HEADING_2,
             });
+          }
+          if (block.kind === "ul") {
+            return block.items.map(
+              (item) =>
+                new Paragraph({
+                  text: item,
+                  bullet: { level: 0 },
+                }),
+            );
           }
           return new Paragraph({
             children: [new TextRun({ text: block.text, size: 22 })],
@@ -79,6 +88,9 @@ function buildPdf(title: string, blocks: MarkdownBlock[]): Promise<Buffer> {
       : blocks.map((block) => {
           if (block.kind === "h1") return { text: block.text, style: "h1" };
           if (block.kind === "h2") return { text: block.text, style: "h2" };
+          if (block.kind === "ul") {
+            return { ul: block.items, margin: [0, 0, 0, 8] as [number, number, number, number] };
+          }
           return { text: block.text, style: "p" };
         });
   const definition: TDocumentDefinitions = {

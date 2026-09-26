@@ -689,6 +689,7 @@
         "files": "Files",
         "viewings": "Viewings",
         "applications": "Applications",
+        "pipeline": "Pipeline",
         "activity": "Activity"
       },
       "edit": "Edit",
@@ -1089,7 +1090,13 @@
     "create_contract": "Create contract",
     "form": {
       "title": "Application form",
-      "hint": "Click a field to edit it. This is not drag-and-drop.",
+      "hint": "Select a question to edit it. Move it up or down, or hide it from applicants.",
+      "move_up": "Move up",
+      "move_down": "Move down",
+      "remove": "Remove question",
+      "hide": "Hide from applicants",
+      "show": "Show to applicants",
+      "hidden": "Hidden",
       "form_title": "Form title",
       "published": "Published",
       "copy_link": "Copy public link",
@@ -1124,8 +1131,11 @@
     },
     "kanban": {
       "add_stage": "Add stage",
+      "cancel": "Cancel",
       "stage_added": "Stage added",
-      "count": "{count, plural, =0 {Empty} =1 {1} other {#}}",
+      "rename": "Rename stage",
+      "empty": "Applicants show up in New after they submit the form.",
+      "count": "{count}",
       "errors": {
         "generic": "Could not update the pipeline."
       }
@@ -1182,8 +1192,12 @@
   },
   "owner_view": {
     "kicker": "Owner review",
+    "powered_by": "Powered by Temas",
     "hint": "Compare shortlisted households, then approve or request changes.",
     "empty": "No households are on the shortlist yet.",
+    "empty_hint": "They will show up here when the agent is ready for your review.",
+    "yes": "Yes",
+    "no": "No",
     "family": "{name} family",
     "plus": "{name} +{count}",
     "no_summary": "No summary yet.",
@@ -1596,8 +1610,16 @@
     "export_pdf": "Export PDF",
     "exported": "Exported to Files",
     "preview": "Preview",
-    "versions": "Versions",
+    "document": "Document",
+    "edit": "Edit",
+    "unfilled": "Not filled in",
+    "versions": "Earlier versions",
     "files": "Files",
+    "status": {
+      "draft": "Draft",
+      "ready": "Ready to export",
+      "exported": "Exported"
+    },
     "errors": {
       "generic": "Could not update the contract.",
       "forbidden": "You don't have permission to manage contracts.",

@@ -79,7 +79,7 @@ export default async function PropertyMapPage({
       return {
         id: row.application.id,
         stageId: row.application.stageId,
-        href: `/properties/${id}/applications`,
+        href: `/properties/${id}/pipeline`,
         title: householdLabel(household, {
           family: (name) => tMap("family", { name }),
           plus: (name, count) => tMap("plus", { name, count }),
@@ -105,7 +105,7 @@ export default async function PropertyMapPage({
   }
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col px-4 pb-4">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col p-4">
       <div className="min-h-0 flex-1 overflow-auto rounded-lg bg-muted/40 [background-image:radial-gradient(circle,var(--border)_1px,transparent_1px)] [background-size:16px_16px]">
         <PropertyMap
           property={{

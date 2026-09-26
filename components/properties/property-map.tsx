@@ -118,7 +118,7 @@ export function PropertyMap({
       <Stem axis="y" />
       <PipelineBoard
         stages={stages}
-        href={`/properties/${property.id}/applications`}
+        href={`/properties/${property.id}/pipeline`}
         kicker={labels.applicants}
       />
     </div>

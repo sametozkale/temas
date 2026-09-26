@@ -23,7 +23,7 @@ export async function ensureForm(tx: DbOrTx, propertyId: string) {
     .insert(forms)
     .values({
       propertyId,
-      title: "Rental application",
+      title: "Prospective tenant application",
       schema: DEFAULT_FORM_FIELDS,
       publicToken: secureToken(),
       isPublished: false,

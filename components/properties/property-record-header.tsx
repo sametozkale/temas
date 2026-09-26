@@ -4,7 +4,10 @@ import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 
-import { patchProperty } from "@/app/(app)/properties/actions";
+import {
+  changePropertyStatus,
+  patchProperty,
+} from "@/app/(app)/properties/actions";
 import { CurrencySelect } from "@/components/currency-select";
 import { Icon, Image02Icon, Location01Icon } from "@/components/icons";
 import { pageTitleClassName } from "@/components/page-header";
@@ -35,7 +38,11 @@ import {
   NONE_CONDITION,
   type PropertyFormInput,
 } from "@/lib/properties/schema";
-import { STATUS_ORDER } from "@/lib/properties/status";
+import {
+  canTransition,
+  isPropertyStatus,
+  STATUS_ORDER,
+} from "@/lib/properties/status";
 import { cn } from "@/lib/utils";
 
 export type PropertyRailValues = {
@@ -112,7 +119,6 @@ export function PropertyRecordRail({
   const address = [draft.addressLine, draft.district, draft.city, draft.country]
     .filter(Boolean)
     .join(", ");
-  const currentIndex = STATUS_ORDER.indexOf(draft.status);
   const rentPerM2 = formatPricePerM2(
     draft.rentAmount,
     draft.areaM2,
@@ -132,7 +138,60 @@ export function PropertyRecordRail({
             </div>
           )}
         </div>
-        <PropertyStatusBadge status={draft.status} className="shrink-0" />
+        {canWrite ? (
+          <Select
+            value={draft.status}
+            disabled={pending}
+            onValueChange={(next) => {
+              if (!isPropertyStatus(next) || next === draft.status) return;
+              const previous = draft;
+              setDraft({ ...draft, status: next });
+              startTransition(async () => {
+                const res = await changePropertyStatus(propertyId, next);
+                if (res.ok) toast.success(tDetail("status_updated"));
+                else {
+                  setDraft(previous);
+                  if (
+                    res.error === "invalid_transition" ||
+                    res.error === "not_found"
+                  ) {
+                    toast.error(tDetail(`errors.${res.error}`));
+                  } else toast.error(tDetail("errors.forbidden"));
+                }
+              });
+            }}
+          >
+            <SelectTrigger
+              size="sm"
+              aria-label={tDetail("change_status")}
+              className="w-fit shrink-0"
+            >
+              <SelectValue>{tStatus(draft.status)}</SelectValue>
+            </SelectTrigger>
+            <SelectContent align="start" className="w-56">
+              {STATUS_ORDER.map((status, i) => {
+                const current = STATUS_ORDER.indexOf(draft.status);
+                return (
+                  <SelectItem
+                    key={status}
+                    value={status}
+                    disabled={
+                      status !== draft.status &&
+                      !canTransition(draft.status, status)
+                    }
+                    className={
+                      i < current ? "text-muted-foreground" : undefined
+                    }
+                  >
+                    {tStatus(status)}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        ) : (
+          <PropertyStatusBadge status={draft.status} className="shrink-0" />
+        )}
       </div>
       <div className="space-y-2">
         <InlineText
@@ -359,36 +418,6 @@ export function PropertyRecordRail({
           )}
         </Fact>
       </dl>
-      <div className="border-t pt-4">
-        <p className="text-xs text-muted-foreground">{t("lifecycle")}</p>
-        <ol className="mt-2 space-y-1.5">
-          {STATUS_ORDER.map((status, i) => (
-            <li
-              key={status}
-              className={cn(
-                "flex items-center gap-2 text-sm",
-                i === currentIndex
-                  ? "font-medium text-foreground"
-                  : i < currentIndex
-                    ? "text-muted-foreground"
-                    : "text-muted-foreground/60",
-              )}
-            >
-              <span
-                className={cn(
-                  "size-1.5 rounded-full",
-                  i === currentIndex
-                    ? "bg-brand"
-                    : i < currentIndex
-                      ? "bg-foreground/40"
-                      : "bg-border",
-                )}
-              />
-              {tStatus(status)}
-            </li>
-          ))}
-        </ol>
-      </div>
     </div>
   );
 }

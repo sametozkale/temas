@@ -39,7 +39,7 @@ export default async function NewContractPage({
         description={t("create_description")}
         actions={
           <Button variant="ghost" size="sm" asChild>
-            <Link href={`/properties/${id}/applications`}>{t("back")}</Link>
+            <Link href={`/properties/${id}/pipeline`}>{t("back")}</Link>
           </Button>
         }
       />

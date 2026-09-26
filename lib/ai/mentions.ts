@@ -80,7 +80,7 @@ export function classifyHref(
   const path = href.split("?")[0] ?? href;
   const property = path.match(PROPERTY_PATH);
   if (property?.[1]) {
-    if (path.includes("/applications")) {
+    if (path.includes("/applications") || path.endsWith("/pipeline")) {
       return { kind: "application", id: property[1] };
     }
     if (path.endsWith("/people")) {

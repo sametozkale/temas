@@ -148,7 +148,7 @@ bookings (
 ```sql
 forms (
   property_id uuid, title text,
-  schema jsonb not null,           -- field definitions: [{key,label,type,required,options}]
+  schema jsonb not null,           -- field definitions: [{key,label,type,required,options,hidden}]
   public_token text unique, is_published bool default false
 )
 

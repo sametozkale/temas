@@ -12,6 +12,7 @@ export const formFieldSchema = z.object({
   label: z.string().trim().min(1).max(120),
   type: z.enum(FORM_FIELD_TYPES),
   required: z.boolean().optional(),
+  hidden: z.boolean().optional(),
   options: z.array(z.string().trim().min(1).max(80)).max(30).optional(),
   helpText: z.string().trim().max(240).optional(),
 });

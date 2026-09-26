@@ -25,7 +25,7 @@ function personHref(row: {
   }
   if (row.applicationPropertyId) {
     return {
-      href: `/properties/${row.applicationPropertyId}/applications`,
+      href: `/properties/${row.applicationPropertyId}/pipeline`,
       rank: 2,
     };
   }

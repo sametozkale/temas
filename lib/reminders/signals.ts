@@ -145,7 +145,7 @@ export function detectReminderSignals(
       context: {
         propertyTitle: application.propertyTitle,
         contactName: application.contactName,
-        href: `/properties/${application.propertyId}/applications`,
+        href: `/properties/${application.propertyId}/pipeline`,
       },
     });
   }

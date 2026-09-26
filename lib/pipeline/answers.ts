@@ -15,6 +15,7 @@ export function parseFormAnswers(
   const missing: string[] = [];
 
   for (const field of fields) {
+    if (field.hidden) continue;
     const name = `field_${field.key}`;
     if (field.type === "file") {
       const value = formData.get(name);

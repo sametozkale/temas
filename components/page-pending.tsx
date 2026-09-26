@@ -29,6 +29,7 @@ type Kind =
   | "property-overview"
   | "property-viewings"
   | "property-applications"
+  | "property-pipeline"
   | "property-people"
   | "property-files"
   | "property-activity"
@@ -44,6 +45,7 @@ type Kind =
 function tabKind(pathname: string): Kind {
   if (pathname.endsWith("/viewings")) return "property-viewings";
   if (pathname.endsWith("/applications")) return "property-applications";
+  if (pathname.endsWith("/pipeline")) return "property-pipeline";
   if (pathname.endsWith("/people")) return "property-people";
   if (pathname.endsWith("/files") || pathname.endsWith("/inventory")) {
     return "property-files";
@@ -373,11 +375,23 @@ function ViewingsPending() {
 
 function ApplicationsPending() {
   return (
-    <div className="space-y-8">
-      <div className="space-y-3 rounded-xl border p-4">
-        <Bar className="h-4 w-32" />
-        <Bar className="h-9 w-full" />
-        <Bar className="h-9 w-2/3" />
+    <div className="space-y-3 rounded-xl border p-4">
+      <Bar className="h-4 w-32" />
+      <Bar className="h-9 w-full" />
+      <Bar className="h-9 w-2/3" />
+    </div>
+  );
+}
+
+function PropertyPipelinePending() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-2">
+          <Bar className="h-4 w-24" />
+          <Bar className="h-3 w-64" />
+        </div>
+        <Bar className="h-8 w-28 rounded-full" />
       </div>
       <div className="flex gap-4 overflow-hidden">
         {Array.from({ length: 4 }, (_, i) => (
@@ -501,6 +515,8 @@ function TabPending({ kind }: { kind: Kind }) {
       return <ViewingsPending />;
     case "property-applications":
       return <ApplicationsPending />;
+    case "property-pipeline":
+      return <PropertyPipelinePending />;
     case "property-people":
       return <PeoplePending />;
     case "property-files":
@@ -707,6 +723,7 @@ function PendingFrame({ kind }: { kind: Kind }) {
     case "property-overview":
     case "property-viewings":
     case "property-applications":
+    case "property-pipeline":
     case "property-people":
     case "property-files":
     case "property-activity":

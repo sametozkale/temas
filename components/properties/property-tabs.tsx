@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 export const PROPERTY_TAB_GROUPS = [
   { id: "listing", tabs: ["overview"] },
-  { id: "letting", tabs: ["viewings", "applications"] },
+  { id: "letting", tabs: ["viewings", "applications", "pipeline"] },
   { id: "record", tabs: ["people", "files", "inventory"] },
   { id: "history", tabs: ["activity"] },
 ] as const;
@@ -27,7 +27,10 @@ export function isPropertyRecordPath(pathname: string) {
 
 export type PropertyTabCounts = Partial<
   Record<
-    Exclude<PropertyTab, "overview" | "activity" | "people" | "files">,
+    Exclude<
+      PropertyTab,
+      "overview" | "activity" | "people" | "files" | "applications"
+    >,
     number
   >
 >;

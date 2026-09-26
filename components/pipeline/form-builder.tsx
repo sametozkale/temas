@@ -11,10 +11,30 @@ import {
   Add01Icon,
   ArrowDown01Icon,
   ArrowUp01Icon,
+  Attachment01Icon,
+  Calendar01Icon,
+  CheckListIcon,
+  Copy01Icon,
   Delete02Icon,
+  HashtagIcon,
+  Mail01Icon,
+  Menu02Icon,
+  ParagraphIcon,
+  SmartPhone01Icon,
+  TextFontIcon,
+  ToggleOnIcon,
+  ViewIcon,
+  ViewOffSlashIcon,
+  type IconSvgElement,
 } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -29,6 +49,19 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { FormField } from "@/lib/db/schema/forms";
 import { FORM_FIELD_TYPES } from "@/lib/pipeline/defaults";
+
+const FIELD_TYPE_ICONS = {
+  text: TextFontIcon,
+  textarea: ParagraphIcon,
+  number: HashtagIcon,
+  email: Mail01Icon,
+  phone: SmartPhone01Icon,
+  date: Calendar01Icon,
+  select: Menu02Icon,
+  multiselect: CheckListIcon,
+  boolean: ToggleOnIcon,
+  file: Attachment01Icon,
+} as const satisfies Record<FormField["type"], IconSvgElement>;
 import { randomSuffix } from "@/lib/slug";
 
 export function FormBuilder({
@@ -138,23 +171,23 @@ export function FormBuilder({
 
   return (
     <Card>
-      <CardHeader className="flex-row items-start justify-between gap-4">
-        <div className="space-y-1">
-          <CardTitle>{t("title")}</CardTitle>
-          <p className="text-xs text-muted-foreground">{t("hint")}</p>
-        </div>
-        <label className="flex items-center gap-2 text-sm">
-          <span>{t("published")}</span>
-          <Switch
-            checked={published}
-            disabled={!canManage || pending}
-            onCheckedChange={(v) => {
-              const next = v === true;
-              setPublished(next);
-              save(next);
-            }}
-          />
-        </label>
+      <CardHeader>
+        <CardTitle>{t("title")}</CardTitle>
+        <p className="text-xs text-muted-foreground">{t("hint")}</p>
+        <CardAction className="self-start">
+          <label className="flex items-center gap-2 text-sm">
+            <span>{t("published")}</span>
+            <Switch
+              checked={published}
+              disabled={!canManage || pending}
+              onCheckedChange={(v) => {
+                const next = v === true;
+                setPublished(next);
+                save(next);
+              }}
+            />
+          </label>
+        </CardAction>
       </CardHeader>
       <CardContent className="space-y-4">
         <Field>
@@ -166,36 +199,59 @@ export function FormBuilder({
           />
         </Field>
         {publicUrl ? (
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span className="truncate">{publicUrl}</span>
+          <div className="flex min-w-0 items-center gap-2 rounded-lg border bg-muted/40 px-3 py-1.5">
+            <span
+              className="min-w-0 flex-1 truncate text-xs text-muted-foreground"
+              title={publicUrl}
+            >
+              {publicUrl}
+            </span>
             <Button
               type="button"
-              variant="ghost"
+              variant="soft"
               size="xs"
+              className="shrink-0"
               onClick={() => void copyLink()}
             >
+              <Icon
+                icon={Copy01Icon}
+                size={16}
+                className="size-4"
+                data-icon="inline-start"
+              />
               {t("copy_link")}
             </Button>
           </div>
         ) : null}
-        <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-          <ul className="divide-y rounded-lg border">
+        <div className="grid min-w-0 gap-4 @3xl:grid-cols-[minmax(0,1fr)_280px]">
+          <ul className="min-w-0 divide-y rounded-lg border">
             {fields.map((field, index) => (
               <li key={field.key}>
                 <div
                   className={`flex items-center gap-2 px-3 py-2 ${
                     selected === field.key ? "bg-accent" : ""
-                  }`}
+                  } ${field.hidden ? "text-muted-foreground" : ""}`}
                 >
                   <button
                     type="button"
-                    className="min-w-0 flex-1 text-left text-sm"
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm"
                     onClick={() => setSelected(field.key)}
                   >
-                    <span className="font-medium">{field.label}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {t(`types.${field.type}`)}
-                      {field.required ? ` · ${t("required")}` : ""}
+                    <Icon
+                      icon={FIELD_TYPE_ICONS[field.type]}
+                      size={16}
+                      className="size-4 shrink-0 text-muted-foreground"
+                    />
+                    <span className="sr-only">{t(`types.${field.type}`)}</span>
+                    <span className="min-w-0">
+                      <span className="font-medium">{field.label}</span>
+                      {field.required || field.hidden ? (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          {field.required ? t("required") : ""}
+                          {field.required && field.hidden ? " · " : ""}
+                          {field.hidden ? t("hidden") : ""}
+                        </span>
+                      ) : null}
                     </span>
                   </button>
                   {canManage ? (
@@ -204,6 +260,7 @@ export function FormBuilder({
                         type="button"
                         variant="ghost"
                         size="icon-xs"
+                        aria-label={t("move_up")}
                         disabled={index === 0}
                         onClick={() => move(field.key, -1)}
                       >
@@ -213,6 +270,7 @@ export function FormBuilder({
                         type="button"
                         variant="ghost"
                         size="icon-xs"
+                        aria-label={t("move_down")}
                         disabled={index === fields.length - 1}
                         onClick={() => move(field.key, 1)}
                       >
@@ -222,6 +280,22 @@ export function FormBuilder({
                         type="button"
                         variant="ghost"
                         size="icon-xs"
+                        aria-label={field.hidden ? t("show") : t("hide")}
+                        aria-pressed={Boolean(field.hidden)}
+                        onClick={() =>
+                          patchField(field.key, { hidden: !field.hidden })
+                        }
+                      >
+                        <Icon
+                          icon={field.hidden ? ViewOffSlashIcon : ViewIcon}
+                          size={16}
+                        />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label={t("remove")}
                         onClick={() => removeField(field.key)}
                       >
                         <Icon icon={Delete02Icon} size={16} />
@@ -304,6 +378,16 @@ export function FormBuilder({
                     }
                   />
                   {t("required")}
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <Switch
+                    checked={!current.hidden}
+                    disabled={!canManage}
+                    onCheckedChange={(v) =>
+                      patchField(current.key, { hidden: v !== true })
+                    }
+                  />
+                  {t("show")}
                 </label>
               </FieldGroup>
             ) : (

@@ -33,7 +33,17 @@ export default async function ContractEditorPage({
         description={found.propertyTitle}
         actions={
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">{found.contract.status}</Badge>
+            <Badge
+              variant={
+                found.contract.status === "exported"
+                  ? "success"
+                  : found.contract.status === "ready"
+                    ? "info"
+                    : "secondary"
+              }
+            >
+              {t(`status.${found.contract.status}`)}
+            </Badge>
             <Button variant="ghost" size="sm" asChild>
               <Link href={`/properties/${id}/files`}>{t("files")}</Link>
             </Button>

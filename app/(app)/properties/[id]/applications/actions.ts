@@ -34,6 +34,7 @@ export type PipelineActionResult<T = undefined> = ActionResult<T>;
 
 async function revalidatePipeline(propertyId: string) {
   revalidatePath(`/properties/${propertyId}/applications`);
+  revalidatePath(`/properties/${propertyId}/pipeline`);
   revalidatePath("/pipeline");
   await revalidatePublicPropertyPages(propertyId);
 }

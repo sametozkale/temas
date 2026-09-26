@@ -258,12 +258,12 @@ export function createAskTools(
           count: rows.length,
           applications: rows.map((r) => ({
             ...r,
-            href: `/properties/${r.propertyId}/applications`,
+            href: `/properties/${r.propertyId}/pipeline`,
           })),
           sources: uniqueSources(
             rows.map((r) => ({
               kind: "application" as const,
-              href: `/properties/${r.propertyId}/applications`,
+              href: `/properties/${r.propertyId}/pipeline`,
               title: `${r.applicant} · ${r.propertyTitle}`,
             })),
           ),
