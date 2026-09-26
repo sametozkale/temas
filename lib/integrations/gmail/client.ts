@@ -16,6 +16,10 @@ export type GmailCredentials = {
    * not been requested. `""` means the mailbox has no older page.
    */
   inboxPageToken?: string;
+  /** Space-separated scopes granted on the last consent. */
+  scope?: string;
+  /** Google calendars the user chose to show. Missing means primary only. */
+  selectedCalendarIds?: string[];
 };
 
 async function authedFetch(
@@ -57,6 +61,7 @@ export async function ensureAccessToken(credentials: GmailCredentials) {
     Date.now() + tokens.expires_in * 1000,
   ).toISOString();
   if (tokens.refresh_token) credentials.refreshToken = tokens.refresh_token;
+  if (tokens.scope) credentials.scope = tokens.scope;
   return credentials.accessToken;
 }
 

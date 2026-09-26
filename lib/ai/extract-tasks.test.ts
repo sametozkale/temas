@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  isVagueTaskTitle,
   mockExtractTasks,
   planInboxTaskExtract,
   resolveCompletedFingerprints,
@@ -48,6 +49,10 @@ describe("planInboxTaskExtract", () => {
           title: "Book a viewing",
           priority: "medium",
         },
+        {
+          title: "Follow up on this conversation",
+          priority: "low",
+        },
       ],
       completed: [{ title: "Send the contract" }],
     });
@@ -63,13 +68,31 @@ describe("mockExtractTasks", () => {
     ).toHaveLength(0);
   });
 
-  it("suggests a follow-up when the inbound looks actionable", () => {
+  it("names the contract when the thread asks for it, and skips a generic follow-up", () => {
     const { tasks } = mockExtractTasks({
       subject: "Keys",
       lastInbound: "Please send the contract when you can.",
     });
-    expect(tasks).toHaveLength(1);
-    expect(tasks[0]?.title).toMatch(/follow up/i);
+    expect(tasks.map((item) => item.title)).toEqual(["Send the contract"]);
+    expect(isVagueTaskTitle("Follow up on this conversation")).toBe(true);
+    expect(
+      planInboxTaskExtract({
+        existing: [],
+        open: [
+          {
+            title: "Follow up on this conversation",
+            priority: "medium",
+          },
+          {
+            title: "Ask the owner about blackout curtains, then update the prospect",
+            priority: "medium",
+          },
+        ],
+        completed: [],
+      }).insert.map((item) => item.title),
+    ).toEqual([
+      "Ask the owner about blackout curtains, then update the prospect",
+    ]);
   });
 
   it("marks existing tasks done when the thread says they were finished", () => {

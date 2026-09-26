@@ -64,9 +64,11 @@ export async function syncConversationRecency(tx: DbOrTx, userId: string) {
     update conversations as c
     set last_message_at = latest.max_sent
     from (
-      select conversation_id, max(sent_at) as max_sent
-      from messages
-      group by conversation_id
+      select m.conversation_id, max(m.sent_at) as max_sent
+      from messages as m
+      inner join conversations as owner on owner.id = m.conversation_id
+      where owner.user_id = ${userId}
+      group by m.conversation_id
     ) as latest
     where c.id = latest.conversation_id
       and c.user_id = ${userId}

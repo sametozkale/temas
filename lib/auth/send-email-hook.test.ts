@@ -10,7 +10,34 @@ import {
   gotrueCallbackHref,
   gotrueEmailHtml,
 } from "./gotrue-email-html";
+import { recentAuthEmailCooldown } from "./email-cooldown";
 import { authEmailHref, verifySendEmailHookSignature } from "./send-email-hook";
+
+describe("recent auth email cooldown", () => {
+  it("treats a short GoTrue wait as a link that was just sent", () => {
+    expect(
+      recentAuthEmailCooldown({
+        status: 429,
+        code: "over_email_send_rate_limit",
+        message: "For security purposes, you can only request this after 7 seconds.",
+      }),
+    ).toBe(true);
+    expect(
+      recentAuthEmailCooldown({
+        status: 429,
+        code: "over_email_send_rate_limit",
+        message: "For security purposes, you can only request this after 3600 seconds.",
+      }),
+    ).toBe(false);
+    expect(
+      recentAuthEmailCooldown({
+        status: 429,
+        code: "over_request_rate_limit",
+        message: "For security purposes, you can only request this after 7 seconds.",
+      }),
+    ).toBe(false);
+  });
+});
 
 describe("GoTrue email templates", () => {
   it("link through the app callback with token_hash", () => {
@@ -44,7 +71,7 @@ describe("authEmailHref", () => {
         redirectTo: "http://localhost:3000/auth/callback?next=/home",
       }),
     ).toBe(
-      "https://temas-oberyon.vercel.app/auth/callback?token_hash=abc&type=magiclink",
+      "https://temas-oberyon.vercel.app/auth/callback?token_hash=abc&type=magiclink&next=%2Fhome",
     );
   });
 });

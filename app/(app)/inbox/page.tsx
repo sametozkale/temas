@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 
 import { InboxAgentFilter } from "@/components/inbox/inbox-agent-filter";
+import { InboxLiveSync } from "@/components/inbox/inbox-live-sync";
 import {
   InboxConnectEmpty,
   InboxDetailEmpty,
@@ -13,13 +14,10 @@ import {
   inboxListSearch,
   parseInboxListFilters,
 } from "@/lib/inbox/filters";
-import {
-  listConversations,
-  listIntegrations,
-  syncConversationRecency,
-} from "@/lib/inbox/queries";
+import { listConversations, listIntegrations } from "@/lib/inbox/queries";
 import {
   gmailOlderAvailable,
+  gmailSyncGate,
   refreshGmailInbox,
 } from "@/lib/integrations/gmail/sync";
 import { can } from "@/lib/permissions";
@@ -40,26 +38,26 @@ export default async function InboxPage({
     searchParams,
   ]);
   const filters = parseInboxListFilters(params, ctx.user.id);
-
-  try {
-    await refreshGmailInbox(ctx.user.id);
-  } catch {
-    // Inbox still renders. The next visit retries the first INBOX import.
+  const gate = await gmailSyncGate(ctx.user.id);
+  if (gate.bootstrap) {
+    try {
+      await refreshGmailInbox(ctx.user.id);
+    } catch {
+      // Inbox still renders. The next visit retries the first INBOX import.
+    }
   }
-  const hasOlder = await gmailOlderAvailable(ctx.user.id).catch(() => false);
 
-  const { items, agents, rows } = await withUserContext(
-    ctx.user.id,
-    async (tx) => {
-      await syncConversationRecency(tx, ctx.user.id);
+  const [hasOlder, { items, agents, rows }] = await Promise.all([
+    gmailOlderAvailable(ctx.user.id).catch(() => false),
+    withUserContext(ctx.user.id, async (tx) => {
       const [items, agents, rows] = await Promise.all([
         listConversations(tx, ctx.workspace.id, ctx.user.id, filters),
         listAssignableMembers(tx, ctx.workspace.id),
         listIntegrations(tx, ctx.user.id),
       ]);
       return { items, agents, rows };
-    },
-  );
+    }),
+  ]);
 
   const gmailConnected =
     rows.find((row) => row.kind === "gmail")?.status === "connected";
@@ -70,7 +68,9 @@ export default async function InboxPage({
   const waiting = gmailConnected && whatsappConnected;
 
   return (
-    <InboxSplit
+    <>
+      {gate.stale ? <InboxLiveSync /> : null}
+      <InboxSplit
       items={items}
       search={inboxListSearch(params)}
       hasOlder={hasOlder}
@@ -110,5 +110,6 @@ export default async function InboxPage({
         />
       )}
     </InboxSplit>
+    </>
   );
 }

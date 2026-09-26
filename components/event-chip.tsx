@@ -22,10 +22,14 @@ const toneClasses: Record<EventChipTone, string> = {
 
 type EventChipProps = React.ComponentProps<"div"> & {
   tone?: EventChipTone;
+  /** Google colour for the bar, when the calendar sent one. */
+  accent?: string | null;
   /** Left column: time label (e.g. "14:30"). */
   time?: React.ReactNode;
   title: React.ReactNode;
   meta?: React.ReactNode;
+  /** Taller row whose hover wash fills the row, for the calendar list. */
+  comfortable?: boolean;
 };
 
 /**
@@ -34,23 +38,33 @@ type EventChipProps = React.ComponentProps<"div"> & {
  */
 export function EventChip({
   tone = "brand",
+  accent,
   time,
   title,
   meta,
+  comfortable = false,
   className,
   ...props
 }: EventChipProps) {
   return (
     <div
       className={cn(
-        "flex items-center gap-3 py-2.5 text-sm transition-colors hover:bg-accent/40",
+        "flex items-center gap-3 text-sm transition-colors",
+        comfortable
+          ? "rounded-lg px-3 py-3 hover:bg-muted"
+          : "py-2.5 hover:bg-accent/40",
         className,
       )}
       {...props}
     >
       <span
         aria-hidden
-        className={cn("h-8 w-0.5 shrink-0 rounded-full", toneClasses[tone])}
+        className={cn(
+          "w-0.5 shrink-0 rounded-full",
+          comfortable ? "self-stretch min-h-8" : "h-8",
+          accent ? undefined : toneClasses[tone],
+        )}
+        style={accent ? { backgroundColor: accent } : undefined}
       />
       {time ? (
         <span className="w-12 shrink-0 text-xs text-muted-foreground tabular-nums">

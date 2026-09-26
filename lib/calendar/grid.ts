@@ -97,6 +97,12 @@ export function timeLabelInZone(value: Date, timeZone: string) {
   return `${String(zoned.getHours()).padStart(2, "0")}:${String(zoned.getMinutes()).padStart(2, "0")}`;
 }
 
+/** Minutes from local midnight in `timeZone`. */
+export function minutesInZone(value: Date, timeZone: string) {
+  const zoned = TZDate.tz(timeZone, value);
+  return zoned.getHours() * 60 + zoned.getMinutes();
+}
+
 /** Shift a `YYYY-MM-DD` civil date by whole days (UTC calendar math). */
 export function shiftIsoDate(iso: string, days: number) {
   const [year, month, day] = iso.split("-").map(Number);

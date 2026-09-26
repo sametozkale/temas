@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
+import type { ReactNode } from "react";
 import { TZDate } from "@date-fns/tz";
 
-import { CalendarFilters } from "@/components/calendar/calendar-property-filter";
 import { CalendarEventPill } from "@/components/calendar/event-pill";
+import { GoogleEventPill } from "@/components/calendar/google-event-pill";
+import { WeekTimeGrid } from "@/components/calendar/week-grid";
 import { ArrowLeft01Icon, ArrowRight01Icon, Icon } from "@/components/icons";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   dayKeyInZone,
+  minutesInZone,
   monthGrid,
   monthKey,
   monthKeyFromIso,
@@ -18,11 +21,18 @@ import {
   weekDays,
   type CalendarView,
 } from "@/lib/calendar/grid";
+import type { GoogleDayEvent } from "@/lib/calendar/google";
 import { cn } from "@/lib/utils";
+
+/** Monday-start grids: Saturday and Sunday are the last two columns. */
+function weekendColumn(index: number) {
+  return index % 7 >= 5;
+}
 
 export type CalendarEvent = {
   id: string;
   startsAt: Date;
+  endsAt: Date;
   propertyId: string;
   propertyTitle: string;
   prospectName: string;
@@ -32,7 +42,6 @@ export type CalendarEvent = {
 };
 
 const MONTH_VISIBLE = 5;
-const WEEK_VISIBLE = 12;
 
 export async function CalendarBoard({
   view,
@@ -41,11 +50,10 @@ export async function CalendarBoard({
   week,
   timeZone,
   events,
-  properties,
   propertyId,
-  agents = [],
   agentId,
-  currentUserId,
+  googleEvents = [],
+  googleMenu,
 }: {
   view: CalendarView;
   year: number;
@@ -53,11 +61,10 @@ export async function CalendarBoard({
   week?: string;
   timeZone: string;
   events: CalendarEvent[];
-  properties: { id: string; title: string }[];
   propertyId?: string;
-  agents?: { userId: string; name: string }[];
   agentId?: string;
-  currentUserId?: string;
+  googleEvents?: GoogleDayEvent[];
+  googleMenu?: ReactNode;
 }) {
   const t = await getTranslations("calendar");
   const format = await getFormatter();
@@ -129,24 +136,83 @@ export async function CalendarBoard({
         })}`
       : monthLabel;
 
+  const googleByDay = new Map<string, GoogleDayEvent[]>();
+  for (const event of googleEvents) {
+    const list = googleByDay.get(event.day) ?? [];
+    list.push(event);
+    googleByDay.set(event.day, list);
+  }
+
+  function dayItems(date: string) {
+    const dayEvents = (byDay.get(date) ?? []).map((event) => ({
+      kind: "viewing" as const,
+      id: event.id,
+      sort: event.startsAt.getTime(),
+      event,
+    }));
+    const external = (googleByDay.get(date) ?? []).map((event) => ({
+      kind: "google" as const,
+      id: event.id,
+      sort: event.sort || 0,
+      event,
+    }));
+    return [
+      ...external.filter((item) => item.event.time === ""),
+      ...dayEvents,
+      ...external.filter((item) => item.event.time !== ""),
+    ].sort((a, b) => a.sort - b.sort);
+  }
+
+  function renderItem(
+    item: ReturnType<typeof dayItems>[number],
+    date: string,
+    frame: "line" | "block",
+  ) {
+    const deferTime = date < todayKey;
+    if (item.kind === "viewing") {
+      return (
+        <CalendarEventPill
+          href={`/properties/${item.event.propertyId}/viewings`}
+          time={timeLabelInZone(item.event.startsAt, item.event.timezone)}
+          title={item.event.propertyTitle}
+          hint={[item.event.prospectName, item.event.assignedAgentName]
+            .filter(Boolean)
+            .join(" · ")}
+          status={item.event.status}
+          propertyId={item.event.propertyId}
+          block={frame === "block"}
+          deferTime={deferTime}
+        />
+      );
+    }
+    return (
+      <GoogleEventPill
+        time={item.event.time}
+        title={item.event.title}
+        when={item.event.when}
+        location={item.event.location}
+        calendarName={item.event.calendarName}
+        color={item.event.color}
+        colorId={item.event.colorId}
+        calendarId={item.event.calendarId}
+        seriesKey={item.event.seriesKey}
+        writable={item.event.writable}
+        block={frame === "block"}
+        deferTime={deferTime}
+      />
+    );
+  }
+
   function pills(date: string, limit: number) {
-    const dayEvents = byDay.get(date) ?? [];
-    const visible = dayEvents.slice(0, limit);
-    const hidden = dayEvents.length - visible.length;
+    const merged = dayItems(date);
+    const visible = merged.slice(0, limit);
+    const hidden = merged.length - visible.length;
     return (
       <>
-        {visible.map((event) => (
-          <CalendarEventPill
-            key={event.id}
-            href={`/properties/${event.propertyId}/viewings`}
-            time={timeLabelInZone(event.startsAt, event.timezone)}
-            title={event.propertyTitle}
-            hint={[event.prospectName, event.assignedAgentName]
-              .filter(Boolean)
-              .join(" · ")}
-            status={event.status}
-            propertyId={event.propertyId}
-          />
+        {visible.map((item) => (
+          <span key={item.id} className="contents">
+            {renderItem(item, date, "line")}
+          </span>
         ))}
         {hidden > 0 ? (
           <p className="px-1 text-[11px] text-muted-foreground">
@@ -156,6 +222,21 @@ export async function CalendarBoard({
       </>
     );
   }
+
+  function viewingSpan(event: CalendarEvent) {
+    const zone = event.timezone || timeZone;
+    const start = minutesInZone(event.startsAt, zone);
+    const endDay = dayKeyInZone(event.endsAt, zone);
+    const startDay = dayKeyInZone(event.startsAt, zone);
+    if (endDay > startDay) return { start, end: 24 * 60 };
+    const end = minutesInZone(event.endsAt, zone);
+    if (end <= start) return { start, end: Math.min(24 * 60, start + 30) };
+    return { start, end };
+  }
+
+  const scrollHour = weekDates.includes(todayKey)
+    ? Math.max(0, zonedNow.getHours() - 1)
+    : 8;
 
   return (
     <div
@@ -224,27 +305,24 @@ export async function CalendarBoard({
           </div>
         ) : null}
         <div className="ml-auto flex min-w-0 shrink-0 items-center gap-2">
-          <CalendarFilters
-            properties={properties}
-            propertyId={propertyId}
-            agents={agents}
-            agentId={agentId}
-            currentUserId={currentUserId}
-            view={view}
-            month={key}
-            week={week}
-          />
-          <div className="flex gap-1">
-            {(["month", "week", "list"] as const).map((item) => (
-              <Button
-                key={item}
-                size="xs"
-                variant={view === item ? "secondary" : "ghost"}
-                asChild
-              >
-                <Link href={href({ view: item })}>{t(`view_${item}`)}</Link>
-              </Button>
-            ))}
+          {googleMenu}
+          <div className="flex h-7 items-center gap-0.5 rounded-full bg-muted p-0.5">
+            {(["month", "week", "list"] as const).map((item) => {
+              const active = view === item;
+              return (
+                <Link
+                  key={item}
+                  href={href({ view: item })}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "inline-flex h-full items-center rounded-full px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground",
+                    active && "bg-card text-foreground",
+                  )}
+                >
+                  {t(`view_${item}`)}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -252,10 +330,13 @@ export async function CalendarBoard({
       {view === "month" ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="grid shrink-0 grid-cols-7 border-b">
-            {weekdayLabels.map((label) => (
+            {weekdayLabels.map((label, index) => (
               <div
                 key={label}
-                className="px-1.5 py-1.5 text-[11px] font-medium tracking-wide text-muted-foreground"
+                className={cn(
+                  "px-1.5 py-1.5 text-[11px] font-medium tracking-wide text-muted-foreground",
+                  weekendColumn(index) && "bg-muted/30",
+                )}
               >
                 {label}
               </div>
@@ -269,13 +350,14 @@ export async function CalendarBoard({
           >
             {weeks.flat().map((cell, index) => {
               const isToday = cell.date === todayKey;
+              const weekend = weekendColumn(index);
               return (
                 <div
                   key={cell.date}
                   className={cn(
                     "flex min-h-0 flex-col gap-0.5 overflow-hidden border-b p-1",
                     (index + 1) % 7 !== 0 && "border-r",
-                    !cell.inMonth && "bg-muted/15",
+                    weekend ? "bg-muted/30" : !cell.inMonth && "bg-muted/15",
                   )}
                 >
                   <p
@@ -297,37 +379,43 @@ export async function CalendarBoard({
       ) : null}
 
       {view === "week" ? (
-        <div className="grid min-h-0 flex-1 grid-cols-7 overflow-hidden border-t">
-          {weekDates.map((date, index) => {
-            const isToday = date === todayKey;
-            const dayNum = Number(date.slice(8));
-            return (
-              <div
-                key={date}
-                className={cn(
-                  "flex min-h-0 flex-col gap-0.5 overflow-hidden border-b p-1",
-                  index < 6 && "border-r",
-                )}
-              >
-                <div className="mb-1 flex items-center gap-1.5 px-0.5">
-                  <span className="text-[11px] font-medium tracking-wide text-muted-foreground">
-                    {weekdayLabels[index]}
-                  </span>
-                  <span
-                    className={cn(
-                      "flex size-6 items-center justify-center text-xs tabular-nums",
-                      isToday &&
-                        "rounded-full bg-foreground font-medium text-background",
-                    )}
-                  >
-                    {dayNum}
-                  </span>
-                </div>
-                {pills(date, WEEK_VISIBLE)}
-              </div>
+        <WeekTimeGrid
+          scrollHour={scrollHour}
+          days={weekDates.map((date, index) => {
+            const items = dayItems(date);
+            const allDay = items.filter(
+              (item) => item.kind === "google" && item.event.time === "",
             );
+            const timed = items.filter(
+              (item) => !(item.kind === "google" && item.event.time === ""),
+            );
+            return {
+              date,
+              label: weekdayLabels[index] ?? "",
+              dayNum: Number(date.slice(8)),
+              isToday: date === todayKey,
+              weekend: weekendColumn(index),
+              allDay: allDay.map((item) => (
+                <span key={item.id}>{renderItem(item, date, "line")}</span>
+              )),
+              timed: timed.map((item) => {
+                const span =
+                  item.kind === "viewing"
+                    ? viewingSpan(item.event)
+                    : {
+                        start: item.event.startMin ?? 0,
+                        end: item.event.endMin ?? (item.event.startMin ?? 0) + 60,
+                      };
+                return {
+                  key: item.id,
+                  start: span.start,
+                  end: span.end,
+                  node: renderItem(item, date, "block"),
+                };
+              }),
+            };
           })}
-        </div>
+        />
       ) : null}
     </div>
   );

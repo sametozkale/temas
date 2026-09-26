@@ -78,7 +78,7 @@ export function InboxDetailEmpty({
 }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-      <Icon icon={InboxIcon} size={48} className="text-muted-foreground/40" />
+      <Icon icon={InboxIcon} size={32} className="text-muted-foreground/40" />
       <p className="text-sm text-muted-foreground">{label}</p>
       {composeHref && composeLabel ? (
         <Button variant="outline" size="sm" asChild>

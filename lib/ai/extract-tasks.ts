@@ -45,6 +45,14 @@ export function taskFingerprint(title: string) {
     .replace(/\s+/g, " ");
 }
 
+/** Titles that could sit on every thread. They are not a task. */
+const VAGUE_TASK =
+  /^(follow up( on this( conversation| thread| email))?|reply( to this( conversation| email| thread))?|check this( conversation| thread| email)|review this( conversation| thread| email))$/;
+
+export function isVagueTaskTitle(title: string) {
+  return VAGUE_TASK.test(taskFingerprint(title));
+}
+
 export function resolveCompletedFingerprints(
   completed: { fingerprint?: string; title?: string }[],
   existing: { fingerprint: string }[],
@@ -77,7 +85,12 @@ export function planInboxTaskExtract(input: {
   const seen = new Set<string>();
   for (const item of input.open) {
     const fingerprint = taskFingerprint(item.title);
-    if (!fingerprint || skip.has(fingerprint) || seen.has(fingerprint)) {
+    if (
+      !fingerprint ||
+      isVagueTaskTitle(item.title) ||
+      skip.has(fingerprint) ||
+      seen.has(fingerprint)
+    ) {
       continue;
     }
     seen.add(fingerprint);
@@ -104,23 +117,19 @@ export function mockExtractTasks(payload: {
       completed: existing.map((row) => ({ fingerprint: row.fingerprint })),
     };
   }
-  if (
-    !/\b(call|send|chase|follow up|deposit|keys|contract|viewing|confirm)\b/.test(
-      hay,
-    )
-  ) {
-    return { tasks: [], completed: [] };
+  if (/\bsend the contract\b/.test(hay)) {
+    return {
+      tasks: [
+        {
+          title: "Send the contract",
+          description: "The thread asks for the contract and it has not been sent.",
+          priority: "high",
+        },
+      ],
+      completed: [],
+    };
   }
-  return {
-    tasks: [
-      {
-        title: "Follow up on this conversation",
-        description: "An inbound message looks like it needs an action.",
-        priority: "medium",
-      },
-    ],
-    completed: [],
-  };
+  return { tasks: [], completed: [] };
 }
 
 export async function extractTasksFromConversation(conversationId: string) {

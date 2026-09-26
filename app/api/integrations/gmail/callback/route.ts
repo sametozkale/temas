@@ -72,8 +72,9 @@ export async function GET(request: NextRequest) {
     refreshToken: tokens.refresh_token,
     accessToken: tokens.access_token,
     expiry: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
+    scope: tokens.scope,
   };
-  if (!credentials.refreshToken) {
+  if (!credentials.refreshToken || !credentials.selectedCalendarIds) {
     const [existing] = await db
       .select({ credentials: integrations.credentials })
       .from(integrations)
@@ -82,7 +83,10 @@ export async function GET(request: NextRequest) {
       )
       .limit(1);
     const prior = existing?.credentials as GmailCredentials | undefined;
-    credentials.refreshToken = prior?.refreshToken;
+    if (!credentials.refreshToken) credentials.refreshToken = prior?.refreshToken;
+    if (prior?.selectedCalendarIds) {
+      credentials.selectedCalendarIds = prior.selectedCalendarIds;
+    }
   }
   if (!credentials.refreshToken) {
     return NextResponse.redirect(await settingsUrl("error=gmail_denied"));

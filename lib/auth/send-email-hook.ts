@@ -112,5 +112,13 @@ export function authEmailHref(input: {
   const url = new URL(appPath("/auth/callback", origin));
   url.searchParams.set("token_hash", input.tokenHash);
   url.searchParams.set("type", input.type);
+  if (input.redirectTo) {
+    try {
+      const next = new URL(input.redirectTo).searchParams.get("next");
+      if (next) url.searchParams.set("next", next);
+    } catch {
+      // A malformed redirect still gets a link on the public origin.
+    }
+  }
   return url.toString();
 }

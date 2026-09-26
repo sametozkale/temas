@@ -217,26 +217,30 @@ function InboxPending({ thread }: { thread?: boolean }) {
 function CalendarPending() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <TitleRow />
+      <header className="flex shrink-0 items-center justify-between gap-3">
+        <Bar className="h-7 w-36" />
+        <div className="flex items-center gap-2">
+          <Bar className="h-8 w-40 rounded-md" />
+          <Bar className="h-8 w-36 rounded-md" />
+        </div>
+      </header>
       <div className="flex min-h-0 flex-1 flex-col gap-4">
         <div className="flex shrink-0 items-center gap-2">
           <Bar className="h-5 w-36" />
           <Bar className="size-7 rounded-md" />
           <Bar className="size-7 rounded-md" />
           <div className="ml-auto flex items-center gap-2">
-            <Bar className="h-8 w-32 rounded-md" />
             <Bar className="h-8 w-28 rounded-md" />
-            <div className="flex gap-1">
-              <Bar className="h-6 w-12 rounded-md" />
-              <Bar className="h-6 w-12 rounded-md" />
-              <Bar className="h-6 w-10 rounded-md" />
-            </div>
+            <Bar className="h-7 w-40 rounded-full" />
           </div>
         </div>
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="grid shrink-0 grid-cols-7 border-b">
             {Array.from({ length: 7 }, (_, i) => (
-              <div key={i} className="px-1.5 py-1.5">
+              <div
+                key={i}
+                className={cn("px-1.5 py-1.5", i >= 5 && "bg-muted/30")}
+              >
                 <Bar className="h-3 w-6" />
               </div>
             ))}
@@ -251,6 +255,7 @@ function CalendarPending() {
                 className={cn(
                   "flex min-h-0 flex-col gap-0.5 overflow-hidden border-b p-1",
                   (i + 1) % 7 !== 0 && "border-r",
+                  i % 7 >= 5 && "bg-muted/30",
                 )}
               >
                 <Bar className="mb-0.5 size-6 rounded-full" />

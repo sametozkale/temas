@@ -8,9 +8,12 @@ import {
   safeNextPath,
   type ActionResult,
 } from "@/lib/action-result";
+import { deliverAuthEmail } from "@/lib/auth/deliver-auth-email";
+import { recentAuthEmailCooldown } from "@/lib/auth/email-cooldown";
 import { publicAppUrl } from "@/lib/app-url";
 import { clientIp } from "@/lib/http";
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const schema = z.object({
@@ -47,6 +50,35 @@ export async function sendMagicLink(
   const redirectTo = new URL("/auth/callback", await publicAppUrl());
   redirectTo.searchParams.set("next", next);
 
+  const admin = createSupabaseAdminClient();
+  if (admin) {
+    const { data, error } = await admin.auth.admin.generateLink({
+      type: "magiclink",
+      email: parsed.data.email,
+      options: { redirectTo: redirectTo.toString() },
+    });
+    const tokenHash = data?.properties?.hashed_token;
+    if (error || !tokenHash) {
+      if (error && recentAuthEmailCooldown(error)) {
+        return actionOk({ email: parsed.data.email });
+      }
+      return actionError(error?.status === 429 ? "rate_limited" : "send_failed");
+    }
+    try {
+      await deliverAuthEmail({
+        user: { email: parsed.data.email },
+        email_data: {
+          token_hash: tokenHash,
+          email_action_type: "magiclink",
+          redirect_to: redirectTo.toString(),
+        },
+      });
+    } catch {
+      return actionError("send_failed");
+    }
+    return actionOk({ email: parsed.data.email });
+  }
+
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data.email,
@@ -57,6 +89,9 @@ export async function sendMagicLink(
   });
 
   if (error) {
+    if (recentAuthEmailCooldown(error)) {
+      return actionOk({ email: parsed.data.email });
+    }
     return actionError(error.status === 429 ? "rate_limited" : "send_failed");
   }
   return actionOk({ email: parsed.data.email });

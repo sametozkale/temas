@@ -9,7 +9,6 @@ import {
   SettingsItem,
   SettingsStatus,
 } from "@/components/settings/settings-chrome";
-import { formatDateTime } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import type { WorkspaceRole } from "@/lib/roles";
 
@@ -26,25 +25,28 @@ export async function IntegrationsPanel({
   whatsapp,
   role,
   oauthError,
+  calendar = false,
+  dev = false,
 }: {
   gmail: IntegrationRow | null;
   whatsapp: IntegrationRow | null;
   role: WorkspaceRole;
   oauthError?: string | null;
+  calendar?: boolean;
+  dev?: boolean;
 }) {
   const t = await getTranslations("settings.integrations");
   const canManage = can(role, "integrations.manage");
   const connected = gmail?.status === "connected";
   const waConnected = whatsapp?.status === "connected";
 
-  const gmailDescription =
-    connected && gmail?.externalId
-      ? `${t("connected_as", { email: gmail.externalId })}${
-          gmail.lastSyncedAt
-            ? ` · ${t("last_synced", { when: formatDateTime(gmail.lastSyncedAt) })}`
-            : ""
-        }`
-      : t("gmail_description");
+  const gmailDescription = !connected
+    ? t("google_description")
+    : dev
+      ? t("google_dev_connected", { email: gmail?.externalId ?? "" })
+      : calendar
+        ? t("google_connected", { email: gmail?.externalId ?? "" })
+        : t("google_mail_only", { email: gmail?.externalId ?? "" });
 
   return (
     <SettingsGroup
@@ -60,7 +62,7 @@ export async function IntegrationsPanel({
       <IntegrationRowLink
         href="/settings/integrations/gmail"
         mark={<GmailMark className="size-6" />}
-        title={t("gmail_title")}
+        title={t("google_title")}
         description={gmailDescription}
         connected={connected}
         connectedLabel={t("status_connected")}

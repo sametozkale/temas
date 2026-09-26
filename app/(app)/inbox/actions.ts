@@ -9,7 +9,7 @@ import { getAppContext } from "@/lib/auth";
 import { applyMailboxAction, MAILBOX_ACTIONS } from "@/lib/inbox/mailbox";
 import { composeSchema, replySchema } from "@/lib/inbox/schema";
 import { sendInboxReply, sendNewEmail } from "@/lib/inbox/send";
-import { loadOlderGmail } from "@/lib/integrations/gmail/sync";
+import { loadOlderGmail, refreshGmailInbox, fillGmailConversation } from "@/lib/integrations/gmail/sync";
 import { ForbiddenError, requireAbility } from "@/lib/permissions";
 
 export type InboxState = ActionResult;
@@ -158,6 +158,42 @@ export async function loadOlderMail(): Promise<
     return actionOk(result);
   } catch {
     return actionError("load_older");
+  }
+}
+
+export async function refreshInboxFromGmail() {
+  const ctx = await getAppContext();
+  try {
+    requireAbility(ctx.membership, "inbox.read");
+  } catch {
+    return false;
+  }
+  try {
+    const result = await refreshGmailInbox(ctx.user.id);
+    const changed = result.ingested > 0 || result.starsChanged;
+    if (changed) revalidatePath("/inbox");
+    return changed;
+  } catch {
+    return false;
+  }
+}
+
+export async function fillInboxThread(conversationId: string) {
+  const ctx = await getAppContext();
+  try {
+    requireAbility(ctx.membership, "inbox.read");
+  } catch {
+    return false;
+  }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(conversationId)) {
+    return false;
+  }
+  try {
+    const ingested = await fillGmailConversation(ctx.user.id, conversationId);
+    if (ingested > 0) revalidatePath("/inbox");
+    return ingested > 0;
+  } catch {
+    return false;
   }
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { gmailThreadStarred } from "@/lib/integrations/gmail/client";
-import { gmailHasOlderMail } from "@/lib/integrations/gmail/sync";
+import { gmailHasOlderMail, gmailSyncIsStale } from "@/lib/integrations/gmail/sync";
 
 describe("gmailThreadStarred", () => {
   it("is starred when any message in the thread still has the star", () => {
@@ -25,5 +25,14 @@ describe("gmailHasOlderMail", () => {
       false,
     );
     expect(gmailHasOlderMail({ mode: "dev", refreshToken: "r" })).toBe(false);
+  });
+});
+
+describe("gmailSyncIsStale", () => {
+  it("treats a pull from the last minute as fresh", () => {
+    const now = Date.parse("2026-09-26T07:00:00Z");
+    expect(gmailSyncIsStale(new Date(now - 30_000), now)).toBe(false);
+    expect(gmailSyncIsStale(new Date(now - 90_000), now)).toBe(true);
+    expect(gmailSyncIsStale(null, now)).toBe(true);
   });
 });

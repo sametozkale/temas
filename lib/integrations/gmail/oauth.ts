@@ -6,6 +6,8 @@ const SCOPES = [
   "https://www.googleapis.com/auth/gmail.readonly",
   "https://www.googleapis.com/auth/gmail.send",
   "https://www.googleapis.com/auth/gmail.modify",
+  "https://www.googleapis.com/auth/calendar.readonly",
+  "https://www.googleapis.com/auth/calendar.events",
 ].join(" ");
 
 export function gmailRedirectUri() {
@@ -30,6 +32,7 @@ export function googleAuthUrl(state: string) {
     response_type: "code",
     scope: SCOPES,
     access_type: "offline",
+    include_granted_scopes: "true",
     prompt: "consent",
     state,
   });
@@ -41,6 +44,7 @@ export type GoogleTokens = {
   refresh_token?: string;
   expires_in: number;
   token_type: string;
+  scope?: string;
 };
 
 export async function exchangeCode(code: string): Promise<GoogleTokens> {

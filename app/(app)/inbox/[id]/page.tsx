@@ -3,15 +3,13 @@ import { notFound } from "next/navigation";
 
 import { InboxAgentFilter } from "@/components/inbox/inbox-agent-filter";
 import { ConversationThread } from "@/components/inbox/conversation-thread";
+import { InboxLiveSync } from "@/components/inbox/inbox-live-sync";
 import { InboxSplit } from "@/components/inbox/inbox-split";
 import { getAppContext } from "@/lib/auth";
 import { withUserContext } from "@/lib/db";
 import { conversations, profiles } from "@/lib/db/schema";
 import { inboxListSearch, parseInboxListFilters } from "@/lib/inbox/filters";
-import {
-  fillGmailConversation,
-  gmailOlderAvailable,
-} from "@/lib/integrations/gmail/sync";
+import { gmailOlderAvailable } from "@/lib/integrations/gmail/sync";
 import {
   getConversation,
   listConversations,
@@ -35,10 +33,7 @@ export default async function ConversationPage({
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const ctx = await getAppContext();
   const filters = parseInboxListFilters(query, ctx.user.id);
-  const [, hasOlder] = await Promise.all([
-    fillGmailConversation(ctx.user.id, id).catch(() => undefined),
-    gmailOlderAvailable(ctx.user.id).catch(() => false),
-  ]);
+  const hasOlder = await gmailOlderAvailable(ctx.user.id).catch(() => false);
   const { items, thread, tone, agents } = await withUserContext(
     ctx.user.id,
     async (tx) => {
@@ -89,7 +84,11 @@ export default async function ConversationPage({
   const defaultTone = TONES.find((value) => value === tone) ?? "friendly";
 
   return (
-    <InboxSplit
+    <>
+      {thread.conversation.channel === "email" ? (
+        <InboxLiveSync conversationId={id} />
+      ) : null}
+      <InboxSplit
       items={items}
       selectedId={id}
       search={inboxListSearch(query)}
@@ -129,5 +128,6 @@ export default async function ConversationPage({
         defaultTone={defaultTone}
       />
     </InboxSplit>
+    </>
   );
 }

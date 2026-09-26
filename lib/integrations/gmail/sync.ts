@@ -1,9 +1,10 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 
-import { db } from "@/lib/db";
+import { db, withUserContext } from "@/lib/db";
 import { conversations, integrations, messages } from "@/lib/db/schema";
 import { ingestInboundEmail, ingestOwnEmail } from "@/lib/inbox/ingest";
 import { parseFromHeader } from "@/lib/inbox/match";
+import { syncConversationRecency } from "@/lib/inbox/queries";
 import {
   type GmailCredentials,
   gmailGetMessage,
@@ -77,22 +78,27 @@ export async function syncGmailIntegration(integrationId: string) {
     )
     .limit(1);
   if (!row || row.status !== "connected") {
-    return { ingested: 0, skipped: true as const };
+    return { ingested: 0, skipped: true as const, starsChanged: false };
   }
 
   const credentials = asGmailCredentials(row.credentials);
   if (credentials.mode === "dev" || !credentials.refreshToken) {
-    return { ingested: 0, skipped: true as const };
+    return { ingested: 0, skipped: true as const, starsChanged: false };
   }
 
-  const profile = await gmailProfile(credentials);
-  const mailbox = profile.emailAddress.toLowerCase();
+  let mailbox = (row.externalId ?? "").toLowerCase();
+  let historyId = credentials.historyId ?? "";
+  if (!mailbox || !historyId || credentials.bootstrapped !== true) {
+    const profile = await gmailProfile(credentials);
+    if (!mailbox) mailbox = profile.emailAddress.toLowerCase();
+    if (!historyId) historyId = profile.historyId;
+  }
 
   const bootstrap = credentials.bootstrapped !== true;
   let threadIds: string[] = [];
   let fallbackIds: string[] = [];
   let starThreadIds: string[] = [];
-  let historyId = credentials.historyId ?? profile.historyId;
+  let historyReset = false;
   if (!bootstrap && credentials.historyId) {
     try {
       const delta = await gmailHistory(credentials, credentials.historyId);
@@ -105,12 +111,13 @@ export async function syncGmailIntegration(integrationId: string) {
       if (!message.startsWith("gmail_404")) throw error;
       const full = await gmailListInbox(credentials);
       threadIds = full.threadIds;
-      historyId = full.historyId ?? profile.historyId;
+      historyId = full.historyId ?? historyId;
+      historyReset = true;
     }
   } else {
     const full = await gmailListInbox(credentials);
     threadIds = full.threadIds;
-    historyId = profile.historyId;
+    historyId = full.historyId ?? historyId;
     credentials.inboxPageToken = full.nextPageToken ?? "";
   }
 
@@ -127,8 +134,17 @@ export async function syncGmailIntegration(integrationId: string) {
     { requireInbox: true },
   );
 
-  if (!bootstrap) {
-    await syncGmailStars(row.userId, credentials, starThreadIds);
+  let starsChanged = false;
+  if (!bootstrap && (starThreadIds.length > 0 || historyReset)) {
+    starsChanged = await syncGmailStars(row.userId, credentials, starThreadIds, {
+      includeLocal: historyReset,
+    });
+  }
+
+  if (ingested > 0) {
+    await withUserContext(row.userId, (tx) =>
+      syncConversationRecency(tx, row.userId),
+    );
   }
 
   credentials.historyId = historyId;
@@ -141,7 +157,7 @@ export async function syncGmailIntegration(integrationId: string) {
     status: "connected",
   });
 
-  return { ingested, skipped: false as const };
+  return { ingested, skipped: false as const, starsChanged };
 }
 
 /** True while an older INBOX page can still be fetched. */
@@ -151,34 +167,14 @@ export function gmailHasOlderMail(credentials: GmailCredentials) {
 }
 
 export async function gmailOlderAvailable(userId: string) {
-  const [row] = await db
-    .select({ credentials: integrations.credentials })
-    .from(integrations)
-    .where(
-      and(
-        eq(integrations.userId, userId),
-        eq(integrations.kind, "gmail"),
-        eq(integrations.status, "connected"),
-      ),
-    )
-    .limit(1);
+  const row = await liveGmailIntegration(userId);
   if (!row) return false;
   return gmailHasOlderMail(asGmailCredentials(row.credentials));
 }
 
 /** Fetch the next older INBOX page and store it. One page per call. */
 export async function loadOlderGmail(userId: string) {
-  const [row] = await db
-    .select()
-    .from(integrations)
-    .where(
-      and(
-        eq(integrations.userId, userId),
-        eq(integrations.kind, "gmail"),
-        eq(integrations.status, "connected"),
-      ),
-    )
-    .limit(1);
+  const row = await liveGmailIntegration(userId);
   if (!row) return { more: false };
   const credentials = asGmailCredentials(row.credentials);
   if (!gmailHasOlderMail(credentials)) return { more: false };
@@ -213,16 +209,19 @@ async function syncGmailStars(
   userId: string,
   credentials: GmailCredentials,
   changedThreadIds: string[],
+  options: { includeLocal: boolean },
 ) {
-  const local = await db
-    .select({
-      threadId: sql<string | null>`${messages.meta}->>'threadId'`,
-    })
-    .from(conversations)
-    .innerJoin(messages, eq(messages.conversationId, conversations.id))
-    .where(
-      and(eq(conversations.userId, userId), eq(conversations.starred, true)),
-    );
+  const local = options.includeLocal
+    ? await db
+        .select({
+          threadId: sql<string | null>`${messages.meta}->>'threadId'`,
+        })
+        .from(conversations)
+        .innerJoin(messages, eq(messages.conversationId, conversations.id))
+        .where(
+          and(eq(conversations.userId, userId), eq(conversations.starred, true)),
+        )
+    : [];
   const threadIds = [
     ...new Set(
       [...changedThreadIds, ...local.map((row) => row.threadId)].filter(
@@ -230,6 +229,7 @@ async function syncGmailStars(
       ),
     ),
   ];
+  let changed = false;
   for (const threadId of threadIds) {
     let starred: boolean | null = null;
     try {
@@ -252,28 +252,25 @@ async function syncGmailStars(
       );
     const ids = [...new Set(matches.map((match) => match.id))];
     if (ids.length === 0) continue;
-    await db
+    const updated = await db
       .update(conversations)
       .set({ starred })
       .where(
-        and(eq(conversations.userId, userId), inArray(conversations.id, ids)),
-      );
+        and(
+          eq(conversations.userId, userId),
+          inArray(conversations.id, ids),
+          sql`${conversations.starred} is distinct from ${starred}`,
+        ),
+      )
+      .returning({ id: conversations.id });
+    if (updated.length > 0) changed = true;
   }
+  return changed;
 }
 
 /** Import the current INBOX once, then later syncs stay incremental. */
 export async function bootstrapGmailIfNeeded(userId: string) {
-  const [row] = await db
-    .select()
-    .from(integrations)
-    .where(
-      and(
-        eq(integrations.userId, userId),
-        eq(integrations.kind, "gmail"),
-        eq(integrations.status, "connected"),
-      ),
-    )
-    .limit(1);
+  const row = await liveGmailIntegration(userId);
   if (!row) return;
   const credentials = asGmailCredentials(row.credentials);
   if (credentials.mode === "dev" || credentials.bootstrapped === true) return;
@@ -299,7 +296,7 @@ export async function fillGmailConversation(
       ),
     )
     .limit(1);
-  if (!conversation || conversation.channel !== "email") return;
+  if (!conversation || conversation.channel !== "email") return 0;
 
   const [anchor] = await db
     .select({
@@ -309,26 +306,16 @@ export async function fillGmailConversation(
     .where(eq(messages.conversationId, conversationId))
     .limit(1);
   const threadId = anchor?.threadId;
-  if (!threadId) return;
+  if (!threadId) return 0;
 
-  const [row] = await db
-    .select()
-    .from(integrations)
-    .where(
-      and(
-        eq(integrations.userId, userId),
-        eq(integrations.kind, "gmail"),
-        eq(integrations.status, "connected"),
-      ),
-    )
-    .limit(1);
-  if (!row) return;
+  const row = await liveGmailIntegration(userId);
+  if (!row) return 0;
   const credentials = asGmailCredentials(row.credentials);
-  if (credentials.mode === "dev" || !credentials.refreshToken) return;
+  if (credentials.mode === "dev" || !credentials.refreshToken) return 0;
   const mailbox = (
     row.externalId ?? (await gmailProfile(credentials)).emailAddress
   ).toLowerCase();
-  await ingestGmailThreads(row, credentials, mailbox, [threadId]);
+  return ingestGmailThreads(row, credentials, mailbox, [threadId]);
 }
 
 async function threadIdsForMessages(
@@ -403,10 +390,21 @@ async function ingestGmailThreads(
   return ingested;
 }
 
-/** Pull new mail and Gmail star changes. Safe to call on each Inbox visit. */
-export async function refreshGmailInbox(userId: string) {
-  const [row] = await db
-    .select({ id: integrations.id })
+/** Skip another Gmail pull when the last one is this recent. */
+export const GMAIL_SYNC_FRESH_MS = 60_000;
+
+export function gmailSyncIsStale(
+  lastSyncedAt: Date | null,
+  now = Date.now(),
+) {
+  if (!lastSyncedAt) return true;
+  return now - lastSyncedAt.getTime() > GMAIL_SYNC_FRESH_MS;
+}
+
+/** The signed-in user's real Gmail grant. A dev mailbox must not win `limit(1)`. */
+async function liveGmailIntegration(userId: string) {
+  const rows = await db
+    .select()
     .from(integrations)
     .where(
       and(
@@ -414,10 +412,32 @@ export async function refreshGmailInbox(userId: string) {
         eq(integrations.kind, "gmail"),
         eq(integrations.status, "connected"),
       ),
-    )
-    .limit(1);
-  if (!row) return;
-  await syncGmailIntegration(row.id);
+    );
+  return (
+    rows.find((row) => {
+      const credentials = asGmailCredentials(row.credentials);
+      return credentials.mode !== "dev" && Boolean(credentials.refreshToken);
+    }) ?? null
+  );
+}
+
+/** Whether this visit must import before paint, or can refresh in the background. */
+export async function gmailSyncGate(userId: string) {
+  const row = await liveGmailIntegration(userId);
+  if (!row) return { bootstrap: false, stale: false };
+  const credentials = asGmailCredentials(row.credentials);
+  const bootstrap = credentials.bootstrapped !== true;
+  return {
+    bootstrap,
+    stale: !bootstrap && gmailSyncIsStale(row.lastSyncedAt),
+  };
+}
+
+/** Pull new mail and Gmail star changes. Safe to call on each Inbox visit. */
+export async function refreshGmailInbox(userId: string) {
+  const row = await liveGmailIntegration(userId);
+  if (!row) return { ingested: 0, skipped: true as const, starsChanged: false };
+  return syncGmailIntegration(row.id);
 }
 
 export async function syncAllGmail() {
