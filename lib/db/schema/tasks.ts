@@ -23,7 +23,7 @@ import { properties } from "./properties";
 
 // docs/03 §6.1 — Tasks
 
-export const TASK_PRIORITIES = ["low", "medium", "high"] as const;
+export const TASK_PRIORITIES = ["urgent", "high", "medium", "low"] as const;
 export type TaskPriority = (typeof TASK_PRIORITIES)[number];
 
 export const TASK_STATUSES = [
@@ -72,7 +72,7 @@ export const tasks = pgTable(
   (t) => [
     check(
       "tasks_priority_check",
-      sql`${t.priority} in ('low','medium','high')`,
+      sql`${t.priority} in ('low','medium','high','urgent')`,
     ),
     check(
       "tasks_status_check",

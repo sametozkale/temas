@@ -4,7 +4,6 @@ import { getTranslations } from "next-intl/server";
 
 import { GmailMark } from "@/components/brands";
 import {
-  ConnectDevButton,
   DevInboundForm,
   DisconnectButton,
 } from "@/components/inbox/dev-inbound-form";
@@ -127,25 +126,16 @@ export default async function GmailIntegrationPage({
               ]}
             >
               {canManage ? (
-                <>
-                  {oauthReady ? (
-                    <Button size="sm" asChild>
-                      <Link href="/api/integrations/gmail/start">
-                        {t("connect")}
-                      </Link>
-                    </Button>
-                  ) : null}
-                  <ConnectDevButton
-                    variant={oauthReady ? "outline" : "default"}
-                  />
-                </>
+                <Button size="sm" asChild>
+                  <Link href="/api/integrations/gmail/start">{t("connect")}</Link>
+                </Button>
               ) : null}
             </IntegrationSetup>
           </SettingsItem>
         </SettingsGroup>
       )}
 
-      {canManage && connected ? (
+      {canManage && connected && process.env.NODE_ENV !== "production" ? (
         <SettingsGroup title={t("development")}>
           <SettingsItem
             control="below"

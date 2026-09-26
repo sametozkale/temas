@@ -4,9 +4,9 @@ import {
   ArrowDown01Icon,
   Building03Icon,
   Icon,
-  SignalMedium01Icon,
   SparklesIcon,
 } from "@/components/icons";
+import { TaskPriorityIcon } from "@/components/tasks/priority-icon";
 import { Badge } from "@/components/ui/badge";
 
 import { Container, Display, Eyebrow } from "./primitives";
@@ -44,11 +44,13 @@ export async function TaskSection() {
                   {t("suggested")}
                 </Badge>
                 <div className="flex items-start gap-3 rounded-lg bg-card px-3 py-2.5">
-                  <Icon
-                    icon={SignalMedium01Icon}
-                    size={16}
-                    className="mt-0.5 shrink-0 text-muted-foreground"
-                  />
+                  <span className="mt-0.5">
+                    <TaskPriorityIcon
+                      priority="medium"
+                      label={t("task")}
+                      decorative
+                    />
+                  </span>
                   <span className="mt-0.5 size-4 shrink-0 rounded-[4px] border border-foreground/15" />
                   <span className="flex-1 text-sm leading-snug">{t("task")}</span>
                 </div>

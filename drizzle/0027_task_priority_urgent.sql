@@ -1,0 +1,2 @@
+ALTER TABLE "tasks" DROP CONSTRAINT "tasks_priority_check";--> statement-breakpoint
+ALTER TABLE "tasks" ADD CONSTRAINT "tasks_priority_check" CHECK ("tasks"."priority" in ('low','medium','high','urgent'));

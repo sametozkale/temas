@@ -37,8 +37,10 @@ type AppShellProps = {
 
 /**
  * AppShell (docs/01 §6): paper canvas, slim sidebar on ≥lg, white rounded
- * body panel. Content is centred at max-width 1080px; Inbox and the
- * property record are full-bleed. Calendar fills the panel height.
+ * body panel. List pages and Calendar use the full width of the white
+ * card. Home, the new-property wizard, and Settings stay centred.
+ * Inbox and the property record are full-bleed. Calendar fills the
+ * panel height.
  */
 export function AppShell({
   workspace,
@@ -55,6 +57,7 @@ export function AppShell({
   const wizardCanvas = pathname === "/properties/new";
   const propertyRecord = isPropertyRecordPath(pathname);
   const calendarCanvas = pathname === "/calendar";
+  const settingsCanvas = pathname.startsWith("/settings");
   const [collapsed, setCollapsed] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [animateWidth, setAnimateWidth] = React.useState(false);
@@ -158,9 +161,11 @@ export function AppShell({
                     ? "mx-auto max-w-[1080px] overflow-auto px-6 pt-6 pb-2"
                     : wizardCanvas
                       ? "mx-auto max-w-[1080px] overflow-hidden px-6 pt-6 pb-6"
-                      : calendarCanvas
-                        ? "mx-auto max-w-[1080px] overflow-hidden px-6 pt-6 pb-4"
-                        : "mx-auto max-w-[1080px] overflow-auto px-6 pt-6 pb-8",
+                      : settingsCanvas
+                        ? "mx-auto max-w-[1080px] overflow-auto px-6 pt-6 pb-8"
+                        : calendarCanvas
+                          ? "overflow-hidden px-6 pt-6 pb-4"
+                          : "overflow-auto px-6 pt-6 pb-8",
               )}
             >
               {children}

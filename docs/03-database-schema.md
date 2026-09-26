@@ -206,7 +206,7 @@ tasks (
   workspace_id uuid references workspaces not null,
   property_id uuid references properties,          -- optional; unmatched sit in a "No property" group
   title text not null, description text,
-  priority text default 'medium' check (priority in ('low','medium','high')),
+  priority text default 'medium' check (priority in ('low','medium','high','urgent')),
   status text default 'open' check (status in ('suggested','open','done','dismissed')),
   assignee_id uuid references auth.users not null,
   created_by uuid references auth.users not null,

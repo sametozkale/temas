@@ -6,6 +6,7 @@ import { useActionState } from "react";
 import { toast } from "sonner";
 
 import { Icon, PlusSignIcon } from "@/components/icons";
+import { TaskPriorityIcon } from "@/components/tasks/priority-icon";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -169,7 +170,14 @@ export function TaskDialog({
                 <SelectContent>
                   {TASK_PRIORITIES.map((priority) => (
                     <SelectItem key={priority} value={priority}>
-                      {t(`priority_${priority}`)}
+                      <span className="flex items-center gap-2">
+                        <TaskPriorityIcon
+                          priority={priority}
+                          label={t(`priority_${priority}`)}
+                          decorative
+                        />
+                        {t(`priority_${priority}`)}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -10,17 +10,11 @@ import {
   acceptTask,
   dismissTask,
   patchTask,
-  toggleTaskDone,
+  setTaskDone,
 } from "@/app/(app)/tasks/actions";
-import {
-  ArrowDown01Icon,
-  Icon,
-  PlusSignIcon,
-  SignalHighIcon,
-  SignalLow01Icon,
-  SignalMedium01Icon,
-} from "@/components/icons";
+import { ArrowDown01Icon, Icon, PlusSignIcon } from "@/components/icons";
 import { PersonAvatar } from "@/components/identity-marks";
+import { TaskPriorityIcon } from "@/components/tasks/priority-icon";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -45,7 +39,7 @@ import {
 } from "./task-dialog";
 
 const ROW_CLASS =
-  "flex h-10 items-center gap-2 rounded-md px-3 hover:bg-muted/40";
+  "flex h-10 items-center gap-2 rounded-md pr-3 pl-2 hover:bg-muted/40";
 
 export type TaskBoardItem = Omit<
   TaskListRow,
@@ -88,6 +82,64 @@ function isPriority(value: string): value is TaskPriority {
   return (TASK_PRIORITIES as readonly string[]).includes(value);
 }
 
+type OpenOrDone = "open" | "done";
+
+function taskStatus(task: TaskBoardItem, moved: Record<string, OpenOrDone>) {
+  return moved[task.id] ?? (task.status === "done" ? "done" : "open");
+}
+
+/** Move rows between open groups and Completed before the server answers. */
+function applyMoved(
+  groups: TaskBoardGroup[],
+  completed: TaskBoardItem[],
+  moved: Record<string, OpenOrDone>,
+) {
+  const openGroups: TaskBoardGroup[] = [];
+  const done: TaskBoardItem[] = [];
+
+  for (const group of groups) {
+    const tasks: TaskBoardItem[] = [];
+    for (const task of group.tasks) {
+      if (taskStatus(task, moved) === "done") {
+        done.push({ ...task, status: "done" });
+      } else {
+        tasks.push({ ...task, status: "open" });
+      }
+    }
+    if (tasks.length > 0) openGroups.push({ ...group, tasks });
+  }
+
+  const reopened: TaskBoardItem[] = [];
+  for (const task of completed) {
+    if (taskStatus(task, moved) === "open") {
+      reopened.push({ ...task, status: "open" });
+    } else {
+      done.push({ ...task, status: "done" });
+    }
+  }
+
+  for (const task of reopened) {
+    const key = task.propertyId ?? "none";
+    let group = openGroups.find((row) => (row.propertyId ?? "none") === key);
+    if (!group) {
+      group = {
+        propertyId: task.propertyId,
+        propertyTitle: task.propertyTitle,
+        tasks: [],
+      };
+      openGroups.push(group);
+      openGroups.sort((a, b) => {
+        if (!a.propertyId) return 1;
+        if (!b.propertyId) return -1;
+        return (a.propertyTitle ?? "").localeCompare(b.propertyTitle ?? "");
+      });
+    }
+    group.tasks.unshift(task);
+  }
+
+  return { groups: openGroups, completed: done };
+}
+
 export function TaskBoard({
   suggestions,
   groups,
@@ -98,9 +150,79 @@ export function TaskBoard({
   canWrite,
 }: BoardProps) {
   const t = useTranslations("tasks");
+  const router = useRouter();
   const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>({
     completed: true,
   });
+  const [moved, setMoved] = React.useState<Record<string, OpenOrDone>>({});
+  const desired = React.useRef<Record<string, OpenOrDone>>({});
+  const syncing = React.useRef<Record<string, boolean>>({});
+
+  React.useEffect(() => {
+    setMoved((current) => {
+      const server = new Map<string, OpenOrDone>();
+      for (const group of groups) {
+        for (const task of group.tasks) server.set(task.id, "open");
+      }
+      for (const task of completed) server.set(task.id, "done");
+      let changed = false;
+      const next = { ...current };
+      for (const [id, status] of Object.entries(current)) {
+        if (server.get(id) === status) {
+          delete next[id];
+          changed = true;
+        }
+      }
+      return changed ? next : current;
+    });
+  }, [groups, completed]);
+
+  const view = React.useMemo(
+    () => applyMoved(groups, completed, moved),
+    [groups, completed, moved],
+  );
+
+  function fail(error?: string) {
+    toast.error(
+      error === "forbidden" ? t("errors.forbidden") : t("errors.generic"),
+    );
+  }
+
+  async function syncStatus(id: string) {
+    if (syncing.current[id]) return;
+    syncing.current[id] = true;
+    try {
+      while (desired.current[id]) {
+        const target = desired.current[id];
+        const result = await setTaskDone(id, target === "done");
+        if (desired.current[id] !== target) continue;
+        delete desired.current[id];
+        if (!result.ok) {
+          setMoved((current) => {
+            if (!(id in current)) return current;
+            const next = { ...current };
+            delete next[id];
+            return next;
+          });
+          fail(result.error);
+          return;
+        }
+        router.refresh();
+      }
+    } finally {
+      syncing.current[id] = false;
+      if (desired.current[id]) void syncStatus(id);
+    }
+  }
+
+  function toggleDone(task: TaskBoardItem) {
+    const current =
+      desired.current[task.id] ?? (task.status === "done" ? "done" : "open");
+    const next: OpenOrDone = current === "done" ? "open" : "done";
+    desired.current[task.id] = next;
+    setMoved((prev) => ({ ...prev, [task.id]: next }));
+    void syncStatus(task.id);
+  }
 
   React.useEffect(() => {
     setCollapsed(readCollapsed());
@@ -138,7 +260,7 @@ export function TaskBoard({
         </TaskGroupBlock>
       ) : null}
 
-      {groups.map((group) => {
+      {view.groups.map((group) => {
         const id = group.propertyId ?? "none";
         return (
           <TaskGroupBlock
@@ -176,27 +298,29 @@ export function TaskBoard({
                 task={task}
                 members={members}
                 canWrite={canWrite}
+                onToggleDone={() => toggleDone(task)}
               />
             ))}
           </TaskGroupBlock>
         );
       })}
 
-      {completed.length > 0 ? (
+      {view.completed.length > 0 ? (
         <TaskGroupBlock
           id="completed"
           title={t("completed")}
-          count={completed.length}
+          count={view.completed.length}
           collapsed={collapsed.completed !== false}
           onToggle={() => toggle("completed")}
         >
-          {completed.map((task) => (
+          {view.completed.map((task) => (
             <TaskRow
               key={task.id}
               task={task}
               members={members}
               canWrite={canWrite}
               showProperty
+              onToggleDone={() => toggleDone(task)}
             />
           ))}
         </TaskGroupBlock>
@@ -259,35 +383,6 @@ function TaskGroupBlock({
   );
 }
 
-function PriorityIcon({
-  priority,
-  label,
-  decorative = false,
-}: {
-  priority: TaskListRow["priority"];
-  label: string;
-  decorative?: boolean;
-}) {
-  const icon =
-    priority === "high"
-      ? SignalHighIcon
-      : priority === "medium"
-        ? SignalMedium01Icon
-        : SignalLow01Icon;
-  return (
-    <span
-      aria-hidden={decorative || undefined}
-      aria-label={decorative ? undefined : label}
-      className={cn(
-        "inline-flex size-4 shrink-0 items-center justify-center",
-        priority === "high" ? "text-warning" : "text-muted-foreground",
-      )}
-    >
-      <Icon icon={icon} size={16} />
-    </span>
-  );
-}
-
 function StatusToggle({
   done,
   label,
@@ -318,7 +413,7 @@ function PriorityPicker({
 }) {
   const t = useTranslations("tasks");
   const icon = (
-    <PriorityIcon
+    <TaskPriorityIcon
       priority={priority}
       label={t(`priority_${priority}`)}
       decorative={canWrite}
@@ -347,7 +442,7 @@ function PriorityPicker({
               value={value}
               aria-label={t(`priority_${value}`)}
             >
-              <PriorityIcon
+              <TaskPriorityIcon
                 priority={value}
                 label={t(`priority_${value}`)}
                 decorative
@@ -548,7 +643,7 @@ export function SuggestionRow({
 
   return (
     <div className={ROW_CLASS}>
-      <PriorityIcon
+      <TaskPriorityIcon
         priority={task.priority}
         label={t(`priority_${task.priority}`)}
       />
@@ -591,11 +686,13 @@ export function TaskRow({
   members,
   canWrite,
   showProperty = false,
+  onToggleDone,
 }: {
   task: TaskBoardItem;
   members: TaskFormMember[];
   canWrite: boolean;
   showProperty?: boolean;
+  onToggleDone: () => void;
 }) {
   const t = useTranslations("tasks");
   const router = useRouter();
@@ -660,14 +757,7 @@ export function TaskRow({
       <StatusToggle
         done={done}
         label={done ? t("reopen") : t("complete")}
-        onToggle={async () => {
-          const result = await toggleTaskDone(task.id);
-          if (!result.ok) {
-            fail(result.error);
-            return;
-          }
-          router.refresh();
-        }}
+        onToggle={onToggleDone}
       />
       <div className="min-w-0 flex-1">
         <InlineTitle

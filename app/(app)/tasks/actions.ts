@@ -348,21 +348,31 @@ export async function dismissTask(id: string): Promise<ActionResult> {
   return result;
 }
 
-export async function toggleTaskDone(id: string): Promise<ActionResult> {
+export async function setTaskDone(
+  id: string,
+  done: boolean,
+): Promise<ActionResult> {
   const ctx = await getAppContext();
   const denied = gate(ctx);
   if (denied) return denied;
   const parsed = uuidSchema.safeParse(id);
-  if (!parsed.success) return actionError("not_found");
+  if (!parsed.success || typeof done !== "boolean") {
+    return actionError("not_found");
+  }
 
   const result = await withUserContext(
     ctx.user.id,
     async (tx): Promise<TasksState> => {
       const existing = await getTask(tx, ctx.workspace.id, parsed.data);
-      if (!existing || existing.status === "suggested") {
+      if (
+        !existing ||
+        existing.status === "suggested" ||
+        existing.status === "dismissed"
+      ) {
         return actionError("not_found");
       }
-      const next = existing.status === "done" ? "open" : "done";
+      const next = done ? "done" : "open";
+      if (existing.status === next) return actionOk();
       await tx
         .update(tasks)
         .set({ status: next })

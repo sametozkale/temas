@@ -5,9 +5,10 @@ import { conversations, profiles, properties, tasks } from "@/lib/db/schema";
 import type { TaskPriority, TaskStatus } from "@/lib/db/schema/tasks";
 
 const PRIORITY_RANK: Record<TaskPriority, number> = {
-  high: 0,
-  medium: 1,
-  low: 2,
+  urgent: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
 };
 
 export type TaskListRow = {

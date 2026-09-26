@@ -37,52 +37,6 @@ async function consumeInjectLimit(workspaceId: string) {
   return wsLimit.ok && ipLimit.ok;
 }
 
-export async function connectGmailDev(): Promise<IntegrationsState> {
-  const ctx = await getAppContext();
-  try {
-    requireAbility(ctx.membership, "integrations.manage");
-  } catch (error) {
-    if (error instanceof ForbiddenError) return actionError("forbidden");
-    throw error;
-  }
-
-  const mailbox = ctx.user.email?.toLowerCase();
-  if (!mailbox) return actionError("no_email");
-
-  const [upserted] = await db
-    .insert(integrations)
-    .values({
-      userId: ctx.user.id,
-      workspaceId: ctx.workspace.id,
-      kind: "gmail",
-      status: "connected",
-      credentials: { mode: "dev" },
-      externalId: mailbox,
-    })
-    .onConflictDoUpdate({
-      target: [integrations.userId, integrations.kind],
-      set: {
-        workspaceId: ctx.workspace.id,
-        status: "connected",
-        credentials: { mode: "dev" },
-        externalId: mailbox,
-      },
-    })
-    .returning({ id: integrations.id });
-
-  await logActivity({
-    workspaceId: ctx.workspace.id,
-    actorId: ctx.user.id,
-    action: "integration.connected",
-    entity: "integration",
-    entityId: upserted!.id,
-    data: { kind: "gmail", mode: "dev", email: mailbox },
-  });
-
-  revalidateIntegrations();
-  return actionOk();
-}
-
 export async function disconnectGmail(): Promise<IntegrationsState> {
   const ctx = await getAppContext();
   try {

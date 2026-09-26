@@ -15,7 +15,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  connectGmailDev,
   connectWhatsAppDev,
   disconnectGmail,
   disconnectWhatsApp,
@@ -110,36 +109,6 @@ export function DevInboundForm({
         {t("inject_submit")}
       </Button>
     </form>
-  );
-}
-
-export function ConnectDevButton({
-  variant = "outline",
-}: {
-  variant?: "outline" | "default";
-}) {
-  const t = useTranslations("settings.integrations");
-  const [pending, setPending] = React.useState(false);
-
-  return (
-    <Button
-      type="button"
-      size="sm"
-      variant={variant}
-      disabled={pending}
-      onClick={async () => {
-        setPending(true);
-        try {
-          const result = await connectGmailDev();
-          if (result.ok) toast.success(t("connected"));
-          else toast.error(t("errors.generic"));
-        } finally {
-          setPending(false);
-        }
-      }}
-    >
-      {t("connect_dev")}
-    </Button>
   );
 }
 

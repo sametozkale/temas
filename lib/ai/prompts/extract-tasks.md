@@ -14,5 +14,5 @@ Return:
 
 Skip things already done (put those in `completed` instead of `tasks`) and skip drafting a reply (that is a different feature).
 
-Each open task: a short imperative title under 80 characters, optional one-sentence description, priority low / medium / high.
+Each open task: a short imperative title under 80 characters, optional one-sentence description, priority low / medium / high / urgent. Use urgent only for something that cannot wait.
 Language: English.

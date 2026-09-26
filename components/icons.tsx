@@ -57,10 +57,6 @@ export {
   Tick02Icon,
   CheckmarkSquare02Icon,
   CircleIcon,
-  SignalLow01Icon,
-  SignalMedium01Icon,
-  SignalHighIcon,
-
   // Common actions
   Add01Icon,
   PlusSignIcon,
