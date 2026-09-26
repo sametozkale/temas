@@ -3,7 +3,7 @@
  * Everywhere else: `import { Icon, Home01Icon } from "@/components/icons"`.
  *
  * Rules (docs/01-design-system.md §5): free set only, stroke style,
- * strokeWidth 1.5, sizes 16/18/20. Never emoji.
+ * strokeWidth 1.5, sizes 16/18/20, plus 32/48 for empty states. Never emoji.
  */
 import * as React from "react";
 import {
@@ -15,7 +15,7 @@ import {
 export type { IconSvgElement };
 
 export type IconProps = Omit<HugeiconsIconProps, "size"> & {
-  size?: 16 | 18 | 20 | 24 | 48;
+  size?: 16 | 18 | 20 | 24 | 32 | 48;
 };
 
 /** Thin wrapper that fixes the stroke width and default size. */

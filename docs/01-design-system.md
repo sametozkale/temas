@@ -139,7 +139,7 @@ Post-install **component patch list** (applied by hand under components/ui, once
 npm install @hugeicons/react @hugeicons/core-free-icons
 ```
 
-- Only the **free** set, stroke style, `strokeWidth: 1.5`, sizes 16/18/20.
+- Only the **free** set, stroke style, `strokeWidth: 1.5`, sizes 16/18/20. Empty states may use 32 or 48.
 - Sidebar icon map: Home → `Home01Icon` (active page → `Home04Icon`, the same house with an interior line), Inbox → `InboxIcon`, Calendar → `Calendar03Icon`, Tasks → `CheckmarkSquare02Icon`, Properties → `Building03Icon`. Settings → `Settings02Icon` and Give feedback → `ChatFeedbackIcon` as a pair of icon buttons above the user, separated by a hairline. Give feedback opens a quiet dialog (textarea + Send); the note is emailed via Resend (Mailpit in development) to `FEEDBACK_TO`. Collapse/expand (top row) → `SidebarLeftIcon`.
 - Property type icons: apartment/house `Home01Icon`, office `Building03Icon`, shop `Store01Icon`, warehouse `WarehouseIcon`, land `MapsIcon`.
 - AI actions: `AiMagicIcon` / `SparklesIcon` — never use emoji.
