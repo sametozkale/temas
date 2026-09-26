@@ -33,10 +33,10 @@ export default async function InvitePage({ params }: Props) {
   if (!invite || invite.expiresAt < new Date()) {
     return (
       <div className="space-y-3">
-        <h1 className="font-serif text-2xl font-medium tracking-tight">
+        <h1 className="font-serif text-4xl leading-[1.05] font-normal tracking-tight">
           {t("invalid_title")}
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-[15px] leading-relaxed text-muted-foreground">
           {t("invalid_description")}
         </p>
       </div>
@@ -61,11 +61,11 @@ export default async function InvitePage({ params }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="font-serif text-2xl font-medium tracking-tight">
+      <div className="space-y-3">
+        <h1 className="font-serif text-4xl leading-[1.05] font-normal tracking-tight">
           {t("title", { workspace: invite.workspaceName })}
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-[15px] leading-relaxed text-muted-foreground">
           {t("description", { role: tr(invite.role), email: invite.email })}
         </p>
       </div>

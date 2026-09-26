@@ -69,7 +69,8 @@ export async function sendMagicLink(
         user: { email: parsed.data.email },
         email_data: {
           token_hash: tokenHash,
-          email_action_type: "magiclink",
+          // New emails come back as a signup token; verifying it as magiclink fails.
+          email_action_type: data.properties.verification_type ?? "magiclink",
           redirect_to: redirectTo.toString(),
         },
       });

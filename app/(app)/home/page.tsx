@@ -8,6 +8,18 @@ import { getThread } from "@/lib/ai/ask";
 import { listAskEntities } from "@/lib/ai/entities";
 import { isTextConfigured } from "@/lib/ai/models";
 import { firstNameOf, getAppContext } from "@/lib/auth";
+import {
+  dayKeyInZone,
+  minutesInZone,
+  monthKeyFromIso,
+  timeLabelInZone,
+  weekDays,
+} from "@/lib/calendar/grid";
+import {
+  selectHomeCalendarEvents,
+  type HomeCalendarEvent,
+} from "@/lib/calendar/home-events";
+import { loadGoogleOverlay } from "@/lib/calendar/google";
 import { withUserContext } from "@/lib/db";
 import { formatDate } from "@/lib/format";
 import { uuidSchema } from "@/lib/properties/schema";
@@ -36,6 +48,17 @@ export default async function HomePage({
     ? t("greeting", { name: firstName })
     : t("greeting_anonymous");
 
+  const timeZone = ctx.workspace.timezone;
+  const now = new Date();
+  const todayKey = dayKeyInZone(now, timeZone);
+  const overlayPromise = loadGoogleOverlay(
+    ctx.user.id,
+    new Date(now.getTime() - 36 * 60 * 60 * 1000),
+    new Date(now.getTime() + 36 * 60 * 60 * 1000),
+    timeZone,
+    (value) => timeLabelInZone(value, timeZone),
+  ).catch(() => null);
+
   const { bookings, reminders, openThread, entities } = await withUserContext(
     ctx.user.id,
     async (tx) => {
@@ -56,12 +79,70 @@ export default async function HomePage({
   );
 
   const comingUp = bookings.slice(0, HOME_PREVIEW);
+  const overlay = await overlayPromise;
+  const calendarEvents: HomeCalendarEvent[] = bookings.map((row) => {
+    const day = dayKeyInZone(row.startsAt, timeZone);
+    return {
+      id: `viewing:${row.id}`,
+      day,
+      title: row.propertyTitle,
+      time: timeLabelInZone(row.startsAt, timeZone),
+      startMs: row.startsAt.getTime(),
+      endMin:
+        dayKeyInZone(row.endsAt, timeZone) === day
+          ? minutesInZone(row.endsAt, timeZone)
+          : 24 * 60,
+    };
+  });
+  if (overlay?.status === "ready") {
+    for (const row of overlay.events) {
+      calendarEvents.push({
+        id: `google:${row.id}`,
+        day: row.day,
+        title: row.title,
+        time: row.time,
+        startMs: row.sort > 0 ? row.sort : null,
+        endMin: row.endMin,
+        google: {
+          when: row.when,
+          location: row.location,
+          calendarName: row.calendarName,
+          description: row.description,
+          meetUrl: row.meetUrl,
+          htmlUrl: row.htmlUrl,
+          guests: row.guests,
+        },
+      });
+    }
+  }
+  const selected = selectHomeCalendarEvents(calendarEvents, { todayKey });
+  const calendarHref = (day: string) => {
+    const week = weekDays(day, timeZone)[0];
+    return week
+      ? `/calendar?view=week&month=${monthKeyFromIso(week)}&week=${week}`
+      : "/calendar";
+  };
+  const calendar =
+    selected.length > 0
+      ? {
+          todayLabel: t("calendar_today"),
+          today: selected.map((event) => ({
+            id: event.id,
+            time: event.time || t("calendar_all_day"),
+            title: event.title,
+            day: event.day,
+            href: calendarHref(event.day),
+            google: event.google ?? null,
+          })),
+        }
+      : null;
 
   return (
     <HomeAsk
       key={openThread?.id ?? "new"}
       greeting={greeting}
       configured={configured}
+      calendar={calendar}
       suggestions={[
         t("suggestion_viewings"),
         t("suggestion_pipeline"),

@@ -26,8 +26,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PlanInterval } from "@/components/plan-interval";
 import { formatNumber } from "@/lib/format";
-import { PLANS, PLAN_IDS, type PlanId } from "@/lib/plans";
+import {
+  PLANS,
+  PLAN_IDS,
+  formatUsd,
+  listingCap,
+  planCredits,
+  planListings,
+  planQuote,
+  type BillingInterval,
+  type PlanId,
+} from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
 import { selectWorkspacePlan } from "../actions";
@@ -51,7 +62,9 @@ export function BillingPanel({
   const tCommon = useTranslations("common");
   const router = useRouter();
   const [pending, startTransition] = React.useTransition();
+  const [interval, setInterval] = React.useState<BillingInterval>("year");
   const current = PLANS[plan];
+  const listingLimit = listingCap(current, seatsUsed);
 
   function switchTo(next: PlanId) {
     startTransition(async () => {
@@ -68,9 +81,21 @@ export function BillingPanel({
   return (
     <>
       <SettingsGroup title={t("plan")} footer={t("plan_hint")}>
+        <div className="mb-3">
+          <PlanInterval
+            value={interval}
+            onChange={setInterval}
+            label={t("interval_label")}
+            month={t("interval_month")}
+            year={t("interval_year")}
+          />
+        </div>
         <div className="grid gap-2 sm:grid-cols-2">
           {PLAN_IDS.map((id) => {
             const catalog = PLANS[id];
+            const quote = planQuote(catalog, interval);
+            const amount = formatUsd(quote.monthlyCents);
+            const listings = planListings(catalog, interval);
             const selected = id === plan;
             return (
               <div
@@ -85,7 +110,20 @@ export function BillingPanel({
                   <div>
                     <p className="text-sm font-medium">{t(`plan_${id}`)}</p>
                     <p className="mt-1 font-serif text-2xl font-medium tracking-tight">
-                      {t(`price_${id}`)}
+                      {quote.perSeat
+                        ? t("price_seat", { amount })
+                        : t("price_month", { amount })}
+                    </p>
+                    <p className="mt-1 min-h-4 text-xs text-muted-foreground">
+                      {quote.annualCents
+                        ? quote.perSeat
+                          ? t("billed_yearly_seat", {
+                              amount: formatUsd(quote.annualCents),
+                            })
+                          : t("billed_yearly", {
+                              amount: formatUsd(quote.annualCents),
+                            })
+                        : null}
                     </p>
                   </div>
                   {selected ? (
@@ -95,13 +133,19 @@ export function BillingPanel({
                 <ul className="space-y-1 text-xs text-muted-foreground">
                   <li>{t("feature_seats", { count: catalog.seats })}</li>
                   <li>
-                    {t("feature_listings", { count: catalog.properties })}
+                    {listings.limit == null
+                      ? t("feature_listings_unlimited")
+                      : listings.perSeat
+                        ? t("feature_listings_per_agent", {
+                            count: listings.limit,
+                          })
+                        : t("feature_listings", { count: listings.limit })}
                   </li>
                   <li>
                     {t("feature_credits", {
                       count:
-                        formatNumber(catalog.aiMessagesPerMonth) ??
-                        catalog.aiMessagesPerMonth,
+                        formatNumber(planCredits(catalog, interval)) ??
+                        planCredits(catalog, interval),
                     })}
                   </li>
                 </ul>
@@ -109,7 +153,7 @@ export function BillingPanel({
                   <Button
                     type="button"
                     size="sm"
-                    className="mt-auto self-start"
+                    className="mt-auto"
                     disabled={pending}
                     onClick={() => switchTo(id)}
                   >
@@ -141,10 +185,14 @@ export function BillingPanel({
           description={t("listings_description")}
         >
           <SettingsStatus>
-            {t("usage_value", {
-              used: formatNumber(listingsUsed) ?? listingsUsed,
-              limit: formatNumber(current.properties) ?? current.properties,
-            })}
+            {listingLimit == null
+              ? t("usage_unlimited", {
+                  used: formatNumber(listingsUsed) ?? listingsUsed,
+                })
+              : t("usage_value", {
+                  used: formatNumber(listingsUsed) ?? listingsUsed,
+                  limit: formatNumber(listingLimit) ?? listingLimit,
+                })}
           </SettingsStatus>
         </SettingsItem>
         <SettingsItem

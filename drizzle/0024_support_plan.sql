@@ -1,0 +1,2 @@
+ALTER TABLE "profiles" ADD COLUMN "support_plan" text DEFAULT 'included' NOT NULL;--> statement-breakpoint
+ALTER TABLE "profiles" ADD CONSTRAINT "profiles_support_plan_check" CHECK ("profiles"."support_plan" in ('included','founder','priority'));

@@ -8,7 +8,8 @@
 
 ```sql
 profiles ( id uuid pk references auth.users, full_name text, phone text, avatar_url text, locale text default 'en',
-           notification_prefs jsonb )
+           notification_prefs jsonb,
+           support_plan text default 'included' check (support_plan in ('included','founder','priority')) )
                                 -- avatar_url is a storage path in the public `avatars` bucket: profiles/{userId}/{uuid}.ext
                                 -- notification_prefs: per-type `{ email, whatsapp }` matrix (digest, viewings, viewing_reminders, applications, owner_decisions). Settings > Notifications.
 

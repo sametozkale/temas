@@ -100,12 +100,14 @@ export {
   Clock01Icon,
   Calendar01Icon,
   Mail01Icon,
+  CustomerSupportIcon,
   InboxUnreadIcon,
   SpamIcon,
   WhatsappIcon,
   BubbleChatIcon,
   SmartPhone01Icon,
   Location01Icon,
+  Video01Icon,
   Notification01Icon,
 
   // Properties area (PHASE 2)

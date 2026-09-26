@@ -3,7 +3,7 @@ import { and, count, eq, gte } from "drizzle-orm";
 import type { DbOrTx } from "@/lib/db";
 import { aiMessages, aiThreads, workspaces } from "@/lib/db/schema";
 import { monthRange } from "@/lib/ai/intent";
-import { getPlan, parsePlanId } from "@/lib/plans";
+import { getPlan, parsePlanId, planCredits } from "@/lib/plans";
 
 export async function getQuota(
   tx: DbOrTx,
@@ -16,7 +16,7 @@ export async function getQuota(
     .where(eq(workspaces.id, workspaceId))
     .limit(1);
   const plan = parsePlanId(ws?.plan);
-  const limit = getPlan(plan).aiMessagesPerMonth;
+  const limit = planCredits(getPlan(plan));
   const { start, end } = monthRange(timeZone);
   const [row] = await tx
     .select({ used: count() })

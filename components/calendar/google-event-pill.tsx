@@ -1,14 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { namedEventTone } from "@/lib/calendar/event-tone";
 import { GoogleEventColorMenu, useGoogleEventColor } from "@/components/calendar/google-event-color";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  GoogleEventDialog,
+  type GoogleEventDialogEvent,
+} from "@/components/calendar/google-event-dialog";
 import { cn } from "@/lib/utils";
 
 function isEmailAddress(value: string) {
@@ -26,6 +26,11 @@ export function GoogleEventPill({
   calendarId,
   seriesKey,
   writable,
+  description,
+  meetUrl,
+  htmlUrl,
+  guests,
+  day,
   stacked = false,
   deferTime = false,
   block = false,
@@ -40,6 +45,11 @@ export function GoogleEventPill({
   calendarId: string;
   seriesKey: string;
   writable: boolean;
+  description: string | null;
+  meetUrl: string | null;
+  htmlUrl: string | null;
+  guests: GoogleEventDialogEvent["guests"];
+  day: string;
   stacked?: boolean;
   /** Past days keep the clock time off the card until hover. */
   deferTime?: boolean;
@@ -47,6 +57,7 @@ export function GoogleEventPill({
   block?: boolean;
 }) {
   const t = useTranslations("calendar");
+  const [open, setOpen] = useState(false);
   const label = time || t("google_all_day");
   const hideTime = deferTime && Boolean(time);
   const painted = useGoogleEventColor(seriesKey, color, colorId);
@@ -57,7 +68,7 @@ export function GoogleEventPill({
     : undefined;
 
   return (
-    <Popover>
+    <>
       <GoogleEventColorMenu
         enabled={writable}
         calendarId={calendarId}
@@ -66,11 +77,11 @@ export function GoogleEventPill({
         color={color}
         colorId={colorId}
       >
-        <PopoverTrigger asChild>
-          <button
+        <button
             type="button"
             title={`${label} ${title}`}
             style={tint}
+            onClick={() => setOpen(true)}
             className={cn(
               "group flex min-w-0 rounded-[3px] text-left text-[11px] hover:brightness-[0.97]",
               block
@@ -106,16 +117,22 @@ export function GoogleEventPill({
               </span>
             ) : null}
           </button>
-        </PopoverTrigger>
       </GoogleEventColorMenu>
-      <PopoverContent align="start" className="w-64 gap-1">
-        <p className="font-medium">{title}</p>
-        <p className="text-xs text-muted-foreground">{when || label}</p>
-        {location ? (
-          <p className="text-xs text-muted-foreground">{location}</p>
-        ) : null}
-        <p className="text-xs text-muted-foreground">{calendarName}</p>
-      </PopoverContent>
-    </Popover>
+      <GoogleEventDialog
+        open={open}
+        onOpenChange={setOpen}
+        event={{
+          title,
+          when,
+          day,
+          location,
+          calendarName,
+          description,
+          meetUrl,
+          htmlUrl,
+          guests,
+        }}
+      />
+    </>
   );
 }

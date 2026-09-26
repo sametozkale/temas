@@ -9,6 +9,7 @@ import { signOut } from "@/app/(auth)/actions";
 import {
   AiMagicIcon,
   ArrowLeft01Icon,
+  CustomerSupportIcon,
   Building03Icon,
   File01Icon,
   Icon,
@@ -32,6 +33,7 @@ type SettingsItem = {
     | "profile"
     | "notifications"
     | "ai"
+    | "support"
     | "general"
     | "members"
     | "integrations"
@@ -49,6 +51,7 @@ const ACCOUNT_ITEMS: SettingsItem[] = [
     icon: Notification01Icon,
   },
   { key: "ai", href: "/settings/ai", icon: AiMagicIcon },
+  { key: "support", href: "/settings/support", icon: CustomerSupportIcon },
 ];
 
 const WORKSPACE_ITEMS: SettingsItem[] = [

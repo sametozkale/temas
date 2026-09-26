@@ -197,6 +197,11 @@ export async function CalendarBoard({
         calendarId={item.event.calendarId}
         seriesKey={item.event.seriesKey}
         writable={item.event.writable}
+        description={item.event.description}
+        meetUrl={item.event.meetUrl}
+        htmlUrl={item.event.htmlUrl}
+        guests={item.event.guests}
+        day={item.event.day}
         block={frame === "block"}
         deferTime={deferTime}
       />

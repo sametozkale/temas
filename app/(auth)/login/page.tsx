@@ -4,7 +4,12 @@ import { isProduction } from "@/lib/env";
 import { LoginForm } from "./login-form";
 
 type Props = {
-  searchParams: Promise<{ next?: string; email?: string; error?: string }>;
+  searchParams: Promise<{
+    next?: string;
+    email?: string;
+    error?: string;
+    intent?: string;
+  }>;
 };
 
 export default async function LoginPage({ searchParams }: Props) {
@@ -15,6 +20,7 @@ export default async function LoginPage({ searchParams }: Props) {
     <LoginForm
       next={next}
       defaultEmail={params.email}
+      intent={params.intent === "signup" ? "signup" : "signin"}
       initialError={
         params.error === "link_invalid" || params.error === "session_mismatch"
           ? params.error

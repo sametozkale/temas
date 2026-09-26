@@ -12,6 +12,7 @@ import { toast } from "sonner";
 
 import { setGoogleEventColor } from "@/app/(app)/calendar/actions";
 import { EventChip } from "@/components/event-chip";
+import { GoogleEventDialog } from "@/components/calendar/google-event-dialog";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -225,27 +226,49 @@ export function GoogleEventListRow({
   timeLabel: string;
 }) {
   const painted = useGoogleEventColor(event.seriesKey, event.color, event.colorId);
+  const [open, setOpen] = useState(false);
   return (
-    <GoogleEventColorMenu
-      enabled={event.writable}
-      calendarId={event.calendarId}
-      eventId={event.seriesKey}
-      seriesKey={event.seriesKey}
-      color={event.color}
-      colorId={event.colorId}
-    >
-      <div>
-        <EventChip
-          tone="muted"
-          accent={painted.color}
-          time={timeLabel}
-          title={event.title}
-          meta={[event.when, event.location, event.calendarName]
-            .filter(Boolean)
-            .join(" · ")}
-          comfortable
-        />
-      </div>
-    </GoogleEventColorMenu>
+    <>
+      <GoogleEventColorMenu
+        enabled={event.writable}
+        calendarId={event.calendarId}
+        eventId={event.seriesKey}
+        seriesKey={event.seriesKey}
+        color={event.color}
+        colorId={event.colorId}
+      >
+        <button
+          type="button"
+          className="block w-full text-left"
+          onClick={() => setOpen(true)}
+        >
+          <EventChip
+            tone="muted"
+            accent={painted.color}
+            time={timeLabel}
+            title={event.title}
+            meta={[event.when, event.location, event.calendarName]
+              .filter(Boolean)
+              .join(" · ")}
+            comfortable
+          />
+        </button>
+      </GoogleEventColorMenu>
+      <GoogleEventDialog
+        open={open}
+        onOpenChange={setOpen}
+        event={{
+          title: event.title,
+          when: event.when,
+          day: event.day,
+          location: event.location,
+          calendarName: event.calendarName,
+          description: event.description,
+          meetUrl: event.meetUrl,
+          htmlUrl: event.htmlUrl,
+          guests: event.guests,
+        }}
+      />
+    </>
   );
 }

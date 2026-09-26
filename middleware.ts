@@ -34,6 +34,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  if (user && pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/home";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   if (user && matches(pathname, AUTH_ONLY_PREFIXES)) {
     const next = safeNextPath(request.nextUrl.searchParams.get("next"));
     const url = request.nextUrl.clone();

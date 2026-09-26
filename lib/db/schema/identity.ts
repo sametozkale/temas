@@ -47,6 +47,8 @@ export const profiles = pgTable(
     aiSignature: text("ai_signature"),
     aiLanguage: text("ai_language").notNull().default("auto"),
     aiTone: text("ai_tone").notNull().default("friendly"),
+    /** Settings > Support. included | founder | priority. Charged later via Stripe. */
+    supportPlan: text("support_plan").notNull().default("included"),
     /** Settings > Notifications: per-type email / WhatsApp matrix. */
     notificationPrefs: jsonb("notification_prefs")
       .$type<NotificationPrefs>()
@@ -55,6 +57,10 @@ export const profiles = pgTable(
     ...timestamps,
   },
   (t) => [
+    check(
+      "profiles_support_plan_check",
+      sql`${t.supportPlan} in ('included','founder','priority')`,
+    ),
     // Own row, plus co-members of any shared workspace (Members list).
     pgPolicy("profiles_select_self_or_comember", {
       for: "select",

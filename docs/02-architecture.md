@@ -22,6 +22,7 @@
 
 ```
 app/
+  (marketing)/                 # public landing at `/` (signed-in users go to /home)
   (auth)/login, /auth/callback, /auth/verify
   (app)/                       # protected workspace area
     home/  inbox/  calendar/  tasks/  properties/
@@ -43,7 +44,7 @@ components/
   ui/          # shadcn (patched — edited by hand)
   icons.tsx    # central Hugeicons re-export
   prompt-bar.tsx  event-chip.tsx  page-header.tsx  empty-state.tsx
-  properties/  inbox/  calendar/  tasks/  pipeline/  forms/  ai/
+  properties/  inbox/  calendar/  tasks/  pipeline/  forms/  ai/  marketing/
 lib/
   db/          # drizzle client + schema/ (one file per table group)
   slots/       # ★ slot engine (pure functions, no IO — testable)
@@ -72,9 +73,10 @@ docs/          # ← these md files live here in the repo
 
 ## 3.1 Plans & entitlements
 
-- The commercial unit is the **workspace**. `workspaces.plan` is a catalog key (`free` | `pro`); limits live in `lib/plans.ts` (seats, properties, AI messages / month). AI quota already reads this catalog.
+- The commercial unit is the **workspace**. `workspaces.plan` is a catalog key (`free` = Solo, `pro` = Team). Limits and USD prices live in `lib/plans.ts` (seats, listings for monthly and yearly billing, AI credits for monthly and yearly billing, monthly cents, and the monthly cents when billed annually). Solo is a flat price for its one seat ($49 / month, or $29 / month billed annually) with 50 listings, or 100 on the yearly plan, and 500 credits/month, or 750/month when billed annually. Team is per seat, up to 50 seats ($69 / agent / month, or $49 / agent / month billed annually) with 200 listings per agent, or unlimited listings on the yearly plan, and 750 credits/month, or 1,000/month when billed annually. AI quota and the listing cap read the monthly allowance until a yearly subscription is stored.
 - One account on many workspaces does not share a plan: each workspace is billed (later) and gated independently.
-- Settings > Billing is owner-only (`billing.manage`): selected catalog plan, this-cycle usage, payment method, invoices. Future Stripe: `stripe_customer_id` / `stripe_subscription_id` on **workspaces**, never on the user. Seat count = members + pending invites. Hard enforcement of seats/listings is deferred.
+- Settings > Billing is owner-only (`billing.manage`): selected catalog plan with a Monthly / Yearly price switch, this-cycle usage, payment method, invoices. The switch does not store an interval until Stripe checkout. Future Stripe: `stripe_customer_id` / `stripe_subscription_id` on **workspaces**, never on the user. Seat count = members + pending invites. Hard enforcement of seats/listings is deferred.
+- Settings > Support is per account (`profiles.support_plan`: `included`, `founder`, `priority`), visible to every role. Included email and the $9 founder WhatsApp / $29 Priority prices live in `lib/support.ts`. The founder number is sent to the page only while Founder or Priority is the saved plan. Choosing a plan stores it without charging until Stripe. Priority notes email the founder address and name the sender, including that they have Priority. Priority also offers the same email and WhatsApp actions.
 
 ## 4. Environments & Variables
 

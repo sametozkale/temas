@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { ThreadMenu } from "@/components/home/thread-menu";
 import { MessageBody } from "@/components/home/message-body";
 import { PromptBar, toFileList } from "@/components/prompt-bar";
+import { GoogleEventDialog } from "@/components/calendar/google-event-dialog";
 import { File01Icon, Icon } from "@/components/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,21 @@ import { cn } from "@/lib/utils";
 const transport = new DefaultChatTransport<AskUIMessage>({
   api: "/api/ai/chat",
 });
+
+const EVENT_WASHES = [
+  "bg-brand-soft text-brand-foreground hover:bg-brand-soft",
+  "bg-info-soft text-info hover:bg-info-soft",
+  "bg-warning-soft text-warning hover:bg-warning-soft",
+  "bg-success-soft text-success hover:bg-success-soft",
+] as const;
+
+function eventWash(id: string) {
+  let n = 0;
+  for (let i = 0; i < id.length; i += 1) {
+    n = (n + id.charCodeAt(i) * (i + 1)) % EVENT_WASHES.length;
+  }
+  return EVENT_WASHES[n];
+}
 
 const DOCK_MS = 400;
 const DOCK_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
@@ -71,6 +87,7 @@ export function HomeAsk({
   greeting,
   configured = true,
   suggestions = [],
+  calendar = null,
   threadId = null,
   threadTitle = null,
   initialMessages = [],
@@ -80,6 +97,31 @@ export function HomeAsk({
   greeting: string;
   configured?: boolean;
   suggestions?: string[];
+  calendar?: {
+    todayLabel: string;
+    today: {
+      id: string;
+      time: string;
+      title: string;
+      day: string;
+      href: string;
+      google: {
+        when: string;
+        location: string | null;
+        calendarName: string;
+        description: string | null;
+        meetUrl: string | null;
+        htmlUrl: string | null;
+        guests: {
+          email: string;
+          name: string | null;
+          response: "accepted" | "declined" | "tentative" | "needsAction";
+          organizer: boolean;
+          self: boolean;
+        }[];
+      } | null;
+    }[];
+  } | null;
   threadId?: string | null;
   threadTitle?: string | null;
   initialMessages?: AskUIMessage[];
@@ -88,6 +130,7 @@ export function HomeAsk({
 }) {
   const t = useTranslations("home");
   const router = useRouter();
+  const [openEventId, setOpenEventId] = React.useState<string | null>(null);
   const threadIdRef = React.useRef<string | null>(threadId);
   const barRef = React.useRef<HTMLDivElement>(null);
   const firstRectRef = React.useRef<DOMRect | null>(null);
@@ -382,6 +425,9 @@ export function HomeAsk({
     );
   }
 
+  const openEvent =
+    calendar?.today.find((event) => event.id === openEventId) ?? null;
+
   return (
     <div className="flex min-h-full w-full items-center justify-center">
       <div className="mx-auto flex w-full max-w-xl flex-col">
@@ -397,26 +443,105 @@ export function HomeAsk({
           {prompt}
         </div>
         {children}
-        {suggestions.length > 0 ? (
-          <section>
-            <h2 className="mb-2 text-sm text-muted-foreground">
-              {t("suggestions_title")}
-            </h2>
-            <div className="flex flex-wrap gap-1.5">
-              {suggestions.map((suggestion) => (
-                <Button
-                  key={suggestion}
-                  type="button"
-                  variant="pill"
-                  size="xs"
-                  disabled={busy}
-                  onClick={() => void ask(suggestion)}
-                >
-                  {suggestion}
-                </Button>
-              ))}
-            </div>
-          </section>
+        {calendar || suggestions.length > 0 ? (
+          <div className="flex flex-col gap-4">
+            {suggestions.length > 0 ? (
+              <section>
+                <h2 className="mb-2 text-xs text-muted-foreground">
+                  {t("suggestions_title")}
+                </h2>
+                <div className="flex flex-wrap gap-1.5">
+                  {suggestions.map((suggestion) => (
+                    <Button
+                      key={suggestion}
+                      type="button"
+                      variant="pill"
+                      size="xs"
+                      disabled={busy}
+                      onClick={() => void ask(suggestion)}
+                    >
+                      {suggestion}
+                    </Button>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+            {calendar && calendar.today.length > 0 ? (
+              <section className="mt-4">
+                <h2 className="mb-2 text-xs text-muted-foreground">
+                  {calendar.todayLabel}
+                </h2>
+                <div className="flex flex-wrap gap-1.5">
+                  {calendar.today.map((event) => {
+                    const chipClass = cn(
+                      "max-w-full hover:brightness-[0.97]",
+                      eventWash(event.id),
+                    );
+                    const body = (
+                      <>
+                        <span className="shrink-0 tabular-nums opacity-70">
+                          {event.time}
+                        </span>
+                        <span className="truncate font-medium">{event.title}</span>
+                      </>
+                    );
+                    if (event.google) {
+                      return (
+                        <Button
+                          key={event.id}
+                          type="button"
+                          variant="pill"
+                          size="xs"
+                          title={`${event.time} ${event.title}`}
+                          className={chipClass}
+                          onClick={() => setOpenEventId(event.id)}
+                        >
+                          {body}
+                        </Button>
+                      );
+                    }
+                    return (
+                      <Button
+                        key={event.id}
+                        variant="pill"
+                        size="xs"
+                        className={chipClass}
+                        asChild
+                      >
+                        <Link
+                          href={event.href}
+                          title={`${event.time} ${event.title}`}
+                        >
+                          {body}
+                        </Link>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null}
+            <GoogleEventDialog
+              open={Boolean(openEvent)}
+              onOpenChange={(open) => {
+                if (!open) setOpenEventId(null);
+              }}
+              event={
+                openEvent?.google
+                  ? {
+                      title: openEvent.title,
+                      when: openEvent.google.when,
+                      day: openEvent.day,
+                      location: openEvent.google.location,
+                      calendarName: openEvent.google.calendarName,
+                      description: openEvent.google.description,
+                      meetUrl: openEvent.google.meetUrl,
+                      htmlUrl: openEvent.google.htmlUrl,
+                      guests: openEvent.google.guests,
+                    }
+                  : null
+              }
+            />
+          </div>
         ) : null}
       </div>
     </div>

@@ -415,7 +415,7 @@ export function Sidebar({
               {item.key === "inbox" && inboxUnread > 0 ? (
                 <span
                   className={cn(
-                    "ml-auto rounded-full bg-primary px-1.5 text-[10px] font-medium text-primary-foreground",
+                    "ml-auto rounded-full bg-brand-soft px-1.5 text-[10px] font-medium text-brand-foreground",
                     collapsed && "hidden",
                   )}
                 >

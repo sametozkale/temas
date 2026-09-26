@@ -169,6 +169,13 @@
       "when": 1790368866365,
       "tag": "0023_conversation_mailbox_state",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790421084132,
+      "tag": "0024_support_plan",
+      "breakpoints": true
     }
   ]
 }

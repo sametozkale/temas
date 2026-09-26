@@ -7,6 +7,7 @@ import {
   asGmailCredentials,
   persistGmailCredentials,
 } from "@/lib/integrations/gmail/sync";
+import type { GoogleEventGuest } from "@/lib/integrations/google/event-details";
 import {
   GoogleCalendarForbidden,
   canColorGoogleEvents,
@@ -40,6 +41,10 @@ export type GoogleDayEvent = {
   /** Series id when the event repeats, otherwise the event id. */
   seriesKey: string;
   writable: boolean;
+  description: string | null;
+  meetUrl: string | null;
+  htmlUrl: string | null;
+  guests: GoogleEventGuest[];
 };
 
 export type GoogleOverlay = {
@@ -172,6 +177,10 @@ export async function loadGoogleOverlay(
             calendarId: event.calendarId,
             seriesKey: event.patchEventId,
             writable: calendar.writable,
+            description: event.description,
+            meetUrl: event.meetUrl,
+            htmlUrl: event.htmlUrl,
+            guests: event.guests,
           });
         }
         continue;
@@ -197,6 +206,10 @@ export async function loadGoogleOverlay(
         calendarId: event.calendarId,
         seriesKey: event.patchEventId,
         writable: calendar.writable,
+        description: event.description,
+        meetUrl: event.meetUrl,
+        htmlUrl: event.htmlUrl,
+        guests: event.guests,
       });
     }
   }

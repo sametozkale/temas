@@ -1,4 +1,8 @@
 import { ensureAccessToken, type GmailCredentials } from "@/lib/integrations/gmail/client";
+import {
+  readGoogleEventDetails,
+  type GoogleEventGuest,
+} from "@/lib/integrations/google/event-details";
 
 const CALENDAR = "https://www.googleapis.com/calendar/v3";
 
@@ -29,7 +33,13 @@ export type GoogleCalendarEvent = {
   colorId: string | null;
   /** Google id to update. A repeating event uses the series, so every instance stays one colour. */
   patchEventId: string;
+  description: string | null;
+  meetUrl: string | null;
+  htmlUrl: string | null;
+  guests: GoogleEventGuest[];
 };
+
+export type { GoogleEventGuest };
 
 export class GoogleCalendarForbidden extends Error {
   constructor() {
@@ -221,6 +231,19 @@ export async function listGoogleEvents(
       recurringEventId?: string;
       start?: { dateTime?: string; date?: string };
       end?: { dateTime?: string; date?: string };
+      description?: string;
+      hangoutLink?: string;
+      htmlLink?: string;
+      conferenceData?: {
+        entryPoints?: { entryPointType?: string; uri?: string }[];
+      };
+      attendees?: {
+        email?: string;
+        displayName?: string;
+        responseStatus?: string;
+        organizer?: boolean;
+        self?: boolean;
+      }[];
     }[];
   };
   const events: GoogleCalendarEvent[] = [];
@@ -233,6 +256,7 @@ export async function listGoogleEvents(
       labels,
       eventColors,
     );
+    const details = readGoogleEventDetails(item);
     events.push({
       id: `${calendar.id}:${item.id}`,
       calendarId: calendar.id,
@@ -247,6 +271,10 @@ export async function listGoogleEvents(
       color: resolved.color,
       colorId: resolved.swatchId,
       patchEventId: item.recurringEventId || item.id,
+      description: details.description,
+      meetUrl: details.meetUrl,
+      htmlUrl: details.htmlUrl,
+      guests: details.guests,
     });
   }
   return events;
