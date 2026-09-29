@@ -1,6 +1,5 @@
-import { createRequire } from "node:module";
-
 import { Document, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
+import pdfMake from "pdfmake";
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
 
 import { markdownToBlocks, type MarkdownBlock } from "@/lib/contracts/markdown";
@@ -10,27 +9,24 @@ export type ContractExport = {
   pdf: Buffer;
 };
 
-type PdfMakeNode = {
-  setFonts: (fonts: Record<string, Record<string, string>>) => void;
-  setUrlAccessPolicy: (cb: (url: string) => boolean) => void;
-  setLocalAccessPolicy: (cb: (path: string) => boolean) => void;
-  createPdf: (doc: TDocumentDefinitions) => {
-    getBuffer: () => Promise<Buffer>;
-  };
-};
+let fontsReady = false;
 
-const require = createRequire(import.meta.url);
-const pdfMake = require("pdfmake") as PdfMakeNode;
-pdfMake.setFonts({
-  Helvetica: {
-    normal: "Helvetica",
-    bold: "Helvetica-Bold",
-    italics: "Helvetica-Oblique",
-    bolditalics: "Helvetica-BoldOblique",
-  },
-});
-pdfMake.setUrlAccessPolicy(() => false);
-pdfMake.setLocalAccessPolicy(() => true);
+function pdf() {
+  if (!fontsReady) {
+    pdfMake.setFonts({
+      Helvetica: {
+        normal: "Helvetica",
+        bold: "Helvetica-Bold",
+        italics: "Helvetica-Oblique",
+        bolditalics: "Helvetica-BoldOblique",
+      },
+    });
+    pdfMake.setUrlAccessPolicy(() => false);
+    pdfMake.setLocalAccessPolicy(() => true);
+    fontsReady = true;
+  }
+  return pdfMake;
+}
 
 export async function exportContractDocuments(
   title: string,
@@ -104,5 +100,5 @@ function buildPdf(title: string, blocks: MarkdownBlock[]): Promise<Buffer> {
     },
     content,
   };
-  return pdfMake.createPdf(definition).getBuffer();
+  return pdf().createPdf(definition).getBuffer();
 }

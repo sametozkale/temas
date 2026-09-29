@@ -8,7 +8,6 @@ import { z } from "zod";
 import { actionError, actionOk, type ActionResult } from "@/lib/action-result";
 import { logActivity } from "@/lib/activity";
 import { getAppContext } from "@/lib/auth";
-import { exportContractDocuments } from "@/lib/contracts/export";
 import { getContract } from "@/lib/contracts/queries";
 import { createContractCore } from "@/lib/contracts/mutations";
 import { withUserContext } from "@/lib/db";
@@ -151,6 +150,7 @@ export async function exportContract(
     return actionError("disclaimer");
   }
 
+  const { exportContractDocuments } = await import("@/lib/contracts/export");
   const files = await exportContractDocuments(
     found.propertyTitle,
     found.contract.bodyMd,

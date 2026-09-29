@@ -5,6 +5,10 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // pdfmake reads its font files from disk; keep it external so the
+  // function bundle includes the package instead of an inlined require
+  // that Vercel cannot resolve.
+  serverExternalPackages: ["pdfmake", "pdfkit"],
   // Keep the dev badge away from the sidebar user menu.
   devIndicators: { position: "bottom-right" },
   experimental: {
