@@ -8,7 +8,7 @@
 | UI | shadcn/ui (customized, see 01) + Tailwind v4 + Hugeicons + Inter/Newsreader | See the design language doc |
 | DB / Auth / Storage | **Supabase** (Postgres + RLS + Storage + pgvector) | Magic-link invites, files and the RAG vector store in one place |
 | ORM | **Drizzle** (`drizzle-orm` + `drizzle-kit`) | Type safe, we own the migrations |
-| Server mutations | **Server Actions** (form submits) + route handlers (webhooks) | |
+| Server mutations | **Server Actions** (form submits) + route handlers (webhooks). Every write parses with zod, calls `requireAbility()`, runs in `withUserContext`, writes the audit row and emits events in one function. A Server Action with typed input is that function; when an action is tied to FormData or `redirect()`, the body lives in a core `lib/<domain>/mutations.ts` `(ctx, input)` and the action only adapts it. Ask write tools (`lib/ai/actions/*`) call the same functions — never the DB — inside `withActivityOrigin`, so audit rows carry `via: "ask"` | One permission path for UI and AI |
 | AI | **Vercel AI SDK** + providers: Anthropic (draft/contract) + OpenAI embeddings (`text-embedding-3-small`, pgvector) | Streaming UI ready |
 | Background jobs | **Inngest** (slot materialization, reminders, inbox sync, embeddings) | Cron + retry + fan-out built in |
 | Email | Outbound: **Resend**. Inbound/sync: **Gmail API + Outlook Graph webhook** (v1: Gmail first) | |

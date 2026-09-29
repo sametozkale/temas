@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 
 import { EmailFrame } from "@/components/inbox/email-frame";
 import { EmailThread } from "@/components/inbox/email-thread";
+import { LinkProperty } from "@/components/inbox/link-property";
 import { ReplyComposer } from "@/components/inbox/reply-composer";
 import { ThreadActions } from "@/components/inbox/thread-actions";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ export async function ConversationThread({
   canManage,
   starred,
   defaultTone,
+  properties,
 }: {
   conversationId: string;
   subject: string | null;
@@ -48,6 +50,8 @@ export async function ConversationThread({
   canManage: boolean;
   starred: boolean;
   defaultTone: DraftTone;
+  /** Listing picker options; omitted when the caller cannot relink. */
+  properties?: { id: string; title: string }[];
 }) {
   const t = await getTranslations("inbox");
   const title = contactName ?? contactEmail ?? t("unknown_contact");
@@ -69,7 +73,14 @@ export async function ConversationThread({
               <Link href="/inbox">{t("back")}</Link>
             </Button>
             <p className="min-w-0 flex-1 truncate text-sm font-medium">{title}</p>
-            {propertyId && propertyTitle ? (
+            {canManage && properties ? (
+              <LinkProperty
+                conversationId={conversationId}
+                propertyId={propertyId}
+                propertyTitle={propertyTitle}
+                properties={properties}
+              />
+            ) : propertyId && propertyTitle ? (
               <Link
                 href={`/properties/${propertyId}`}
                 className="hidden max-w-[30%] truncate text-xs text-muted-foreground underline-offset-4 hover:underline md:inline"

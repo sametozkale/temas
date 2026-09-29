@@ -15,6 +15,7 @@ export const CREDIT_ACTIONS = [
   "auto_link",
   "embedding",
   "reminder_copy",
+  "listing_import",
 ] as const;
 
 export type CreditAction = (typeof CREDIT_ACTIONS)[number];
@@ -38,6 +39,8 @@ export const CREDIT_COSTS: Record<CreditAction, number> = {
   embedding: 0,
   /** Reminder copy. Not charged. */
   reminder_copy: 0,
+  /** Ask reading a listing link or pasted listing into a property draft. */
+  listing_import: 2,
 };
 
 export function creditCost(action: CreditAction): number {

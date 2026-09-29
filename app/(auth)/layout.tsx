@@ -17,10 +17,7 @@ export default async function AuthLayout({
     >
       <div className="flex min-h-svh flex-col px-6 sm:px-10">
         <header className="flex h-16 items-center">
-          <Link
-            href="/"
-            className="font-serif text-2xl font-medium tracking-tight"
-          >
+          <Link href="/" className="font-serif text-2xl font-medium tracking-tight">
             Temas
           </Link>
         </header>

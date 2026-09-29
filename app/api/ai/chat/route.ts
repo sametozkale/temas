@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { persistUserTurn, streamAsk, textFromMessages } from "@/lib/ai/ask";
+import {
+  findOwnThread,
+  isApprovalResubmit,
+  persistUserTurn,
+  streamAsk,
+  textFromMessages,
+} from "@/lib/ai/ask";
+import { storedUserParts } from "@/lib/ai/message-parts";
 import { getQuota } from "@/lib/ai/quota";
 import type { AskUIMessage } from "@/lib/ai/types";
 import { getAppContext } from "@/lib/auth";
@@ -18,11 +25,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
     throw error;
-  }
-
-  const quota = await getQuota(db, ctx.workspace.id, ctx.workspace.timezone);
-  if (quota.exhausted) {
-    return NextResponse.json({ error: "quota_exhausted" }, { status: 429 });
   }
 
   const ip = clientIpFromHeaders(req.headers);
@@ -51,14 +53,36 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid" }, { status: 400 });
   }
 
-  const { threadId, title, isNew } = await persistUserTurn({
-    workspaceId: ctx.workspace.id,
-    userId: ctx.user.id,
-    threadId: threadIdIn,
-    question,
-  });
+  const resubmit = isApprovalResubmit(messages);
+  let turn: { threadId: string; title: string | null; isNew: boolean };
+  if (resubmit) {
+    // Confirm/Cancel continues a turn that was already charged.
+    const thread = threadIdIn
+      ? await findOwnThread(ctx.workspace.id, ctx.user.id, threadIdIn)
+      : null;
+    if (!thread) {
+      return NextResponse.json({ error: "invalid" }, { status: 400 });
+    }
+    turn = { threadId: thread.id, title: thread.title, isNew: false };
+  } else {
+    const quota = await getQuota(db, ctx.workspace.id, ctx.workspace.timezone);
+    if (quota.exhausted) {
+      return NextResponse.json({ error: "quota_exhausted" }, { status: 429 });
+    }
+    const lastUser = [...messages].reverse().find((message) => message.role === "user");
+    turn = await persistUserTurn({
+      workspaceId: ctx.workspace.id,
+      userId: ctx.user.id,
+      threadId: threadIdIn,
+      question,
+      parts: storedUserParts(lastUser?.parts),
+    });
+  }
+  const { threadId, title, isNew } = turn;
 
   return streamAsk({
+    ctx,
+    resubmit,
     workspaceId: ctx.workspace.id,
     timeZone: ctx.workspace.timezone,
     userId: ctx.user.id,

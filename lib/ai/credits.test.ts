@@ -19,5 +19,6 @@ describe("credit costs", () => {
     expect(CREDIT_COSTS.draft).toBeGreaterThan(CREDIT_COSTS.ask);
     expect(CREDIT_COSTS.contract).toBeGreaterThan(CREDIT_COSTS.draft);
     expect(CREDIT_COSTS.applicant_summary).toBeGreaterThan(CREDIT_COSTS.ask);
+    expect(CREDIT_COSTS.listing_import).toBeGreaterThan(CREDIT_COSTS.ask);
   });
 });

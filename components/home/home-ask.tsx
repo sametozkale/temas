@@ -1,13 +1,24 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, isFileUIPart, isTextUIPart } from "ai";
+import {
+  DefaultChatTransport,
+  getToolName,
+  isFileUIPart,
+  isTextUIPart,
+  isStaticToolUIPart,
+  isToolUIPart,
+  lastAssistantMessageIsCompleteWithApprovalResponses,
+  type ToolUIPart,
+} from "ai";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 
+import { ActionCard } from "@/components/home/action-card";
+import { ChainOfThought, ThinkingLine } from "@/components/home/chain-of-thought";
 import { ThreadMenu } from "@/components/home/thread-menu";
 import { MessageBody } from "@/components/home/message-body";
 import { PromptBar, toFileList } from "@/components/prompt-bar";
@@ -15,6 +26,8 @@ import { GoogleEventDialog } from "@/components/calendar/google-event-dialog";
 import { File01Icon, Icon } from "@/components/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CARD_TOOL_NAMES } from "@/lib/ai/actions/policy";
+import { toolDumpSteps, type ThoughtStep } from "@/lib/ai/tool-dump";
 import type { AskUIMessage } from "@/lib/ai/types";
 import {
   classifyHref,
@@ -69,6 +82,70 @@ function mergeEntities(
   }
   return rememberRecordNames(catalog, remembered);
 }
+
+type MessageBlock =
+  | { kind: "text"; key: string; text: string }
+  | { kind: "thought"; key: string; steps: ThoughtStep[] }
+  | { kind: "card"; key: string; part: ToolUIPart };
+
+/** Text runs, collapsed tool steps, and action cards in reply order. */
+function messageBlocks(parts: AskUIMessage["parts"]): MessageBlock[] {
+  const blocks: MessageBlock[] = [];
+  for (const [i, part] of parts.entries()) {
+    if (isTextUIPart(part)) {
+      const steps = toolDumpSteps(part.text);
+      if (steps) {
+        if (steps.length > 0) blocks.push({ kind: "thought", key: `h${i}`, steps });
+        continue;
+      }
+      const last = blocks[blocks.length - 1];
+      if (last?.kind === "text") last.text = `${last.text}\n${part.text}`;
+      else blocks.push({ kind: "text", key: `t${i}`, text: part.text });
+    } else if (
+      isStaticToolUIPart(part) &&
+      CARD_TOOL_NAMES.has(getToolName(part))
+    ) {
+      blocks.push({ kind: "card", key: part.toolCallId, part });
+    }
+  }
+  const visible = blocks.filter((block) => block.kind !== "text" || block.text.trim());
+  const thoughts = visible.filter((block) => block.kind === "thought");
+  const rest = visible.filter((block) => block.kind !== "thought");
+  return [...thoughts, ...rest];
+}
+
+const LOOKUP_TOOL = /^(list|get|search|find|read|preview)/;
+
+/** The i18n key under `home.ask.activity` for what an unfinished reply is doing. */
+function activityKey(parts: AskUIMessage["parts"] | undefined): string {
+  const last = [...(parts ?? [])]
+    .reverse()
+    .find((part) => isToolUIPart(part) || (isTextUIPart(part) && part.text.trim()));
+  if (!last || !isToolUIPart(last)) return "thinking";
+  if (last.state === "input-streaming" || last.state === "input-available") {
+    const name = getToolName(last);
+    if (ACTIVITY_TOOLS.has(name)) return `tools.${name}`;
+    return LOOKUP_TOOL.test(name) ? "searching" : "working";
+  }
+  return "analyzing";
+}
+
+const ACTIVITY_TOOLS = new Set([
+  "searchProperties",
+  "getPropertyDetail",
+  "listViewings",
+  "listApplications",
+  "searchConversations",
+  "getReminders",
+  "listTasks",
+  "listMembers",
+  "listOpenSlots",
+  "listPipelineStages",
+  "listContractTemplates",
+  "listCalendarEvents",
+  "previewListingImport",
+  "draftReply",
+]);
 
 function sourceNotInlined(href: string, inlined: Set<string>) {
   if (inlined.has(href)) return false;
@@ -149,10 +226,12 @@ export function HomeAsk({
     threadTitle?.trim() || null,
   );
   const [savedId, setSavedId] = React.useState<string | null>(threadId);
-  const { messages, sendMessage, status } = useChat<AskUIMessage>({
+  const { messages, sendMessage, status, addToolApprovalResponse } =
+    useChat<AskUIMessage>({
     id: threadId ?? "new",
     messages: initialMessages,
     transport,
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     onData: (part) => {
       if (part.type === "data-thread") {
         threadIdRef.current = part.data.id;
@@ -322,19 +401,32 @@ export function HomeAsk({
             />
           ) : null}
         </header>
-        <div className="mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col lg:pt-6">
-          <ol className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto">
-            {visible.map((message) => {
+        <div className="mx-auto flex w-full max-w-xl flex-1 shrink-0 flex-col lg:pt-6">
+          <ol className="flex flex-1 shrink-0 flex-col gap-4">
+            {visible.map((message, index) => {
               const text = message.parts
                 .filter(isTextUIPart)
                 .map((part) => part.text)
                 .join("\n");
+              const blocks = messageBlocks(message.parts);
+              const live = index === visible.length - 1;
               const sources = message.parts.filter(
                 (part) => part.type === "data-source",
               );
               const files = message.parts.filter(isFileUIPart);
+              const targets = new Map(
+                message.parts.flatMap((part) =>
+                  part.type === "data-target"
+                    ? [[part.data.toolCallId, part.data.rows] as const]
+                    : [],
+                ),
+              );
               const outbound = message.role === "user";
-              const waiting = busy && !outbound && !text;
+              const waiting =
+                busy &&
+                live &&
+                !outbound &&
+                blocks[blocks.length - 1]?.kind !== "text";
               const rise = outbound && !seenIdsRef.current.has(message.id);
               const messageEntities = mergeEntities(entities, message.parts);
               const inlined = mentionHrefs(
@@ -347,7 +439,7 @@ export function HomeAsk({
                 <li
                   key={message.id}
                   className={cn(
-                    "flex flex-col gap-1.5",
+                    "flex min-w-0 max-w-full flex-col gap-1.5",
                     outbound ? "items-end" : "items-start",
                     rise &&
                       "motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-8",
@@ -383,25 +475,47 @@ export function HomeAsk({
                       ))}
                     </ul>
                   ) : null}
-                  <div
-                    role="article"
-                    aria-label={outbound ? t("you") : t("assistant")}
-                    className={cn(
-                      "max-w-[85%] rounded-2xl px-4 py-2 text-sm leading-6 whitespace-pre-wrap",
-                      outbound
-                        ? "bg-brand-soft text-brand-foreground"
-                        : "bg-secondary text-foreground",
-                    )}
-                  >
-                    {waiting ? (
-                      <span
-                        aria-hidden
-                        className="mt-1.5 inline-block size-1.5 animate-pulse rounded-full bg-current opacity-40"
-                      />
+                  {blocks.map((block) =>
+                    block.kind === "thought" ? (
+                      <ChainOfThought key={block.key} steps={block.steps} />
+                    ) : block.kind === "text" ? (
+                      <div
+                        key={block.key}
+                        role="article"
+                        aria-label={outbound ? t("you") : t("assistant")}
+                        className={cn(
+                          "min-w-0 max-w-[85%] rounded-2xl px-4 py-2 text-sm leading-6 wrap-anywhere whitespace-pre-wrap",
+                          outbound
+                            ? "bg-brand-soft text-brand-foreground"
+                            : "bg-secondary text-foreground",
+                        )}
+                      >
+                        <MessageBody
+                          text={block.text}
+                          entities={messageEntities}
+                        />
+                      </div>
                     ) : (
-                      <MessageBody text={text} entities={messageEntities} />
-                    )}
-                  </div>
+                      <ActionCard
+                        key={block.key}
+                        part={block.part}
+                        targets={targets.get(block.part.toolCallId)}
+                        live={live}
+                        onRespond={(id, approved) =>
+                          void addToolApprovalResponse({
+                            id,
+                            approved,
+                            options: {
+                              body: { threadId: threadIdRef.current },
+                            },
+                          })
+                        }
+                      />
+                    ),
+                  )}
+                  {waiting ? (
+                    <ThinkingLine label={t(`ask.activity.${activityKey(message.parts)}`)} />
+                  ) : null}
                   {extraSources.length > 0 ? (
                     <div className="flex max-w-[85%] flex-wrap gap-1.5">
                       {extraSources.map((part) => (
@@ -425,6 +539,11 @@ export function HomeAsk({
                 </li>
               );
             })}
+            {busy && visible.at(-1)?.role === "user" ? (
+              <li className="flex">
+                <ThinkingLine label={t("ask.activity.thinking")} />
+              </li>
+            ) : null}
             <li ref={endRef} className="h-px" aria-hidden />
           </ol>
           {prompt}

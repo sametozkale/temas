@@ -12,7 +12,7 @@ import { bookings, contacts, emailOtps, viewingSlots } from "@/lib/db/schema";
 import { publicAppUrl } from "@/lib/app-url";
 import { formatAddress, formatDateTime } from "@/lib/format";
 import { sendEmail } from "@/lib/integrations/resend";
-import { notifyWorkspaceStaff } from "@/lib/notifications/dispatch";
+import { notifyWorkspaceParties } from "@/lib/viewings/notify";
 import { clientIp } from "@/lib/http";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { secureToken } from "@/lib/slug";
@@ -25,8 +25,6 @@ import { bookingProspectSchema, otpSchema } from "@/lib/viewings/schema";
 import { BookingCancelledEmail } from "@/emails/booking-cancelled";
 import { BookingConfirmationEmail } from "@/emails/booking-confirmation";
 import { BookingOtpEmail } from "@/emails/booking-otp";
-import { ViewingNotificationEmail } from "@/emails/viewing-notification";
-import { propertyPeople } from "@/lib/db/schema/properties";
 
 function hashOtp(email: string, code: string, namespace = "temas-otp") {
   return createHash("sha256")
@@ -46,84 +44,6 @@ function otpMatches(storedHash: string, email: string, code: string) {
     }
   }
   return false;
-}
-
-async function notifyWorkspaceParties(input: {
-  propertyId: string;
-  workspaceId: string;
-  assignedUserId?: string | null;
-  propertyTitle: string;
-  prospectName: string;
-  whenLabel: string;
-  kind: "booked" | "cancelled";
-}) {
-  const tenantRows = await db
-    .select({ email: contacts.email, name: contacts.fullName })
-    .from(propertyPeople)
-    .innerJoin(contacts, eq(contacts.id, propertyPeople.contactId))
-    .where(
-      and(
-        eq(propertyPeople.propertyId, input.propertyId),
-        eq(propertyPeople.relation, "current_tenant"),
-      ),
-    );
-
-  for (const person of tenantRows) {
-    if (!person.email) continue;
-    if (input.kind === "booked") {
-      await sendEmail({
-        to: person.email,
-        subject: `Viewing scheduled — ${input.propertyTitle}`,
-        react: ViewingNotificationEmail({
-          recipientName: person.name,
-          propertyTitle: input.propertyTitle,
-          prospectName: input.prospectName,
-          whenLabel: input.whenLabel,
-          role: "tenant",
-        }),
-      });
-    } else {
-      await sendEmail({
-        to: person.email,
-        subject: `Viewing cancelled — ${input.propertyTitle}`,
-        react: BookingCancelledEmail({
-          recipientName: person.name,
-          propertyTitle: input.propertyTitle,
-          whenLabel: input.whenLabel,
-        }),
-      });
-    }
-  }
-
-  await notifyWorkspaceStaff({
-    workspaceId: input.workspaceId,
-    assignedUserId: input.assignedUserId,
-    type: "viewings",
-    email: (name) =>
-      input.kind === "booked"
-        ? {
-            subject: `New viewing — ${input.propertyTitle}`,
-            react: ViewingNotificationEmail({
-              recipientName: name,
-              propertyTitle: input.propertyTitle,
-              prospectName: input.prospectName,
-              whenLabel: input.whenLabel,
-              role: "agent",
-            }),
-          }
-        : {
-            subject: `Viewing cancelled — ${input.propertyTitle}`,
-            react: BookingCancelledEmail({
-              recipientName: name,
-              propertyTitle: input.propertyTitle,
-              whenLabel: input.whenLabel,
-            }),
-          },
-    whatsapp: () =>
-      input.kind === "booked"
-        ? `New viewing — ${input.propertyTitle}. ${input.prospectName} booked ${input.whenLabel}.`
-        : `Viewing cancelled — ${input.propertyTitle} (${input.whenLabel}).`,
-  });
 }
 
 export async function requestBookingOtp(

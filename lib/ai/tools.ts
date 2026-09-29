@@ -18,12 +18,15 @@ import {
   applications,
   bookings,
   contacts,
+  contracts,
   conversations,
+  documents,
   inventoryItems,
   messages,
   pipelineStages,
   profiles,
   properties,
+  propertyMedia,
   propertyPeople,
   reminders,
   viewingSlots,
@@ -96,6 +99,9 @@ export function createAskTools(
             id: properties.id,
             title: properties.title,
             status: properties.status,
+            type: properties.type,
+            currency: properties.currency,
+            address: properties.address,
             description: properties.description,
             rentAmount: properties.rentAmount,
             depositAmount: properties.depositAmount,
@@ -126,8 +132,10 @@ export function createAskTools(
         if (!property) return { error: "not_found" };
         const inventory = await db
           .select({
+            id: inventoryItems.id,
             name: inventoryItems.name,
             quantity: inventoryItems.quantity,
+            condition: inventoryItems.condition,
           })
           .from(inventoryItems)
           .where(eq(inventoryItems.propertyId, id));
@@ -136,13 +144,50 @@ export function createAskTools(
             relation: propertyPeople.relation,
             name: contacts.fullName,
             id: contacts.id,
+            personId: propertyPeople.id,
+            email: contacts.email,
+            phone: contacts.phone,
+            joined: sql<boolean>`${propertyPeople.joinedAt} is not null`,
           })
           .from(propertyPeople)
           .innerJoin(contacts, eq(contacts.id, propertyPeople.contactId))
           .where(eq(propertyPeople.propertyId, id));
+        const files = await db
+          .select({
+            id: documents.id,
+            title: documents.title,
+            kind: documents.kind,
+            shared: sql<boolean>`coalesce((${documents.meta}->>'shared')::boolean, false)`,
+          })
+          .from(documents)
+          .where(eq(documents.propertyId, id))
+          .orderBy(desc(documents.createdAt))
+          .limit(30);
+        const photos = await db
+          .select({ id: propertyMedia.id, sortOrder: propertyMedia.sortOrder })
+          .from(propertyMedia)
+          .where(eq(propertyMedia.propertyId, id))
+          .orderBy(propertyMedia.sortOrder);
+        const drafts = await db
+          .select({
+            id: contracts.id,
+            status: contracts.status,
+            disclaimerAcknowledged: contracts.disclaimerAcknowledged,
+            createdAt: contracts.createdAt,
+          })
+          .from(contracts)
+          .where(eq(contracts.propertyId, id))
+          .orderBy(desc(contracts.createdAt))
+          .limit(10);
         return {
           property: { ...property, href: `/properties/${id}` },
           inventory,
+          documents: files,
+          photos: photos.map((p, index) => ({ id: p.id, position: index + 1 })),
+          contracts: drafts.map((c) => ({
+            ...c,
+            href: `/properties/${id}/contracts/${c.id}`,
+          })),
           people: people.map((person) => ({
             ...person,
             href: `/properties/${id}/people`,
@@ -248,6 +293,7 @@ export function createAskTools(
             propertyTitle: properties.title,
             applicant: contacts.fullName,
             stage: pipelineStages.name,
+            stageId: applications.stageId,
           })
           .from(applications)
           .innerJoin(properties, eq(properties.id, applications.propertyId))

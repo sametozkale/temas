@@ -23,6 +23,7 @@ import { requireAbility } from "@/lib/permissions";
 import { enqueueEmbedProperty } from "@/lib/ai/enqueue";
 import { revalidatePublicPropertyPages } from "@/lib/public-cache";
 import { resolveAssignedUserId } from "@/lib/properties/assignment";
+import { deletePropertyCore } from "@/lib/properties/mutations";
 import { getProperty, type PropertyRow } from "@/lib/properties/queries";
 import { syncAssignedAgentWindows } from "@/lib/viewings/assignee";
 import {
@@ -382,34 +383,8 @@ export async function deleteProperty(
   propertyId: string,
 ): Promise<PropertyActionResult> {
   const ctx = await getAppContext();
-  requireAbility(ctx.membership, "properties.delete");
-  const id = uuidSchema.parse(propertyId);
-
-  const result = await withUserContext(ctx.user.id, async (tx) => {
-    const current = await requireProperty(tx, ctx.workspace.id, id);
-    if (!current) return "not_found" as const;
-    await tx
-      .update(properties)
-      .set({ deletedAt: new Date() })
-      .where(eq(properties.id, id));
-    await logActivity(
-      {
-        workspaceId: ctx.workspace.id,
-        actorId: ctx.user.id,
-        propertyId: id,
-        action: "property.deleted",
-        entity: "property",
-        entityId: id,
-        data: { title: current.title },
-      },
-      tx,
-    );
-    return "ok" as const;
-  });
-
-  if (result !== "ok") return actionError(result);
-  revalidateProperty(id);
-  await revalidatePublicPropertyPages(id);
+  const result = await deletePropertyCore(ctx, propertyId);
+  if (!result.ok) return actionError(result.error);
   redirect("/properties");
 }
 

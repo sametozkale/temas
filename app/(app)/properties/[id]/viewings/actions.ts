@@ -20,6 +20,11 @@ import { minutesToTime } from "@/lib/slots";
 import { revalidatePublicPropertyPages } from "@/lib/public-cache";
 import { ensureAssigneeContact } from "@/lib/viewings/assignee";
 import { enqueueMaterialize } from "@/lib/viewings/enqueue";
+import {
+  bookViewingCore,
+  cancelViewingCore,
+  rescheduleViewingCore,
+} from "@/lib/viewings/mutations";
 import { getCalendarByProperty } from "@/lib/viewings/queries";
 import { calendarSettingsSchema, weekSchema } from "@/lib/viewings/schema";
 import { rruleForDay } from "@/lib/viewings/week";
@@ -188,4 +193,16 @@ export async function saveAgentWeek(
   await enqueueMaterialize(calendarId);
   await revalidateViewings(id);
   return actionOk();
+}
+
+export async function bookViewing(input: unknown) {
+  return bookViewingCore(await getAppContext(), input);
+}
+
+export async function cancelViewing(input: unknown) {
+  return cancelViewingCore(await getAppContext(), input);
+}
+
+export async function rescheduleViewing(input: unknown) {
+  return rescheduleViewingCore(await getAppContext(), input);
 }

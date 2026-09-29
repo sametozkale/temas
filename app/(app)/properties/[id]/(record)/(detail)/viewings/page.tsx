@@ -1,9 +1,9 @@
 import { after } from "next/server";
 import { getTranslations } from "next-intl/server";
 
-import { EventChip } from "@/components/event-chip";
 import { PersonAvatar } from "@/components/identity-marks";
 import { CopyInviteButton } from "@/components/viewings/copy-invite-button";
+import { StaffBookings } from "@/components/viewings/staff-bookings";
 import { ViewingsPanel } from "@/components/viewings/viewings-panel";
 import { initialsOf } from "@/lib/auth-utils";
 import { withUserContext } from "@/lib/db";
@@ -15,6 +15,7 @@ import { parseTimeToMinutes } from "@/lib/slots";
 import { enqueueMaterialize } from "@/lib/viewings/enqueue";
 import {
   getCalendarByProperty,
+  listBookingsInRange,
   listOpenSlots,
   listPropertyPeopleForCalendar,
   listWindows,
@@ -62,24 +63,30 @@ export default async function ViewingsPage({
   ]);
   const canManage = can(ctx.membership.role, "calendar.manage");
 
-  const { calendar, windows, slots, people, form } = await withUserContext(
-    ctx.user.id,
-    async (tx) => {
-      const [calendar, people, form] = await Promise.all([
+  const { calendar, windows, slots, people, form, bookings } =
+    await withUserContext(ctx.user.id, async (tx) => {
+      const now = new Date();
+      const [calendar, people, form, bookings] = await Promise.all([
         getCalendarByProperty(tx, id),
         listPropertyPeopleForCalendar(tx, id),
         getFormByProperty(tx, id),
+        listBookingsInRange(
+          tx,
+          ctx.workspace.id,
+          now,
+          new Date(now.getTime() + 180 * 86_400_000),
+          { propertyId: id },
+        ).then((rows) => rows.filter((r) => r.status === "confirmed")),
       ]);
       if (!calendar) {
-        return { calendar: null, windows: [], slots: [], people, form };
+        return { calendar: null, windows: [], slots: [], people, form, bookings };
       }
       const [windows, slots] = await Promise.all([
         listWindows(tx, calendar.id),
         listOpenSlots(tx, calendar.id, new Date()),
       ]);
-      return { calendar, windows, slots, people, form };
-    },
-  );
+      return { calendar, windows, slots, people, form, bookings };
+    });
 
   if (calendar) {
     const calendarId = calendar.id;
@@ -128,32 +135,23 @@ export default async function ViewingsPage({
         }
       />
       <div className="space-y-6">
-        <section className="rounded-lg border">
-          <div className="border-b px-4 py-3">
-            <h2 className="text-sm font-medium">{t("upcoming")}</h2>
-            <p className="text-xs text-muted-foreground">
-              {t("upcoming_hint")}
-            </p>
-          </div>
-          {slots.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-              {t("no_slots")}
-            </p>
-          ) : (
-            <div className="divide-y px-2">
-              {slots.slice(0, 12).map((s) => (
-                <EventChip
-                  key={s.id}
-                  tone="brand"
-                  time={formatDateTime(s.startsAt, property.timezone)
-                    .split(", ")
-                    .at(-1)}
-                  title={formatDateTime(s.startsAt, property.timezone)}
-                />
-              ))}
-            </div>
-          )}
-        </section>
+        <StaffBookings
+          propertyId={id}
+          canManage={canManage}
+          slots={slots.map((s) => {
+            const label = formatDateTime(s.startsAt, property.timezone);
+            return { id: s.id, label, time: label.split(", ").at(-1) ?? "" };
+          })}
+          bookings={bookings.map((b) => {
+            const label = formatDateTime(b.startsAt, property.timezone);
+            return {
+              id: b.id,
+              label,
+              time: label.split(", ").at(-1) ?? "",
+              prospectName: b.prospectName,
+            };
+          })}
+        />
         <section className="rounded-lg border">
           <div className="border-b px-4 py-3">
             <h2 className="text-sm font-medium">{t("people_title")}</h2>

@@ -81,6 +81,10 @@ Job pseudo-code:
 4. Confirmation page: add to calendar (.ics) and a cancel button with the `cancel_token` link; on cancellation the slot becomes `open` and all parties are notified.
 5. Rate limits: 10 OTPs per IP per hour, 5 bookings per token per day.
 
+## 4.1 Staff Booking (product + Ask)
+
+`lib/viewings/mutations.ts`, `requireAbility('calendar.manage')`. The agent books on behalf of a prospect (no OTP — the agent vouches for the identity), cancels, or reschedules. Same transaction as the public flow: slot must be `open` → booking INSERT + slot `booked`; cancel → booking `cancelled` + slot `open`; reschedule = cancel the old booking and book the new open slot in one transaction, keeping the contact. Notifications go to the same parties as the public flow (prospect, tenant, assigned agent, owners) and `slots/materialize` is enqueued. Entry points: the property Viewings tab and Ask (both behind confirmation in Ask).
+
 ## 5. Test Scenarios (Vitest — mandatory set for the engine)
 
 - Simple intersection: agent 09–17, tenant 17–20 → no slot at all (boundary: does a 17:00 end count as a 17:00 start? — decision: `[start, end)` half-open interval; document it).

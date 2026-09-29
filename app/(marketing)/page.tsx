@@ -7,26 +7,21 @@ import { ContractsSection } from "@/components/marketing/contracts-section";
 import { FeatureTrio } from "@/components/marketing/feature-trio";
 import { Hero } from "@/components/marketing/hero";
 import { Intro } from "@/components/marketing/intro";
+import { marketingMetadata } from "@/components/marketing/metadata";
 import { Plans } from "@/components/marketing/plans";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteNav } from "@/components/marketing/site-nav";
 import { CalendarSection } from "@/components/marketing/slot-mock";
 import { TaskSection } from "@/components/marketing/task-section";
-import { TrustGrid } from "@/components/marketing/trust-grid";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("marketing");
-  return {
+  return marketingMetadata({
     title: t("meta_title"),
     description: t("meta_description"),
-    openGraph: {
-      title: t("meta_title"),
-      description: t("meta_description"),
-      type: "website",
-      siteName: "Temas",
-      images: [{ url: "/marketing/agent-keys.webp", width: 900, height: 900 }],
-    },
-  };
+    path: "/",
+    absoluteTitle: true,
+  });
 }
 
 export default function MarketingPage() {
@@ -36,12 +31,11 @@ export default function MarketingPage() {
       <main>
         <Hero />
         <Intro />
-        <FeatureTrio />
         <CalendarSection />
-        <AskSection />
+        <FeatureTrio />
         <TaskSection />
+        <AskSection />
         <ContractsSection />
-        <TrustGrid />
         <Plans />
         <Closing />
       </main>

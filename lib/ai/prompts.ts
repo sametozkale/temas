@@ -11,7 +11,8 @@ export function loadPrompt(
     | "contract-system.md"
     | "reminder-copy.md"
     | "extract-tasks.md"
-    | "name-thread.md",
+    | "name-thread.md"
+    | "listing-import.md",
 ) {
   return readFileSync(join(DIR, name), "utf8").trim();
 }

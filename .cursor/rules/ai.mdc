@@ -5,7 +5,7 @@ alwaysApply: false
 ---
 
 - Prompts are not embedded in code; they are loaded from lib/ai/prompts/*.md.
-- The AI performs no writes (v1): the tool set is read-only. Draft/contract outputs are never sent/exported without human approval.
+- Ask write tools (lib/ai/actions/*) only call the product's mutation functions (Server Actions or their lib/<domain>/mutations.ts cores) — never the DB directly — so zod + requireAbility always run. Risky tools (send, delete, book, share, access, billing, create listing) are `user-approval` in lib/ai/actions/policy.ts. Draft/contract outputs are never sent/exported without human approval.
 - Every AI call: the workspace scope filter is mandatory (in the application layer in addition to RLS).
 - Where structured output is needed use generateObject + zod; free text uses streamText.
 - Model selection only through lib/ai/models.ts; model names are never hard-coded in endpoints.

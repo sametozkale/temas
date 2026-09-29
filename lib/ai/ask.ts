@@ -3,14 +3,26 @@ import {
   createUIMessageStream,
   createUIMessageStreamResponse,
   isTextUIPart,
+  isToolUIPart,
   stepCountIs,
   streamText,
   toUIMessageStream,
+  type InferUIMessageChunk,
   type UIMessageStreamWriter,
 } from "ai";
 import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
+import type { AppContext } from "@/lib/auth";
+import {
+  approvalSecret,
+  createActionScope,
+  createWriteTools,
+  toolApproval,
+} from "@/lib/ai/actions";
+import { settleApprovals } from "@/lib/ai/actions/approval";
+import { CARD_TOOL_NAMES } from "@/lib/ai/actions/policy";
+import { describeTargets } from "@/lib/ai/actions/targets";
 import type { DbOrTx } from "@/lib/db";
 import { db } from "@/lib/db";
 import { aiMessages, aiThreads, profiles } from "@/lib/db/schema";
@@ -21,6 +33,7 @@ import { isTextConfigured, modelLabel, textModel } from "@/lib/ai/models";
 import { loadPrompt } from "@/lib/ai/prompts";
 import { nameThread } from "@/lib/ai/name-thread";
 import { searchSnippets } from "@/lib/ai/rag";
+import { filesForModel, reviveUnfinishedApprovals } from "@/lib/ai/message-parts";
 import { createAskTools } from "@/lib/ai/tools";
 import type { AskSource, AskUIMessage } from "@/lib/ai/types";
 
@@ -71,10 +84,10 @@ function uniqueSources(items: AskSource[]) {
   });
 }
 
-function toolsWithSources(
-  tools: ReturnType<typeof createAskTools>,
+function toolsWithSources<T extends Record<string, { execute?: unknown }>>(
+  tools: T,
   emit: (source: AskSource) => void,
-) {
+): T {
   return Object.fromEntries(
     Object.entries(tools).map(([name, tool]) => {
       const execute = tool.execute as
@@ -94,7 +107,35 @@ function toolsWithSources(
         },
       ];
     }),
-  ) as ReturnType<typeof createAskTools>;
+  ) as T;
+}
+
+/** The client is sending Confirm/Cancel for an action card, not a new question. */
+export function isApprovalResubmit(messages: AskUIMessage[]) {
+  const last = messages[messages.length - 1];
+  if (last?.role !== "assistant") return false;
+  return last.parts.some(
+    (part) => isToolUIPart(part) && part.state === "approval-responded",
+  );
+}
+
+export async function findOwnThread(
+  workspaceId: string,
+  userId: string,
+  threadId: string,
+) {
+  const [row] = await db
+    .select({ id: aiThreads.id, title: aiThreads.title })
+    .from(aiThreads)
+    .where(
+      and(
+        eq(aiThreads.id, threadId),
+        eq(aiThreads.workspaceId, workspaceId),
+        eq(aiThreads.userId, userId),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
 }
 
 export async function persistUserTurn(input: {
@@ -102,6 +143,7 @@ export async function persistUserTurn(input: {
   userId: string;
   threadId: string | null;
   question: string;
+  parts?: AskUIMessage["parts"];
 }) {
   let threadId = input.threadId;
   let title: string | null = null;
@@ -138,6 +180,7 @@ export async function persistUserTurn(input: {
     role: "user",
     content: input.question,
     credits: creditCost("ask"),
+    ...(input.parts ? { toolCalls: [{ parts: input.parts }] } : {}),
   });
   await db
     .update(aiThreads)
@@ -147,16 +190,119 @@ export async function persistUserTurn(input: {
   return { threadId, title, isNew };
 }
 
-export async function persistAssistantTurn(
-  threadId: string,
-  content: string,
-  toolCalls?: unknown[],
-) {
+/** Stored in `ai_messages.tool_calls[0]` for assistant rows. */
+type StoredAssistantTurn = {
+  model: string;
+  parts?: AskUIMessage["parts"];
+};
+
+/**
+ * An approval resubmit continues the thread's latest assistant row instead
+ * of inserting a new one, and adds the extra credits to it.
+ */
+export async function persistAssistantTurn(input: {
+  threadId: string;
+  content: string;
+  turn: StoredAssistantTurn;
+  credits: number;
+  continueLast: boolean;
+}) {
+  if (input.continueLast) {
+    const [last] = await db
+      .select({ id: aiMessages.id, credits: aiMessages.credits })
+      .from(aiMessages)
+      .where(
+        and(
+          eq(aiMessages.threadId, input.threadId),
+          eq(aiMessages.role, "assistant"),
+        ),
+      )
+      .orderBy(desc(aiMessages.createdAt))
+      .limit(1);
+    if (last) {
+      await db
+        .update(aiMessages)
+        .set({
+          content: input.content,
+          toolCalls: [input.turn],
+          credits: last.credits + input.credits,
+        })
+        .where(eq(aiMessages.id, last.id));
+      return;
+    }
+  }
   await db.insert(aiMessages).values({
-    threadId,
+    threadId: input.threadId,
     role: "assistant",
-    content,
-    toolCalls: toolCalls ?? null,
+    content: input.content,
+    credits: input.credits,
+    toolCalls: [input.turn],
+  });
+}
+
+function storableParts(parts: AskUIMessage["parts"]) {
+  return parts.filter((part) => part.type !== "data-thread");
+}
+
+/**
+ * Tool calls that can no longer finish come back as an expired error so the
+ * model history stays valid. A confirmation card in the latest reply stays
+ * open (`keepPending`); once the agent sends a new message it expires.
+ */
+function expireParts(
+  parts: AskUIMessage["parts"],
+  keepPending: boolean,
+): AskUIMessage["parts"] {
+  return parts.map((part) => {
+    if (
+      isToolUIPart(part) &&
+      (((part.state === "approval-requested" ||
+        part.state === "approval-responded") &&
+        !keepPending) ||
+        part.state === "input-available" ||
+        part.state === "input-streaming")
+    ) {
+      return {
+        type: part.type,
+        toolCallId: part.toolCallId,
+        state: "output-error",
+        input: part.input,
+        errorText: "expired",
+      } as AskUIMessage["parts"][number];
+    }
+    return part;
+  });
+}
+
+function expireStale(messages: AskUIMessage[]): AskUIMessage[] {
+  return messages.map((message, index) =>
+    message.role === "assistant"
+      ? {
+          ...message,
+          parts: expireParts(message.parts, index === messages.length - 1),
+        }
+      : message,
+  );
+}
+
+type AskChunk = InferUIMessageChunk<AskUIMessage>;
+
+/** Adds the resolved record names after each action card's tool input. */
+function withActionTargets(ctx: AppContext) {
+  return new TransformStream<AskChunk, AskChunk>({
+    async transform(chunk, controller) {
+      controller.enqueue(chunk);
+      if (chunk.type !== "tool-input-available" || !CARD_TOOL_NAMES.has(chunk.toolName)) {
+        return;
+      }
+      const rows = await describeTargets(ctx, chunk.toolName, chunk.input);
+      if (rows.length === 0) return;
+      controller.enqueue({
+        type: "data-target",
+        id: chunk.toolCallId,
+        data: { toolCallId: chunk.toolCallId, rows },
+      });
+    },
   });
 }
 
@@ -175,6 +321,7 @@ async function persistThreadTitle(
 }
 
 export async function streamAsk(input: {
+  ctx: AppContext;
   workspaceId: string;
   timeZone: string;
   userId: string;
@@ -183,7 +330,11 @@ export async function streamAsk(input: {
   isNew: boolean;
   messages: AskUIMessage[];
   question: string;
+  /** Continuing after Confirm/Cancel on an action card. */
+  resubmit: boolean;
 }) {
+  const scope = createActionScope(input.ctx, input.threadId, input.messages);
+  const messages = expireStale(input.messages);
   const [prefs] = await db
     .select({ language: profiles.aiLanguage })
     .from(profiles)
@@ -201,14 +352,15 @@ export async function streamAsk(input: {
       : "";
 
   const stream = createUIMessageStream<AskUIMessage>({
-    originalMessages: input.messages,
+    originalMessages: messages,
     execute: async ({ writer }) => {
-      const tools = toolsWithSources(
+      const readTools = toolsWithSources(
         createAskTools(input.workspaceId, input.timeZone, input.userId),
         (source) => {
           writer.write({ type: "data-source", data: source });
         },
       );
+      const tools = { ...readTools, ...createWriteTools(scope) };
       writer.write({
         type: "data-thread",
         data: {
@@ -227,23 +379,34 @@ export async function streamAsk(input: {
             .catch(() => undefined)
         : Promise.resolve();
       try {
-        if (!isTextConfigured()) {
-          await writeMockAsk(writer, tools, input.question);
-          return;
-        }
-        const model = textModel("sonnet");
+        const model = isTextConfigured() ? textModel("sonnet") : null;
         if (!model) {
-          await writeMockAsk(writer, tools, input.question);
+          if (input.resubmit) {
+            await settleApprovals({
+              writer,
+              tools,
+              message: messages.at(-1),
+              secret: approvalSecret(),
+            });
+          } else {
+            await writeMockAsk(writer, readTools, input.question);
+          }
           return;
         }
         const result = streamText({
           model,
           system: `${loadPrompt("ask-system.md")}\n- ${languageRule}${ragBlock}`,
-          messages: await convertToModelMessages(input.messages),
+          messages: await convertToModelMessages(filesForModel(messages), { tools }),
           tools,
-          stopWhen: stepCountIs(6),
+          toolApproval,
+          experimental_toolApprovalSecret: approvalSecret(),
+          stopWhen: stepCountIs(10),
         });
-        writer.merge(toUIMessageStream({ stream: result.stream }));
+        writer.merge(
+          toUIMessageStream({ stream: result.stream }).pipeThrough(
+            withActionTargets(input.ctx),
+          ),
+        );
       } finally {
         await naming;
       }
@@ -253,9 +416,17 @@ export async function streamAsk(input: {
         .filter(isTextUIPart)
         .map((part) => part.text)
         .join("\n");
-      await persistAssistantTurn(input.threadId, text, [
-        { model: modelLabel("sonnet") },
-      ]);
+      await persistAssistantTurn({
+        threadId: input.threadId,
+        content: text,
+        turn: {
+          model: modelLabel("sonnet"),
+          parts: storableParts(responseMessage.parts),
+        },
+        credits:
+          scope.charges.listingImport * creditCost("listing_import"),
+        continueLast: input.resubmit,
+      });
     },
   });
 
@@ -407,6 +578,7 @@ export async function getThread(
       id: aiMessages.id,
       role: aiMessages.role,
       content: aiMessages.content,
+      toolCalls: aiMessages.toolCalls,
     })
     .from(aiMessages)
     .where(eq(aiMessages.threadId, thread.id))
@@ -415,16 +587,30 @@ export async function getThread(
   const messages: AskUIMessage[] = rows
     .filter(
       (row): row is typeof row & { role: "user" | "assistant" } =>
-        (row.role === "user" || row.role === "assistant") &&
-        Boolean(row.content),
+        row.role === "user" || row.role === "assistant",
     )
-    .map((row) => ({
-      id: row.id,
-      role: row.role,
-      parts: [{ type: "text" as const, text: row.content ?? "" }],
-    }));
+    .map((row) => {
+      const stored = row.toolCalls?.[0] as StoredAssistantTurn | undefined;
+      const parts =
+        Array.isArray(stored?.parts) &&
+        (row.role === "assistant" || stored.parts.some((part) => part.type === "file"))
+          ? stored.parts
+          : row.content
+            ? [{ type: "text" as const, text: row.content }]
+            : [];
+      return { id: row.id, role: row.role, parts };
+    })
+    .filter((message) => message.parts.length > 0);
 
-  return { ...thread, messages };
+  const expired = expireStale(messages);
+  const last = expired.at(-1);
+  if (last?.role === "assistant") {
+    expired[expired.length - 1] = {
+      ...last,
+      parts: reviveUnfinishedApprovals(last.parts),
+    };
+  }
+  return { ...thread, messages: expired };
 }
 
 export async function updateThreadTitle(

@@ -19,8 +19,8 @@ export async function Closing() {
         <div className="relative overflow-hidden rounded-[28px] bg-brand p-3 sm:p-6">
           <div className="grid grid-cols-1 items-center gap-12 rounded-[20px] bg-background px-6 py-14 sm:px-12 lg:grid-cols-[1fr_1.1fr]">
             <Reveal className="relative mx-auto w-full max-w-md">
-              <span aria-hidden className="absolute -top-4 -left-4 size-4 border-t border-l border-foreground/70" />
-              <span aria-hidden className="absolute -right-4 -bottom-4 size-4 border-r border-b border-foreground/70" />
+              <span aria-hidden className="absolute -top-4 -left-4 size-4 border-t border-l border-muted-foreground/55" />
+              <span aria-hidden className="absolute -right-4 -bottom-4 size-4 border-r border-b border-muted-foreground/55" />
               <Image
                 src="/marketing/agent-portrait.webp"
                 alt=""
@@ -39,6 +39,8 @@ export async function Closing() {
               <Display>{t("title")}</Display>
               <p className="mt-6 max-w-md text-lg leading-relaxed text-muted-foreground">
                 {t("body")}
+                <br />
+                {t("invite")}
               </p>
               <div className="mt-9 flex flex-wrap items-center gap-2">
                 <Button size="lg" asChild>

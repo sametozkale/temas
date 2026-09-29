@@ -31,7 +31,7 @@ export async function Hero() {
               <Link href={SIGNUP_HREF}>{t("cta")}</Link>
             </Button>
             <Button size="lg" variant="ghost" asChild>
-              <a href="#product">{t("secondary")}</a>
+              <a href="#viewings">{t("secondary")}</a>
             </Button>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
@@ -55,7 +55,7 @@ export async function Hero() {
           <Polaroid
             photo="street"
             caption={tp("street")}
-            className="absolute -bottom-14 -left-4 z-10 hidden w-32 rotate-[4deg] lg:block xl:-left-10 xl:w-36"
+            className="absolute -bottom-14 left-[calc(3rem+212px+1rem)] z-10 hidden w-32 rotate-[4deg] lg:block xl:w-36"
           />
           <Image
             src="/marketing/scrap-to-let.webp"
@@ -65,7 +65,7 @@ export async function Hero() {
             sizes="160px"
             className="absolute -top-20 right-16 z-10 hidden w-32 rotate-[7deg] md:block"
           />
-          <div className="rounded-[28px] bg-brand p-3 sm:p-8 lg:p-12">
+          <div className="rounded-[28px] bg-brand px-3 py-2 sm:px-8 sm:py-4 lg:px-12 lg:py-5">
             <ProductMock />
           </div>
         </Reveal>

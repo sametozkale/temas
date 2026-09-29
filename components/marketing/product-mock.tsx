@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 
@@ -49,7 +50,7 @@ export function ProductMock() {
     >
       <nav
         aria-label={t("nav_label")}
-        className="flex w-[42px] shrink-0 flex-col gap-4 px-1 py-3 sm:w-[212px] sm:px-2"
+        className="flex w-[42px] shrink-0 flex-col gap-4 px-1 py-1.5 sm:w-[212px] sm:px-2 sm:py-2"
       >
         <div className="flex h-7 items-center gap-2 rounded-md pl-1 sm:pr-1">
           <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-[11px] font-medium text-muted-foreground">
@@ -155,7 +156,7 @@ export function ProductMock() {
         id="mock-panel"
         role="tabpanel"
         aria-labelledby={`mock-tab-${tab}`}
-        className="flex min-h-[460px] min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-foreground/6 bg-card sm:min-h-[520px]"
+        className="flex min-h-[500px] min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-foreground/6 bg-card sm:min-h-[640px]"
       >
         {tab === "home" ? <HomeCanvas chip={chip} eventChip={eventChip} /> : null}
         {tab === "inbox" ? <InboxCanvas /> : null}
@@ -315,13 +316,23 @@ function TasksCanvas() {
 
 function PropertiesCanvas() {
   const t = useTranslations("marketing.mock");
+  const photos = {
+    "1": "/marketing/riverside-flat.webp",
+    "2": "/marketing/canal-loft.webp",
+  } as const;
   return (
     <div className="flex flex-1 flex-col px-4 py-4 sm:px-5">
       <p className="px-2 py-2 text-[13px] font-medium">{t("nav_properties")}</p>
       <div className="mt-2 grid gap-3 sm:grid-cols-2">
         {(["1", "2"] as const).map((id) => (
           <div key={id} className="overflow-hidden rounded-xl border border-foreground/6">
-            <div className="aspect-[4/3] bg-secondary" />
+            <Image
+              src={photos[id]}
+              alt={t(`prop_${id}_title`)}
+              width={1152}
+              height={864}
+              className="aspect-[4/3] w-full object-cover"
+            />
             <div className="p-3">
               <p className="text-[13px] font-medium">{t(`prop_${id}_title`)}</p>
               <p className="mt-1 text-xs text-muted-foreground">{t(`prop_${id}_meta`)}</p>

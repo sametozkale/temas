@@ -1,37 +1,17 @@
 import { getTranslations } from "next-intl/server";
 
-import {
-  ArrowUp02Icon,
-  Calendar03Icon,
-  CheckmarkSquare02Icon,
-  Icon,
-  Money01Icon,
-  PlusSignIcon,
-  UserGroupIcon,
-  type IconSvgElement,
-} from "@/components/icons";
-import { cn } from "@/lib/utils";
+import { ArrowUp02Icon, Building03Icon, Icon, PlusSignIcon } from "@/components/icons";
 
 import { Container, Display, Eyebrow } from "./primitives";
 import { Reveal } from "./reveal";
 
-const ROWS: {
-  key: "row_viewings" | "row_applicants" | "row_deposits" | "row_tasks";
-  icon: IconSvgElement;
-  tone: string;
-  count: number;
-}[] = [
-  { key: "row_viewings", icon: Calendar03Icon, tone: "bg-info-soft text-info", count: 12 },
-  { key: "row_applicants", icon: UserGroupIcon, tone: "bg-brand-soft text-brand", count: 9 },
-  { key: "row_deposits", icon: Money01Icon, tone: "bg-warning-soft text-warning", count: 3 },
-  { key: "row_tasks", icon: CheckmarkSquare02Icon, tone: "bg-success-soft text-success", count: 14 },
-];
+const ANSWERS = ["answer_1", "answer_2", "answer_3"] as const;
 
 export async function AskSection() {
   const t = await getTranslations("marketing.ask");
 
   return (
-    <section className="py-24 sm:py-32">
+    <section id="ask" className="scroll-mt-8 py-24 sm:py-32">
       <Container>
         <div className="rounded-[28px] bg-secondary px-4 py-12 sm:px-14 sm:py-20">
           <div className="grid grid-cols-1 items-center gap-14 lg:grid-cols-2">
@@ -46,7 +26,7 @@ export async function AskSection() {
             <Reveal delay={120} className="space-y-3">
               <div
                 aria-hidden
-                className="mb-6 flex h-12 items-center gap-3 rounded-full border bg-card px-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)]"
+                className="mb-6 flex h-12 items-center gap-3 rounded-full border bg-card py-0 pr-2 pl-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)]"
               >
                 <Icon
                   icon={PlusSignIcon}
@@ -59,23 +39,21 @@ export async function AskSection() {
                   <Icon icon={ArrowUp02Icon} size={16} strokeWidth={2} />
                 </span>
               </div>
+              <p className="px-4 text-[15px]">{t("answer")}</p>
               <ul className="space-y-3">
-                {ROWS.map((row) => (
+                {ANSWERS.map((key) => (
                   <li
-                    key={row.key}
-                    className="flex items-center gap-3 rounded-full bg-card py-2 pr-5 pl-2 sm:gap-4 sm:pr-6 shadow-[0_1px_2px_rgb(0_0_0/0.04)] ring-1 ring-foreground/6"
+                    key={key}
+                    className="flex items-center gap-3 rounded-full bg-card py-2 pr-5 pl-2 shadow-[0_1px_2px_rgb(0_0_0/0.04)] ring-1 ring-foreground/6 sm:gap-4 sm:pr-6"
                   >
-                    <span
-                      className={cn(
-                        "flex size-11 shrink-0 items-center justify-center rounded-full",
-                        row.tone,
-                      )}
-                    >
-                      <Icon icon={row.icon} size={20} />
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-warning-soft text-warning">
+                      <Icon icon={Building03Icon} size={20} />
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-[15px] sm:text-[17px]">{t(row.key)}</span>
-                    <span className="text-[15px] text-muted-foreground tabular-nums sm:text-[17px]">
-                      {row.count}
+                    <span className="min-w-0 flex-1 truncate text-[15px] sm:text-[17px]">
+                      {t(key)}
+                    </span>
+                    <span className="shrink-0 text-[13px] text-muted-foreground sm:text-sm">
+                      {t("answer_status")}
                     </span>
                   </li>
                 ))}

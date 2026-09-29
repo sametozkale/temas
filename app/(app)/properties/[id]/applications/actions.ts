@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { actionError, actionOk, type ActionResult } from "@/lib/action-result";
+import { publicAppUrl } from "@/lib/app-url";
 import { logActivity } from "@/lib/activity";
 import { getAppContext } from "@/lib/auth";
 import { withUserContext } from "@/lib/db";
@@ -188,17 +189,18 @@ export async function moveApplication(
 
 export async function rotateOwnerLink(
   propertyId: string,
-): Promise<PipelineActionResult> {
+): Promise<PipelineActionResult<{ url: string }>> {
   const ctx = await getAppContext();
   requireAbility(ctx.membership, "pipeline.manage");
   const id = uuidSchema.parse(propertyId);
+  const nextToken = secureToken();
 
   const previousToken = await withUserContext(ctx.user.id, async (tx) => {
     const { ownerView } = await ensurePipeline(tx, id);
     const previous = ownerView.publicToken;
     await tx
       .update(ownerViews)
-      .set({ publicToken: secureToken() })
+      .set({ publicToken: nextToken })
       .where(eq(ownerViews.id, ownerView.id));
     await logActivity(
       {
@@ -216,7 +218,9 @@ export async function rotateOwnerLink(
 
   await revalidatePipeline(id);
   if (previousToken) revalidatePath(`/o/${previousToken}`);
-  return actionOk();
+  revalidatePath(`/o/${nextToken}`);
+  const url = new URL(`/o/${nextToken}`, await publicAppUrl()).toString();
+  return actionOk({ url });
 }
 
 export async function loadApplicant(

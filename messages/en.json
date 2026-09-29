@@ -112,20 +112,30 @@
     }
   },
   "marketing": {
-    "meta_title": "Temas: the letting workspace for rental agents",
-    "meta_description": "Viewings that book themselves, one inbox with a first draft, and applicants that keep moving. Built for independent agents and small rental agencies.",
+    "meta_title": "Temas: the AI-native platform for real estate brokers",
+    "meta_description": "Temas books viewings when you and the current tenant are both free, answers from one private inbox, turns promises into tasks, drafts contracts, and acts on your word once you confirm.",
     "nav": {
       "label": "Main",
       "product": "Product",
+      "viewings": "Viewings",
+      "viewings_line": "A time you, the tenant, and the applicant can all do.",
+      "inbox": "Inbox",
+      "inbox_line": "One reply, from the thread. You still send it.",
+      "tasks": "Tasks",
+      "tasks_line": "The promise in the thread, on the listing.",
+      "ask": "AI Chat",
+      "ask_line": "Answers, then does the next step.",
+      "contracts": "Contracts",
+      "contracts_line": "A first draft, filled from the listing.",
       "privacy": "Privacy",
-      "plans": "Plans",
+      "pricing": "Pricing",
       "sign_in": "Sign in",
       "start": "Get started"
     },
     "hero": {
-      "eyebrow": "For independent agents and small rental agencies",
-      "title": "Less chasing. More letting.",
-      "description": "Temas books viewings around everyone’s availability, drafts your replies and keeps each applicant moving, so the day goes to people instead of tabs.",
+      "eyebrow": "For independent agents and small real estate agencies",
+      "title": "The AI-native platform for real estate brokers.",
+      "description": "Temas books viewings when you and the current tenant are both free, drafts your replies and keeps each applicant moving, so the day goes to people instead of tabs.",
       "cta": "Get started",
       "secondary": "See how it works",
       "note": "From {amount} a month, billed annually."
@@ -147,7 +157,7 @@
       "event_1_time": "10:30",
       "event_1_title": "Viewing · Riverside flat",
       "event_2_time": "14:00",
-      "event_2_title": "Owner call · High Street office",
+      "event_2_title": "Landlord call · High Street office",
       "event_3_time": "17:30",
       "event_3_title": "Handover · Canal loft",
       "suggestions": "Suggestions",
@@ -164,7 +174,7 @@
       "inbox_2_name": "James Carter",
       "inbox_2_subject": "Deposit for the Canal loft",
       "inbox_2_time": "Yesterday",
-      "inbox_3_name": "Harbour owner",
+      "inbox_3_name": "David Okonkwo",
       "inbox_3_subject": "Keys for the High Street office",
       "inbox_3_time": "Mon",
       "cal_mon": "Mon",
@@ -176,7 +186,7 @@
       "cal_2": "17:30 Canal",
       "task_group": "Riverside flat",
       "task_1": "Ask the owner about blackout curtains",
-      "task_2": "Send the offer to Olivia",
+      "task_2": "Send Olivia's offer to the landlord",
       "prop_1_title": "Riverside flat",
       "prop_1_meta": "Apartment · 2 bed · $2,400",
       "prop_2_title": "Canal loft",
@@ -190,26 +200,57 @@
     },
     "intro": {
       "eyebrow": "Introducing Temas",
-      "lead": "Property software is good at keeping records. It is not good at moving a letting forward.",
-      "body_1": "The real work still happens in your inbox, on your phone and in your head: finding a time the tenant can do, answering the same five questions, remembering what you promised the prospect on Tuesday.",
-      "body_2": "Temas is a workspace for rental agents that acts on what you already have. It finds the viewing time that suits everyone, writes the first draft of the reply, reads each thread for what you said you would do, and keeps every household moving until the keys change hands."
+      "lead": "A real estate broker runs the whole letting with AI, between the current tenant, each applicant, and the owner.",
+      "body_1": "It still happens in your inbox, on your phone and in your head.",
+      "body_2": "Temas works from the hours, the threads and the listings you already keep. A reply stays a draft until you send it, and a viewing is booked only when someone picks a time you have offered."
     },
     "trio": {
-      "title": "Everything a letting needs, in one place.",
-      "viewings_title": "Viewings that book themselves",
-      "viewings_body": "Share one link. Prospects see only the times when you and the current tenant are both free.",
+      "title": "From the first reply to the landlord's yes.",
+      "viewings_title": "One link, with times that already work",
+      "viewings_body": "Text the link. The applicant sees those viewing times, picks one and confirms by email.",
       "inbox_title": "One inbox, with a first draft",
       "inbox_body": "Gmail and WhatsApp in one list, matched to the right property, with a reply drafted in your tone.",
       "pipeline_title": "Applicants, as households",
-      "pipeline_body": "Every form lands in a pipeline. Shortlist, then show the owner a clean side-by-side to approve."
+      "pipeline_body": "Every application lands in the pipeline. Shortlist, then show the landlord a side-by-side to approve.",
+      "viewings_property": "Riverside flat",
+      "viewings_length": "30 min",
+      "viewings_day": "Tue",
+      "viewings_slot_1": "17:00",
+      "viewings_slot_2": "17:45",
+      "viewings_slot_3": "18:30",
+      "viewings_link": "temas.app/b/riverside",
+      "inbox_1_name": "Olivia Marin",
+      "inbox_1_preview": "Could the bedroom get blackout curtains?",
+      "inbox_1_time": "2h",
+      "inbox_1_property": "Riverside flat",
+      "inbox_2_name": "James Adeyemi",
+      "inbox_2_preview": "Is the loft still available this week?",
+      "inbox_2_time": "5h",
+      "inbox_2_property": "Canal loft",
+      "inbox_draft_label": "Draft",
+      "inbox_draft": "I'll ask the landlord and come back to you.",
+      "pipeline_stage_1": "New",
+      "pipeline_stage_2": "Shortlisted",
+      "pipeline_house_1": "Marin",
+      "pipeline_house_1_initials": "M L",
+      "pipeline_house_1_meta": "2 people",
+      "pipeline_house_1_score": "82",
+      "pipeline_house_3": "Costa",
+      "pipeline_house_3_initials": "C",
+      "pipeline_house_3_meta": "1 person",
+      "pipeline_house_3_score": "61",
+      "pipeline_house_2": "Khan",
+      "pipeline_house_2_initials": "A",
+      "pipeline_house_2_meta": "1 person",
+      "pipeline_house_2_score": "74"
     },
     "calendar": {
       "eyebrow": "Viewing calendar",
       "title": "The time that works for everyone.",
-      "body": "Add your hours once and invite the current tenant to add theirs. Temas finds the overlap, fits the viewing length and a buffer, and publishes only those slots. The prospect picks one and confirms with an email code.",
+      "body": "Add your hours once and invite the current tenant to add theirs. Temas keeps the overlap, fits the viewing length and leaves a gap before the next one.",
       "you": "You",
       "tenant": "Current tenant",
-      "bookable": "Bookable",
+      "bookable": "Viewing times",
       "mon": "Mon",
       "tue": "Tue",
       "wed": "Wed",
@@ -217,51 +258,549 @@
       "fri": "Fri",
       "point_1": "Reminders by email or WhatsApp",
       "point_2": "Reschedule or cancel from either side",
-      "point_3": "Add the owner when they need to be there"
+      "point_3": "Add the landlord when they need to attend"
     },
     "ask": {
       "eyebrow": "Ask anything",
       "title": "Ask your portfolio, not a spreadsheet.",
-      "body": "Questions run across your listings, calendar, pipeline and your own inbox. Answers come back with the records linked, so one click opens the property.",
+      "body": "Questions run across your listings, viewings, applicants and your own inbox. The answer names the property, so one click opens it.",
       "question": "Which properties are missing a deposit?",
-      "row_viewings": "Viewings this month",
-      "row_applicants": "Applicants in the pipeline",
-      "row_deposits": "Properties missing a deposit",
-      "row_tasks": "Open tasks"
+      "answer": "Three listings have no deposit on file.",
+      "answer_1": "Riverside flat",
+      "answer_2": "Canal loft",
+      "answer_3": "High Street office",
+      "answer_status": "No deposit"
     },
     "tasks": {
       "eyebrow": "Tasks from your inbox",
       "title": "The promise you made at 6pm is still on the list.",
       "body": "Temas reads each thread for a specific thing you said you would do and suggests it as a task. Suggestions from your inbox are only yours. When a later message shows it is done, the task ticks itself off.",
-      "from": "Olivia, prospect",
+      "from": "Olivia, applicant",
       "message": "Could the bedroom get blackout curtains before we move in?",
       "you": "You",
-      "reply": "Good question. I’ll ask the owner and come back to you.",
+      "reply": "Good question. I’ll ask the landlord and come back to you.",
       "suggested": "Suggested from your inbox",
-      "task": "Ask the owner about blackout curtains for the bedroom, then update the prospect.",
+      "task": "Ask the landlord about blackout curtains for the bedroom, then update the applicant.",
       "property": "Riverside flat"
     },
     "contracts": {
       "eyebrow": "Contracts",
-      "title": "A first draft of the lease, from facts you already entered.",
-      "body": "Pick a template (mandate, offer, lease, deposit, handover or vacate). Parties, rent and listing facts fill themselves in. You edit, then export to DOCX or PDF.",
-      "note": "Drafts are a starting point, not legal advice."
+      "title": "A first draft of the tenancy agreement, from facts you already entered.",
+      "body": "Pick a template (mandate, offer, lease, deposit, handover or vacate). The parties, the rent and the listing facts fill themselves in. You edit, then export to DOCX or PDF.",
+      "note": "Drafts are a starting point, not legal advice.",
+      "doc_document": "Document",
+      "doc_edit": "Edit",
+      "doc_title": "Residential lease",
+      "doc_parties": "The landlord lets Riverside flat to the Marin household.",
+      "doc_rent_lead": "From",
+      "doc_rent": "rent is $2,400 a month.",
+      "doc_chip": "Start date",
+      "doc_export_docx": "Export DOCX",
+      "doc_export_pdf": "Export PDF"
+    },
+    "features": {
+      "problem": "The problem",
+      "how": "How Temas does it",
+      "outcome": "What you get",
+      "step": "Step {n}",
+      "viewings": {
+        "meta_title": "Viewings the tenant and the applicant can both do",
+        "meta_description": "Temas finds the hours you and the current tenant are both free and shares them as one booking link. The viewing is booked when an applicant picks a time and confirms.",
+        "eyebrow": "Viewings",
+        "title": "A viewing at a time you, the current tenant, and the applicant can all do.",
+        "lead": "Finding that hour is still a chain of messages. The tenant is home, the applicant can only come after work, and the gap before the next viewing gets forgotten.",
+        "problem_body": "You text the current tenant, then the applicant, and sometimes the owner. One of them replies tomorrow. The hour you offered is already gone.",
+        "how_title": "From the tenant's evenings to a booked viewing, in seven steps.",
+        "outcome_1": "A time the tenant, the applicant, and you can all do.",
+        "outcome_2": "No messages back and forth to find it.",
+        "outcome_3": "Everyone told, with a reminder before.",
+        "steps": {
+          "s1": {
+            "title": "Send the current tenant a link.",
+            "body": "Open the viewing calendar on Riverside flat and invite Daniel, the current tenant. He gets a magic link by email or WhatsApp. No password, and he sees only this property."
+          },
+          "s2": {
+            "title": "The tenant adds the hours they are home.",
+            "body": "On his own page, Daniel picks days and times in three short steps: Tuesday and Thursday, 17:00 to 20:00. If his week changes, he edits it and the times follow."
+          },
+          "s3": {
+            "title": "You add yours once.",
+            "body": "Your hours repeat every week: weekdays, 10:00 to 19:00. You also set how long a viewing takes and the gap you need before the next one."
+          },
+          "s4": {
+            "title": "Temas keeps only the overlap.",
+            "body": "Where your hours and Daniel's meet, Temas fits 30-minute viewings with a 15-minute gap after each. Tuesday and Thursday get 17:00, 17:45, and 18:30. When the owner has to be there, their hours become a third set."
+          },
+          "s5": {
+            "title": "Share one booking link with applicants.",
+            "body": "Send the link by email or WhatsApp. Applicants see a month of open days, and on each day only the times that already work for you and the tenant."
+          },
+          "s6": {
+            "title": "The applicant picks a time and confirms.",
+            "body": "Olivia picks Tuesday at 17:45, adds her name and email, and types the six-digit code we email her. Nothing is booked until she does."
+          },
+          "s7": {
+            "title": "Booked, and everyone knows.",
+            "body": "The viewing lands on the workspace calendar. Olivia, Daniel, the assigned agent, and the workspace owners get a confirmation, then a reminder two hours before. Either side can reschedule or cancel."
+          }
+        },
+        "screen": {
+          "tenant_name": "Daniel Park",
+          "tenant_role": "Current tenant",
+          "invite_message": "Hi Daniel, could you add the evenings you are home? A few applicants would like to see the flat.",
+          "invite_card_title": "Add your hours",
+          "invite_card_body": "Riverside flat, viewing calendar",
+          "invite_card_link": "temas.app/t/riverside",
+          "invite_time": "Read 10:12",
+          "wizard_step": "Step 2 of 3",
+          "wizard_title": "When are you home for viewings?",
+          "wizard_from_label": "From",
+          "wizard_from": "17:00",
+          "wizard_to_label": "To",
+          "wizard_to": "20:00",
+          "wizard_next": "Continue",
+          "d1": "Mon",
+          "d2": "Tue",
+          "d3": "Wed",
+          "d4": "Thu",
+          "d5": "Fri",
+          "d6": "Sat",
+          "d7": "Sun",
+          "d1_short": "Mo",
+          "d2_short": "Tu",
+          "d3_short": "We",
+          "d4_short": "Th",
+          "d5_short": "Fr",
+          "d6_short": "Sa",
+          "d7_short": "Su",
+          "hours_title": "Your hours",
+          "hours_repeat": "Every week",
+          "hours_range": "10:00 – 19:00",
+          "hours_off": "Unavailable",
+          "hours_length_label": "Viewing length",
+          "hours_length": "30 min",
+          "hours_buffer_label": "Gap after",
+          "hours_buffer": "15 min",
+          "booking_agency": "Harbour Lettings",
+          "booking_title": "Viewing: Riverside flat",
+          "booking_length": "30 min",
+          "booking_place": "Riverside flat, 2nd floor",
+          "booking_month": "October 2026",
+          "booking_day": "Tue 6",
+          "time_1": "17:00",
+          "time_2": "17:45",
+          "time_3": "18:30",
+          "otp_slot": "Tue 6 Oct, 17:45",
+          "otp_name_label": "Name",
+          "otp_name": "Olivia Marin",
+          "otp_email_label": "Email",
+          "otp_email": "olivia.marin@mail.com",
+          "otp_hint": "Enter the 6-digit code we sent to your email.",
+          "otp_digits": "4829",
+          "otp_confirm": "Confirm viewing",
+          "booked_title": "Viewing: Riverside flat",
+          "booked_when": "Tue 6 Oct, 17:45 – 18:15",
+          "booked_status": "Booked",
+          "booked_notified": "Confirmation sent to",
+          "p1_name": "Olivia Marin",
+          "p1_role": "Applicant",
+          "p1_channel": "Email",
+          "p2_name": "Daniel Park",
+          "p2_role": "Current tenant",
+          "p2_channel": "WhatsApp",
+          "p3_name": "Sofia Kaya",
+          "p3_role": "Assigned agent",
+          "p3_channel": "Email",
+          "p4_name": "Hana Lee",
+          "p4_role": "Workspace owner",
+          "p4_channel": "Email",
+          "booked_reminder": "Reminder to everyone at 15:45",
+          "booked_reschedule": "Reschedule",
+          "booked_cancel": "Cancel"
+        }
+      },
+      "inbox": {
+        "meta_title": "Gmail and WhatsApp in one inbox, matched to the listing",
+        "meta_description": "Every message lands on the right listing in one private list. AI drafts the reply in your tone, adds the booking link for a viewing request, and waits for you to send it.",
+        "eyebrow": "Inbox",
+        "title": "One reply, from the thread and the listing, still yours to send.",
+        "lead": "Gmail and WhatsApp do not know which property the question is about. The same question gets answered twice, and a reply can go out before you have checked the listing.",
+        "problem_body": "The applicant writes on WhatsApp. The owner writes by email. You are the only person who holds both, and the answer has to match that flat.",
+        "how_title": "From a WhatsApp question to a reply on the right listing.",
+        "outcome_1": "Email and WhatsApp in one list.",
+        "outcome_2": "A reply drafted from the thread and the listing.",
+        "outcome_3": "Your mailbox stays yours.",
+        "steps": {
+          "s1": {
+            "title": "Connect your own Gmail and WhatsApp.",
+            "body": "In Settings, connect your Google account once for mail and calendar, then pair WhatsApp by scanning a code. The connection belongs to you, not to the office."
+          },
+          "s2": {
+            "title": "Every message lands in one list, on the right listing.",
+            "body": "Emails and WhatsApp messages sit together. Temas matches each one to the person and the property by their phone or email, so the listing is already on the row."
+          },
+          "s3": {
+            "title": "Open the thread and see both sides.",
+            "body": "Their messages and your replies, including ones you sent from Gmail, sit in one conversation. Olivia wants blackout curtains and asks to see the flat this week."
+          },
+          "s4": {
+            "title": "Draft with AI, in your tone.",
+            "body": "One click writes a reply from the last messages, the listing, and your signature. Pick formal, friendly, or short. The draft stays a draft until you edit it or send it."
+          },
+          "s5": {
+            "title": "A viewing request brings the booking link.",
+            "body": "When the message asks to see the flat, the draft adds the listing's booking link, so Olivia can pick a time you and the tenant already have free."
+          },
+          "s6": {
+            "title": "You send it, from your own account.",
+            "body": "The reply goes out from your WhatsApp and stays on Riverside flat. Only you see this mailbox. Not a colleague, and not the agency owner."
+          }
+        },
+        "screen": {
+          "connect_title": "Integrations",
+          "google": "Google",
+          "google_detail": "Gmail and Calendar, sofia@harbourlettings.com",
+          "connected": "Connected",
+          "whatsapp": "WhatsApp",
+          "pair_1": "Open WhatsApp on your phone",
+          "pair_2": "Go to Linked devices",
+          "pair_3": "Scan this code",
+          "inbox_title": "Inbox",
+          "search": "Search by name, email, or subject",
+          "r1_name": "Olivia Marin",
+          "r1_time": "2h",
+          "r1_preview": "Could the bedroom get blackout curtains?",
+          "r1_property": "Riverside flat",
+          "r2_name": "James Adeyemi",
+          "r2_time": "5h",
+          "r2_preview": "Is the loft still available this week?",
+          "r2_property": "Canal loft",
+          "r3_name": "Helen Brooks",
+          "r3_time": "Yesterday",
+          "r3_preview": "Fine by me, as long as the deposit is in first.",
+          "r3_property": "Riverside flat",
+          "r4_name": "Sam Costa",
+          "r4_time": "Mon",
+          "r4_preview": "Is parking included with the loft?",
+          "r4_property": "Canal loft",
+          "thread_1": "Hi, we loved the photos of the flat.",
+          "thread_2": "Thanks Olivia, happy to show you round.",
+          "thread_day": "Today",
+          "thread_3": "Could the bedroom get blackout curtains? And can we see it this week?",
+          "reply_placeholder": "Write a reply",
+          "draft_button": "Draft with AI",
+          "draft_label": "Draft with AI",
+          "tone_formal": "Formal",
+          "tone_friendly": "Friendly",
+          "tone_short": "Short",
+          "intent": "Viewing request",
+          "draft": "Hi Olivia, good question. I'll ask the landlord about blackout curtains and come back to you.",
+          "draft_link_lead": "You can pick a viewing time here:",
+          "link_title": "Book a viewing: Riverside flat",
+          "link_detail": "Tue and Thu evenings",
+          "send": "Send",
+          "sent_meta": "Sent from WhatsApp, 10:24",
+          "private": "Only you can see this conversation."
+        }
+      },
+      "tasks": {
+        "meta_title": "Tasks from the promises in your inbox",
+        "meta_description": "Temas turns a promise in your own inbox into a task on the listing, keeps it private until you accept it, and ticks it off when the thread says it is done.",
+        "eyebrow": "Tasks",
+        "title": "The thing you promised in the thread is a task on the listing.",
+        "lead": "At 6pm you tell an applicant you will ask the owner. By the next morning that promise is only in the message.",
+        "problem_body": "Follow-ups live in your head, or in a note that is not on the property. The thread moves on, and the question is still open.",
+        "how_title": "From a promise in a message to a task that closes itself.",
+        "outcome_1": "The promises you make in messages, on the listing.",
+        "outcome_2": "Private until you accept them.",
+        "outcome_3": "Finished work closes on its own.",
+        "steps": {
+          "s1": {
+            "title": "You make a promise in the thread.",
+            "body": "Olivia asks about blackout curtains. You reply that you will ask the landlord. Until now, that promise lived only in the message."
+          },
+          "s2": {
+            "title": "Temas suggests it as a task, for you only.",
+            "body": "After your reply, Temas reads the thread for a specific thing you still have to do. The suggestion waits under Suggested. No colleague sees it, or the thread it came from."
+          },
+          "s3": {
+            "title": "Waiting on someone else is not a task.",
+            "body": "When James writes that he will send his payslips tomorrow, the next step is his. Temas does not add a follow-up to your list."
+          },
+          "s4": {
+            "title": "Accept it, and it lives on the listing.",
+            "body": "Accepted, it becomes an open task under Riverside flat, assigned to you, with a priority. The team can see it now. Only you get the link back to the conversation."
+          },
+          "s5": {
+            "title": "When the thread says it is done, it ticks itself.",
+            "body": "The curtains go up and Olivia writes to thank you. Temas marks the task done, even if you never ticked it."
+          }
+        },
+        "screen": {
+          "olivia": "Olivia Marin",
+          "riverside": "Riverside flat",
+          "olivia_ask": "Could the bedroom get blackout curtains before we move in?",
+          "you_promise": "Good question. I’ll ask the landlord and come back to you.",
+          "sent_at": "Sent 18:04",
+          "tasks_title": "Tasks",
+          "tab_all": "All",
+          "tab_assigned": "Assigned",
+          "tab_suggested": "Suggested",
+          "suggested_from": "Suggested from your inbox",
+          "task": "Ask the landlord about blackout curtains for the bedroom, then update Olivia.",
+          "source": "From your chat with Olivia Marin",
+          "accept": "Accept",
+          "dismiss": "Dismiss",
+          "only_you": "Only you can see this suggestion.",
+          "james": "James Adeyemi",
+          "canal": "Canal loft",
+          "you_ask_docs": "Could you send your last three payslips?",
+          "james_reply": "Sure, I'll send them tomorrow morning.",
+          "no_task": "No task. The next step is James's.",
+          "you_initials": "SK",
+          "visible_now": "Visible to the team, assigned to you.",
+          "completed": "Completed",
+          "olivia_done": "The curtains are up, thank you so much!",
+          "done_by_thread": "Done from the thread"
+        }
+      },
+      "ask": {
+        "meta_title": "AI Chat that answers and acts",
+        "meta_description": "Ask across your listings, viewings, applicants, and your own inbox. The answer names the record, and once you confirm, it books, sends, and updates for you.",
+        "eyebrow": "AI Chat",
+        "title": "Ask about any listing, then let it do the next step.",
+        "lead": "Which properties are missing a deposit still means the spreadsheet, the calendar, and three threads.",
+        "problem_body": "The facts are in the workspace, but finding them means opening each listing. Another agent's mail is not yours to search, and a guess is worse than no answer.",
+        "how_title": "Ask the way you would ask a colleague, then hand it the work.",
+        "outcome_1": "Answers from your own listings, calendar, and inbox.",
+        "outcome_2": "Every record named, one click away.",
+        "outcome_3": "Viewings booked, messages sent, and records updated when you confirm.",
+        "steps": {
+          "s1": {
+            "title": "Start from Home.",
+            "body": "Home opens on one question box, with today's viewings and a few suggestions to start from."
+          },
+          "s2": {
+            "title": "Ask across the portfolio.",
+            "body": "Which properties are missing a deposit? The answer names the three listings, each as a chip that opens the record."
+          },
+          "s3": {
+            "title": "Ask about the calendar.",
+            "body": "How many viewings are booked in October? Temas counts them from the workspace calendar and says which listings they are for."
+          },
+          "s4": {
+            "title": "Ask about your own conversations.",
+            "body": "What did James say about the Canal loft? Temas reads your inbox, never a colleague's, and links the conversation it used."
+          },
+          "s5": {
+            "title": "A name opens the record.",
+            "body": "Click Riverside flat and the listing opens with its people, viewings, and files. The missing deposit is right there to fill in."
+          },
+          "s6": {
+            "title": "It can act, too.",
+            "body": "Tell it to book Olivia for Tuesday at 17:45. It lays out what it will do: book the viewing, send her the confirmation, add a task, and fill in the deposit. Nothing runs until you confirm."
+          },
+          "s7": {
+            "title": "Confirm, and it is done.",
+            "body": "One click and each step runs from your account. Every change links back to its record, and the chat is saved in the sidebar under a short title."
+          }
+        },
+        "screen": {
+          "greeting": "Hi Sofia, ask anything",
+          "placeholder": "Ask anything...",
+          "suggestions": "Suggestions",
+          "chip_1": "Viewings this month",
+          "chip_2": "Missing deposits",
+          "chip_3": "Unanswered messages",
+          "today": "Today",
+          "today_time": "17:45",
+          "today_event": "Viewing: Riverside flat",
+          "riverside": "Riverside flat",
+          "canal": "Canal loft",
+          "high_street": "High Street office",
+          "and": " and ",
+          "q_deposit": "Which properties are missing a deposit?",
+          "a_deposit": "Three listings have no deposit on file: ",
+          "q_viewings": "How many viewings are booked in October?",
+          "a_viewings_1": "Six viewings are booked in October: four at ",
+          "a_viewings_2": " and two at ",
+          "a_viewings_source": "From the workspace calendar",
+          "q_inbox": "What did James say about the Canal loft?",
+          "a_inbox": "James asked whether the loft is still available this week. He said he will send his last three payslips tomorrow morning.",
+          "source": "Source",
+          "james_thread": "James Adeyemi",
+          "tab_overview": "Overview",
+          "tab_people": "People",
+          "tab_viewings": "Viewings",
+          "tab_files": "Files",
+          "rent_label": "Rent",
+          "rent": "$2,400 / month",
+          "deposit_label": "Deposit",
+          "deposit_missing": "Not on file",
+          "chats": "Chats",
+          "chat_1": "Booking for Olivia",
+          "chat_2": "October viewings",
+          "chat_3": "Missing deposits",
+          "q_act": "Book Olivia for Tuesday at 17:45 and let her know. The deposit is $4,800. Remind me to ask the landlord about the curtains.",
+          "act_intro": "Here is what I will do",
+          "act_done_intro": "Done",
+          "act_book": "Book a viewing",
+          "act_book_detail": "Riverside flat, Tue 6 Oct, 17:45",
+          "act_send": "Send Olivia the confirmation",
+          "act_send_detail": "WhatsApp, from your account",
+          "act_task": "Add a task for you",
+          "act_task_detail": "Ask the landlord about blackout curtains",
+          "act_field": "Fill in the deposit",
+          "act_field_detail": "Riverside flat: $4,800",
+          "act_confirm": "Confirm",
+          "act_edit": "Edit",
+          "act_status_done": "Done",
+          "act_done_note": "Four changes made. Each one links to its record."
+        }
+      },
+      "contracts": {
+        "meta_title": "Contracts drafted from the listing",
+        "meta_description": "Pick a template and Temas fills in the parties, address, and rent from the listing, flags what is missing, and exports DOCX or PDF for a lawyer's review. It is not legal advice.",
+        "eyebrow": "Contracts",
+        "title": "A first draft of the agreement, filled from the listing you already entered.",
+        "lead": "The lease starts as last year's file. The rent, the parties, and the address are copied across by hand.",
+        "problem_body": "Those facts are already on the property. Retyping them is where the draft goes wrong, and a blank page is not where a lawyer's review should start.",
+        "how_title": "From the listing to a file a lawyer can review.",
+        "outcome_1": "A first draft from facts you already entered.",
+        "outcome_2": "Missing details flagged, not guessed.",
+        "outcome_3": "A file ready for a lawyer's review.",
+        "steps": {
+          "s1": {
+            "title": "Pick a template.",
+            "body": "From Riverside flat, choose a listing mandate, a reservation offer, a rental agreement, a deposit receipt, a handover protocol, or an eviction undertaking. Your office can edit each one in Settings."
+          },
+          "s2": {
+            "title": "The facts fill in from the listing.",
+            "body": "The landlord, the Marin household, the address, and the rent come from the property. What is still missing is flagged before anything is written."
+          },
+          "s3": {
+            "title": "Add the terms.",
+            "body": "Rent, deposit, start and end dates, the yearly increase, and any special clauses go into a short form. Leave a field empty and the draft marks it."
+          },
+          "s4": {
+            "title": "Edit the draft like a document.",
+            "body": "The draft opens as a document. Edit shows the text underneath. The start date is still missing, so it stays a quiet chip until you fill it."
+          },
+          "s5": {
+            "title": "Confirm it is not legal advice, then export.",
+            "body": "DOCX and PDF export stay off until you tick that the draft is not legal advice. Have a lawyer review it before anyone signs."
+          },
+          "s6": {
+            "title": "Saved with the listing's files.",
+            "body": "The export is saved to the Files tab on Riverside flat. Signing happens outside Temas in this version."
+          }
+        },
+        "screen": {
+          "riverside": "Riverside flat",
+          "create_title": "Create contract",
+          "tpl_1": "Listing mandate",
+          "tpl_2": "Reservation offer",
+          "tpl_3": "Residential rental agreement",
+          "tpl_4": "Deposit receipt",
+          "tpl_5": "Handover protocol",
+          "tpl_6": "Eviction undertaking",
+          "facts_title": "From the listing",
+          "fact_owner_label": "Landlord",
+          "fact_owner": "Helen Brooks",
+          "fact_tenant_label": "Tenant",
+          "fact_tenant": "Marin household, 2 people",
+          "fact_address_label": "Property",
+          "fact_address": "Riverside flat, 2nd floor",
+          "fact_rent_label": "Rent",
+          "fact_rent": "$2,400 / month",
+          "fact_deposit_label": "Deposit",
+          "fact_deposit": "Missing on the listing",
+          "fact_start_label": "Start date",
+          "fact_start": "Missing",
+          "terms_title": "Terms",
+          "term_rent_label": "Rent",
+          "term_rent": "$2,400",
+          "term_deposit_label": "Deposit",
+          "term_deposit": "$4,800",
+          "term_start_label": "Start date",
+          "term_start": "Pick a date",
+          "term_end_label": "End date",
+          "term_end": "Pick a date",
+          "term_increase_label": "Yearly increase",
+          "term_increase": "3%",
+          "term_clauses_label": "Special clauses",
+          "term_clauses": "Blackout curtains fitted in the bedroom before move-in.",
+          "generate": "Create draft",
+          "doc_document": "Document",
+          "doc_edit": "Edit",
+          "doc_h_parties": "1. Parties",
+          "doc_parties": "Helen Brooks lets Riverside flat to the Marin household.",
+          "doc_h_rent": "2. Rent and deposit",
+          "doc_rent_lead": "From",
+          "doc_rent": "rent is $2,400 a month, with a deposit of $4,800.",
+          "doc_chip": "Start date",
+          "doc_clause": "Blackout curtains are fitted in the bedroom before move-in.",
+          "disclaimer_title": "Before you export",
+          "disclaimer_body": "This draft is not legal advice. Have it reviewed by a lawyer before use.",
+          "disclaimer_check": "I understand this is not legal advice.",
+          "export_docx": "Export DOCX",
+          "export_pdf": "Export PDF",
+          "tab_overview": "Overview",
+          "tab_people": "People",
+          "tab_viewings": "Viewings",
+          "tab_files": "Files",
+          "file_docx": "Residential rental agreement, Marin.docx",
+          "file_pdf": "Residential rental agreement, Marin.pdf",
+          "file_meta": "Just now, by Sofia Kaya",
+          "no_esign": "Signing happens outside Temas in this version."
+        }
+      }
     },
     "privacy": {
       "eyebrow": "Privacy",
       "title": "Your inbox stays yours.",
       "body": "Temas is built for small teams that share a portfolio, not their mail.",
       "private_title": "Private by default",
-      "private_body": "Your connected Gmail and WhatsApp are visible only to you. Not a colleague, not the workspace owner.",
+      "private_body": "Your connected Gmail and WhatsApp are visible only to you. Not a colleague, and not the agency owner.",
       "readonly_title": "AI suggests, you decide",
       "readonly_body": "Temas drafts and answers. It never books, cancels or sends a message on its own.",
       "scoped_title": "Links that open one door",
-      "scoped_body": "Tenants and owners sign in with a magic link and see only their own property.",
+      "scoped_body": "Landlords and tenants sign in with a magic link and see only their own property.",
       "eu_title": "Hosted in the EU",
       "eu_body": "Your workspace data lives in an EU region."
     },
+    "pricing": {
+      "meta_title": "Pricing: Solo and Team plans",
+      "meta_description": "Solo for one agent, Team priced per agent for up to 50 agents. Monthly or yearly, per workspace. Signing up does not charge you.",
+      "faq_eyebrow": "Questions",
+      "faq_title": "What you pay for, and when.",
+      "q1": {
+        "question": "Is the plan per person or per office?",
+        "answer": "Per workspace. The same login can sit on a Team workspace at the office and a Solo workspace of its own, each on its own plan."
+      },
+      "q2": {
+        "question": "Do I pay when I sign up?",
+        "answer": "No. Signing up does not charge you. You choose a plan and pay later, from Settings > Billing."
+      },
+      "q3": {
+        "question": "How does Team pricing work?",
+        "answer": "Team is priced per agent, for up to 50 agents. You pay for the seats that are in use."
+      },
+      "q4": {
+        "question": "What counts as an AI message?",
+        "answer": "A question in AI Chat uses 1. A reply draft uses 3, an applicant summary 2, and a contract draft 8. Chat titles, task suggestions, and reminders use none."
+      },
+      "q5": {
+        "question": "What changes on the yearly plan?",
+        "answer": "The monthly price is lower and you pay once a year. Solo gets more listings and AI messages. Team gets unlimited listings and more AI messages."
+      },
+      "q6": {
+        "question": "What happens if I cancel?",
+        "answer": "The workspace goes back to the Solo monthly plan."
+      }
+    },
     "plans": {
-      "eyebrow": "Plans",
+      "eyebrow": "Pricing",
       "title": "Start on your own. Bring the team later.",
       "note": "Each office chooses its own plan. Yearly is paid once a year.",
       "free_name": "Solo",
@@ -275,7 +814,7 @@
       "price_seat": "{amount} / agent / month",
       "billed_yearly": "Billed as {amount} a year",
       "billed_yearly_seat": "Billed as {amount} a year per agent",
-      "seats": "{count, plural, one {# seat} other {Up to # seats}}",
+      "seats": "{count, plural, one {# agent} other {Up to # agents}}",
       "listings": "Up to {count} listings",
       "listings_per_agent": "{count} listings per agent",
       "listings_unlimited": "Unlimited listings",
@@ -285,23 +824,164 @@
     },
     "closing": {
       "title": "Spend the day with people, not tabs.",
-      "body": "Set up your first property in a few minutes. Invite the team when you are ready.",
+      "body": "Set up your first listing in a few minutes.",
+      "invite": "Invite the office when you are ready.",
       "cta": "Get started",
       "secondary": "Sign in"
     },
     "footer": {
-      "tagline": "The letting workspace for independent agents and small rental agencies.",
+      "tagline": "The letting workspace for independent agents and small real estate agencies.",
       "product": "Product",
       "viewings": "Viewings",
       "inbox": "Inbox",
-      "ask": "Ask anything",
+      "ask": "AI Chat",
       "tasks": "Tasks",
       "contracts": "Contracts",
       "company": "Temas",
-      "privacy": "Privacy",
-      "plans": "Plans",
+      "privacy": "Privacy policy",
+      "terms": "Terms of service",
+      "pricing": "Pricing",
+      "sign_up": "Sign up",
       "sign_in": "Sign in",
-      "rights": "© {year} Temas"
+      "rights": "© {year} ProducterHQ OÜ"
+    },
+    "legal": {
+      "updated": "Last updated 29 September 2026.",
+      "contact": "Write to <mail>{email}</mail>.",
+      "privacy": {
+        "meta_title": "Privacy policy",
+        "meta_description": "How ProducterHQ OÜ handles personal data in Temas.",
+        "title": "Privacy policy",
+        "intro": "Temas is a letting workspace for real estate agents. ProducterHQ OÜ, an Estonian private limited company, operates it. This policy says what personal data the product stores and who can see it.",
+        "sections": [
+          {
+            "title": "Who decides",
+            "paragraphs": [
+              "When an agency uses Temas, that workspace decides why listing, people, message and file data is kept. ProducterHQ OÜ processes that data only to provide the product.",
+              "ProducterHQ OÜ decides for itself about accounts, security logs and, once a payment starts, billing records."
+            ]
+          },
+          {
+            "title": "What is stored",
+            "paragraphs": [
+              "An account is an email address and a profile, signed in with a magic link. A workspace holds its name, official company name, members, roles and plan.",
+              "A listing can hold the property facts, the owner, the current tenant, applicants, files, inventory, tasks and contract drafts.",
+              "Gmail and WhatsApp that an agent connects are stored for that agent only. A colleague and the agency owner do not see those threads. The same Google connection can show that agent's own calendars beside the workspace viewings. Those events stay private to them.",
+              "Ask questions, drafts and the short summaries used to search a workspace are stored with that workspace. A contract draft is stored on the listing until the agency deletes it."
+            ]
+          },
+          {
+            "title": "Why",
+            "paragraphs": [
+              "The data is used to run the workspace: find a viewing time, keep applicants moving, draft a reply or a contract, and remind the people the agent chose to notify.",
+              "A reply stays a draft until the agent sends it. A viewing is booked only when someone picks a time the agent has offered. Ask answers from records the signed-in person is allowed to see, and it does not book, cancel or send on its own."
+            ]
+          },
+          {
+            "title": "People who are not agents",
+            "paragraphs": [
+              "An owner or a current tenant opens a magic link and sees only the property they were invited to. A prospective tenant has no account. A booking or form link shows that page, and email confirmation is used where the page asks for it.",
+              "Those links are not a view of the rest of the agency."
+            ]
+          },
+          {
+            "title": "Where it is kept",
+            "paragraphs": [
+              "The workspace database and files are hosted in the EU (eu-central). The application is hosted on Vercel.",
+              "Connecting Google or WhatsApp, sending email, or using Ask, a draft or a contract sends the data that feature needs to that provider. Those providers can process it outside the EU. The providers are Google (Gmail and Calendar), Meta (WhatsApp), Resend (email), Anthropic and OpenAI (AI), Inngest (background jobs), Supabase (database, sign-in and files) and, when a payment is taken, Stripe."
+            ]
+          },
+          {
+            "title": "How long",
+            "paragraphs": [
+              "Workspace data stays while the workspace is open. Closing an account or asking us to delete a workspace removes that data, except records we have to keep for the law or an unpaid invoice.",
+              "Disconnecting Gmail or WhatsApp stops new mail and messages from arriving. Copies already stored for that inbox are removed when the account or the connection is deleted."
+            ]
+          },
+          {
+            "title": "Your rights",
+            "paragraphs": [
+              "You can ask to see, correct, delete, limit or receive a copy of personal data ProducterHQ OÜ holds about you, and you can object to a use that is based on a legitimate interest.",
+              "If the data was entered by an agency, ask that agency first. They decide about their listings and their clients. You can also complain to the Estonian Data Protection Inspectorate (Andmekaitse Inspektsioon), or to the authority where you live."
+            ]
+          },
+          {
+            "title": "Cookies",
+            "paragraphs": [
+              "Temas uses cookies to keep you signed in, to remember the open workspace, and to remember the calendar view you last chose. It does not use advertising cookies."
+            ]
+          }
+        ]
+      },
+      "terms": {
+        "meta_title": "Terms of service",
+        "meta_description": "The terms for using Temas, operated by ProducterHQ OÜ.",
+        "title": "Terms of service",
+        "intro": "These terms are between you and ProducterHQ OÜ, an Estonian private limited company, for the use of Temas. If you use Temas for an agency, you confirm that you can accept them for that agency.",
+        "sections": [
+          {
+            "title": "The service",
+            "paragraphs": [
+              "Temas is a letting workspace. It keeps listings, finds viewing times from the hours you and the current tenant have given, drafts replies, tracks applicants and tasks, and drafts contracts from facts already on the listing.",
+              "A feature can change or be withdrawn. Signing a document inside Temas, collecting rent, and publishing to listing portals are not part of the service."
+            ]
+          },
+          {
+            "title": "Accounts",
+            "paragraphs": [
+              "You sign in with a magic link to your email. One login can belong to more than one workspace. Each workspace has its own role and plan.",
+              "The workspace owner manages members, the official company name and billing. An agent works the portfolio and their own inbox. They do not change billing or member roles."
+            ]
+          },
+          {
+            "title": "Your content",
+            "paragraphs": [
+              "You keep the listings, files and messages you put in Temas. You give ProducterHQ OÜ permission to host and process them so the product can run.",
+              "You are responsible for having a lawful reason to store an owner's, a tenant's or an applicant's personal data, and for what you send them."
+            ]
+          },
+          {
+            "title": "Connected mail and WhatsApp",
+            "paragraphs": [
+              "Connecting Google lets Temas read and send from that mailbox, and read and update that agent's calendars, only as the product describes. Connecting WhatsApp does the same for that number.",
+              "Those threads stay visible only to the person who connected them. You can disconnect either one in Settings."
+            ]
+          },
+          {
+            "title": "AI and contract drafts",
+            "paragraphs": [
+              "Ask, inbox drafts and task suggestions are drafts for you to check. Temas does not send a message, book a viewing or cancel one unless a person does.",
+              "A contract draft is a starting point filled from the listing. It is not legal advice and it is not a finished tenancy agreement. You review it, and a lawyer should review it, before anyone signs. Country rules on deposits, notice and registration are yours to add."
+            ]
+          },
+          {
+            "title": "Plans and payment",
+            "paragraphs": [
+              "Prices are in US dollars and are the ones shown on the Plans section and in billing. Solo is one price for one agent. Team is a price per agent. Yearly is paid once a year at the lower monthly rate.",
+              "Creating an account does not take a payment. A charge starts only when you complete checkout. Until payment is switched on, choosing a plan only saves that choice. Each workspace is billed on its own."
+            ]
+          },
+          {
+            "title": "Acceptable use",
+            "paragraphs": [
+              "Do not use Temas to break the law, to send mail or WhatsApp the recipient did not agree to receive, to upload something you have no right to store, or to try to read another person's inbox."
+            ]
+          },
+          {
+            "title": "Stopping",
+            "paragraphs": [
+              "You can stop using Temas at any time. ProducterHQ OÜ can suspend a workspace that breaks these terms, or that does not pay after checkout has started.",
+              "Except where the law does not allow it, liability for the service in a year is limited to the fees that workspace paid for Temas in the previous twelve months. ProducterHQ OÜ is not liable for a decision you make from a draft, or for a contract you export."
+            ]
+          },
+          {
+            "title": "Law",
+            "paragraphs": [
+              "These terms use the law of Estonia. The courts of Estonia hear disputes, without taking away a right that a mandatory law in your country gives a business or a person."
+            ]
+          }
+        ]
+      }
     }
   },
   "home": {
@@ -348,6 +1028,248 @@
       "refresh": "Refresh",
       "dismiss": "Dismiss",
       "scan_failed": "Could not scan reminders."
+    },
+    "ask": {
+      "thought": {
+        "label": "Thought"
+      },
+      "activity": {
+        "thinking": "Thinking",
+        "searching": "Searching",
+        "analyzing": "Analyzing the results",
+        "working": "Preparing the change",
+        "tools": {
+          "searchProperties": "Searching properties",
+          "getPropertyDetail": "Reading the property",
+          "listViewings": "Checking viewings",
+          "listApplications": "Checking applicants",
+          "searchConversations": "Searching your inbox",
+          "getReminders": "Checking reminders",
+          "listTasks": "Checking tasks",
+          "listMembers": "Looking up your team",
+          "listOpenSlots": "Finding open times",
+          "listPipelineStages": "Reading the pipeline",
+          "listContractTemplates": "Reading contract templates",
+          "listCalendarEvents": "Checking your calendar",
+          "previewListingImport": "Reading the listing",
+          "draftReply": "Drafting a reply"
+        }
+      },
+      "actions": {
+        "confirm": "Confirm",
+        "cancel": "Cancel",
+        "purpose_pending": "Nothing changes until you confirm.",
+        "purpose_running": "Temas is doing this now.",
+        "purpose_done": "This change is saved.",
+        "updated": "Updated {fields}.",
+        "updated_on": "Updated {fields} on {name}.",
+        "open_named": "Open {name}",
+        "show_more": "Show all",
+        "show_less": "Show less",
+        "state_pending": "Needs your confirmation",
+        "state_running": "Working",
+        "state_done": "Done",
+        "state_cancelled": "Cancelled",
+        "state_failed": "Not done",
+        "state_expired": "Expired",
+        "expired_hint": "This confirmation is no longer active. Ask again to run it.",
+        "cancelled_hint": "Nothing was changed.",
+        "open": "Open",
+        "copy_link": "Copy link",
+        "copied": "Link copied",
+        "photos": "{count, plural, one {# photo} other {# photos}}",
+        "photos_skipped": "{count, plural, one {# photo could not be imported} other {# photos could not be imported}}",
+        "yes": "Yes",
+        "no": "No",
+        "empty": "Empty",
+        "tools": {
+          "previewListingImport": "Read listing",
+          "createProperty": "Create property",
+          "updatePropertyFields": "Update property",
+          "changePropertyStatus": "Change status",
+          "deleteProperty": "Delete property",
+          "saveInventoryItem": "Save inventory item",
+          "deleteInventoryItem": "Delete inventory item",
+          "addPropertyPerson": "Add person",
+          "removePropertyPerson": "Remove person",
+          "createPersonInviteLink": "Create invite link",
+          "setCoverPhoto": "Set cover photo",
+          "removePhoto": "Remove photo",
+          "setDocumentShared": "Change document sharing",
+          "deleteDocument": "Delete document",
+          "attachChatFiles": "Attach files",
+          "createTask": "Create task",
+          "updateTask": "Update task",
+          "setTaskDone": "Update task",
+          "acceptTask": "Accept suggestion",
+          "dismissTask": "Dismiss suggestion",
+          "moveApplication": "Move applicant",
+          "addPipelineStage": "Add stage",
+          "renamePipelineStage": "Rename stage",
+          "setFormPublished": "Application form",
+          "rotateOwnerLink": "New owner link",
+          "createViewingCalendar": "Create viewing calendar",
+          "updateCalendarSettings": "Viewing settings",
+          "setAgentAvailability": "Weekly availability",
+          "bookViewing": "Book viewing",
+          "cancelViewing": "Cancel viewing",
+          "rescheduleViewing": "Reschedule viewing",
+          "sendReply": "Send reply",
+          "sendEmail": "Send email",
+          "manageMailbox": "Update conversation",
+          "draftReply": "Draft reply",
+          "linkConversationToProperty": "Link conversation",
+          "createContract": "Draft contract",
+          "saveContractBody": "Save contract text",
+          "acknowledgeContractDisclaimer": "Contract disclaimer",
+          "exportContract": "Export contract",
+          "setGoogleEventColor": "Event colour",
+          "openInProduct": "Open in Temas",
+          "updateProfile": "Update profile",
+          "updateAiPreferences": "AI preferences",
+          "updateNotificationPreference": "Notification",
+          "updateWorkspace": "Workspace settings",
+          "selectWorkspacePlan": "Change plan",
+          "inviteMember": "Invite member",
+          "revokeInvite": "Revoke invite",
+          "updateMemberRole": "Change role",
+          "removeMember": "Remove member",
+          "saveContractTemplate": "Save template",
+          "restoreContractTemplate": "Restore template",
+          "selectSupportPlan": "Support plan",
+          "sendPriorityNote": "Message support",
+          "disconnectIntegration": "Disconnect integration"
+        },
+        "fields": {
+          "title": "Title",
+          "name": "Name",
+          "fullName": "Name",
+          "email": "Email",
+          "phone": "Phone",
+          "role": "Role",
+          "relation": "Role",
+          "to": "To",
+          "toName": "Recipient",
+          "subject": "Subject",
+          "body": "Message",
+          "bodyMd": "Text",
+          "note": "Note",
+          "reason": "Reason",
+          "description": "Description",
+          "type": "Type",
+          "status": "Status",
+          "priority": "Priority",
+          "action": "Action",
+          "kind": "Kind",
+          "condition": "Condition",
+          "addressLine": "Address",
+          "district": "District",
+          "city": "City",
+          "country": "Country",
+          "timezone": "Timezone",
+          "rentAmount": "Rent",
+          "currency": "Currency",
+          "depositAmount": "Deposit",
+          "duesAmount": "Dues",
+          "summerUtilitiesAmount": "Summer utilities",
+          "winterUtilitiesAmount": "Winter utilities",
+          "areaM2": "Area (m²)",
+          "rooms": "Rooms",
+          "bedrooms": "Bedrooms",
+          "bathrooms": "Bathrooms",
+          "floor": "Floor",
+          "totalFloors": "Total floors",
+          "yearBuilt": "Year built",
+          "availableFrom": "Available from",
+          "features": "Features",
+          "assignedUserId": "Assignee",
+          "assigneeId": "Assignee",
+          "startsAt": "Time",
+          "time": "Time",
+          "format": "Format",
+          "published": "Published",
+          "isPublished": "Booking link published",
+          "requireFormFirst": "Form first",
+          "shared": "Shared with tenants",
+          "slotDurationMin": "Slot length (min)",
+          "bufferMin": "Buffer (min)",
+          "minNoticeHours": "Minimum notice (h)",
+          "maxDaysAhead": "Days ahead",
+          "plan": "Plan",
+          "interval": "Billing",
+          "language": "Language",
+          "tone": "Tone",
+          "signature": "Signature",
+          "legalName": "Legal name",
+          "channel": "Channel",
+          "enabled": "On",
+          "done": "Done",
+          "acknowledged": "Acknowledged",
+          "integration": "Integration",
+          "target": "Page",
+          "url": "Link",
+          "sourceUrl": "Source",
+          "text": "Listing text",
+          "quantity": "Quantity",
+          "label": "Item",
+          "property": "Property",
+          "task": "Task",
+          "assignee": "Assignee",
+          "member": "Member",
+          "invite": "Invite",
+          "conversation": "Conversation",
+          "viewing": "Viewing",
+          "slot": "Time",
+          "contract": "Contract",
+          "template": "Template",
+          "document": "Document",
+          "item": "Item",
+          "person": "Person",
+          "photo": "Photo",
+          "applicant": "Applicant",
+          "stage": "Stage",
+          "missing": "Missing"
+        },
+        "errors": {
+          "forbidden": "Your role does not allow this.",
+          "limit_reached": "Ask stops after 5 changes in one reply. Send another message to continue.",
+          "not_found": "The record could not be found.",
+          "invalid": "Some values were not valid.",
+          "failed": "It did not work. Try again in the product.",
+          "fetch_failed": "The page could not be read. Paste the listing text instead.",
+          "invalid_url": "That link cannot be opened.",
+          "not_a_listing": "That page does not look like a listing.",
+          "slot_taken": "That time is no longer open.",
+          "no_files": "No files are attached in this chat.",
+          "no_calendar": "This property has no viewing calendar yet.",
+          "unknown": "It did not work.",
+          "reconnect": "Reconnect the account in Settings, then try again.",
+          "not_connected": "Connect the account in Settings first.",
+          "send_failed": "The message could not be sent.",
+          "email_failed": "The email could not be sent.",
+          "rate_limited": "Too many attempts. Wait a moment and try again.",
+          "upload_failed": "The file could not be uploaded.",
+          "too_large": "The file is too large.",
+          "unsupported_type": "That file type is not supported.",
+          "last_owner": "The workspace needs at least one owner.",
+          "self_invite": "You cannot invite yourself.",
+          "already_member": "That person is already a member.",
+          "own_address": "You cannot send to your own address.",
+          "no_recipient": "There is no one to send this to.",
+          "no_mailbox": "This conversation has no mailbox connected.",
+          "mailbox_failed": "The mailbox did not accept the change.",
+          "draft_failed": "The draft could not be written.",
+          "disclaimer": "Acknowledge the not-legal-advice note before exporting.",
+          "not_starter": "This needs a paid plan.",
+          "not_entitled": "Your plan does not include this.",
+          "duplicate": "That already exists.",
+          "invalid_transition": "The record cannot move to that state.",
+          "not_active": "That is no longer active.",
+          "contact": "Add an email or a phone number.",
+          "slot": "Pick an open time.",
+          "end_before_start": "The end time has to be after the start."
+        }
+      }
     }
   },
   "inbox": {
@@ -433,8 +1355,16 @@
       "mailbox_failed": "Gmail could not update this email. Try again.",
       "load_older": "Older mail could not be loaded. Try again.",
       "reconnect": "Reconnect Gmail to archive, delete, or star mail.",
-      "invalid": "That mailbox action is not available."
-    }
+      "invalid": "That mailbox action is not available.",
+      "link_failed": "Could not link the listing. Try again."
+    },
+    "link_listing": "Link listing",
+    "link_to": "Link to listing",
+    "open_listing": "Open listing",
+    "unlink_listing": "Unlink listing",
+    "linked": "Linked to the listing",
+    "unlinked": "Listing unlinked",
+    "no_listings": "No listings yet"
   },
   "calendar": {
     "title": "Calendar",
@@ -1071,8 +2001,28 @@
       "SU": "Sun"
     },
     "errors": {
-      "generic": "Could not save. Try again."
-    }
+      "generic": "Could not save. Try again.",
+      "slot_taken": "That time was just taken. Pick another."
+    },
+    "booked_title": "Booked viewings",
+    "booked_hint": "Upcoming viewings on this listing.",
+    "no_bookings": "No viewings booked yet.",
+    "book": "Book",
+    "book_title": "Book a viewing",
+    "book_description": "{when}. The prospect gets the confirmation and a link to cancel. Add an email or a phone number.",
+    "book_name": "Prospect name",
+    "book_email": "Email",
+    "book_phone": "Phone",
+    "book_confirm": "Book viewing",
+    "booked_toast": "Viewing booked",
+    "reschedule": "Reschedule",
+    "reschedule_title": "Reschedule viewing",
+    "reschedule_description": "Move {name} from {when} to another open slot. Everyone is told.",
+    "reschedule_to": "New time",
+    "reschedule_confirm": "Move viewing",
+    "rescheduled_toast": "Viewing moved",
+    "cancel_booking": "Cancel",
+    "cancelled_toast": "Viewing cancelled"
   },
   "booking": {
     "kicker": "Book a viewing",

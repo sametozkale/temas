@@ -4,7 +4,7 @@ import { Container, Display, Eyebrow } from "./primitives";
 import { PlansGrid } from "./plans-grid";
 import { Reveal } from "./reveal";
 
-export async function Plans() {
+export async function Plans({ heading = "h2" }: { heading?: "h1" | "h2" }) {
   const t = await getTranslations("marketing.plans");
 
   return (
@@ -12,7 +12,7 @@ export async function Plans() {
       <Container>
         <Reveal className="mx-auto max-w-2xl text-center">
           <Eyebrow>{t("eyebrow")}</Eyebrow>
-          <Display>{t("title")}</Display>
+          <Display as={heading}>{t("title")}</Display>
         </Reveal>
         <PlansGrid />
         <p className="mt-6 text-center text-xs text-muted-foreground">{t("note")}</p>

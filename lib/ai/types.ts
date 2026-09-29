@@ -18,9 +18,16 @@ export type AskSource = {
   title: string;
 };
 
+/** Server-resolved names of the records an action card points at. */
+export type AskActionTargets = {
+  toolCallId: string;
+  rows: { key: string; value: string; id?: string }[];
+};
+
 export type AskDataParts = {
   source: AskSource;
   thread: { id: string; title?: string };
+  target: AskActionTargets;
 };
 
 export type AskUIMessage = UIMessage<unknown, AskDataParts>;

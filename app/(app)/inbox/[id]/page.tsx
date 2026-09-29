@@ -18,6 +18,7 @@ import {
 import { TONES } from "@/lib/ai/types";
 import { can } from "@/lib/permissions";
 import { listAssignableMembers } from "@/lib/properties/assignment";
+import { listProperties } from "@/lib/properties/queries";
 
 export default async function ConversationPage({
   params,
@@ -34,7 +35,7 @@ export default async function ConversationPage({
   const ctx = await getAppContext();
   const filters = parseInboxListFilters(query, ctx.user.id);
   const hasOlder = await gmailOlderAvailable(ctx.user.id).catch(() => false);
-  const { items, thread, tone, agents } = await withUserContext(
+  const { items, thread, tone, agents, propertyOptions } = await withUserContext(
     ctx.user.id,
     async (tx) => {
       const [prefs] = await tx
@@ -53,7 +54,13 @@ export default async function ConversationPage({
           listConversations(tx, ctx.workspace.id, ctx.user.id, filters),
           listAssignableMembers(tx, ctx.workspace.id),
         ]);
-        return { items, thread: null, tone: prefs?.tone, agents };
+        return {
+          items,
+          thread: null,
+          tone: prefs?.tone,
+          agents,
+          propertyOptions: [],
+        };
       }
       if (!found.conversation.isRead) {
         await tx
@@ -67,16 +74,21 @@ export default async function ConversationPage({
             ),
           );
       }
-      const [items, messages, agents] = await Promise.all([
+      const [items, messages, agents, propertyOptions] = await Promise.all([
         listConversations(tx, ctx.workspace.id, ctx.user.id, filters),
         listMessages(tx, id),
         listAssignableMembers(tx, ctx.workspace.id),
+        listProperties(tx, ctx.workspace.id),
       ]);
       return {
         items,
         thread: { ...found, messages },
         tone: prefs?.tone,
         agents,
+        propertyOptions: propertyOptions.map((p) => ({
+          id: p.id,
+          title: p.title,
+        })),
       };
     },
   );
@@ -126,6 +138,7 @@ export default async function ConversationPage({
         canManage={can(ctx.membership.role, "inbox.write")}
         starred={thread.conversation.starred}
         defaultTone={defaultTone}
+        properties={propertyOptions}
       />
     </InboxSplit>
     </>

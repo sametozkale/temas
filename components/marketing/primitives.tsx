@@ -52,7 +52,7 @@ export function CropPanel({
   children: ReactNode;
   className?: string;
 }) {
-  const mark = "pointer-events-none absolute size-4 border-foreground/70";
+  const mark = "pointer-events-none absolute size-4 border-muted-foreground/55";
   return (
     <div className={cn("relative bg-secondary", className)}>
       <span aria-hidden className={cn(mark, "-top-4 -left-4 border-t border-l")} />

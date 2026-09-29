@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Newsreader } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -23,12 +23,16 @@ const newsreader = Newsreader({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "Temas",
-  description: "AI-native property management for real estate agents",
-  applicationName: "Temas",
-  appleWebApp: { capable: true, title: "Temas", statusBarStyle: "default" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("marketing");
+  return {
+    metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
+    title: { default: "Temas", template: "%s · Temas" },
+    description: t("meta_description"),
+    applicationName: "Temas",
+    appleWebApp: { capable: true, title: "Temas", statusBarStyle: "default" },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [

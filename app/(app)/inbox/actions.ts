@@ -7,6 +7,7 @@ import { generateDraft } from "@/lib/ai/drafts";
 import { TONES } from "@/lib/ai/types";
 import { getAppContext } from "@/lib/auth";
 import { applyMailboxAction, MAILBOX_ACTIONS } from "@/lib/inbox/mailbox";
+import { linkConversationToPropertyCore } from "@/lib/inbox/mutations";
 import { composeSchema, replySchema } from "@/lib/inbox/schema";
 import { sendInboxReply, sendNewEmail } from "@/lib/inbox/send";
 import { loadOlderGmail, refreshGmailInbox, fillGmailConversation } from "@/lib/integrations/gmail/sync";
@@ -225,4 +226,11 @@ export async function draftReply(
     if (message === "not_found") return actionError("not_found");
     return actionError("draft_failed");
   }
+}
+
+export async function linkConversationToProperty(input: {
+  conversationId: string;
+  propertyId: string | null;
+}) {
+  return linkConversationToPropertyCore(await getAppContext(), input);
 }
