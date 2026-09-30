@@ -86,7 +86,7 @@ export function PlansGrid() {
                     key={feature}
                     className="flex items-center gap-2.5 text-[15px]"
                   >
-                    <Icon icon={Tick02Icon} size={16} className="text-brand" />
+                    <Icon icon={Tick02Icon} size={16} className="text-success" />
                     {feature}
                   </li>
                 ))}

@@ -185,6 +185,7 @@
 }
 
 .dark,
+html.dark .theme-preview,
 html.contrast .theme-chrome {
   --background: #191816;
   --foreground: #edede8;
