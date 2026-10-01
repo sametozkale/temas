@@ -68,7 +68,7 @@ export function DatePicker({
           disabled={disabled}
           aria-required={required}
           className={cn(
-            "h-10 w-full justify-between rounded-lg border-input bg-card px-3 font-normal shadow-none hover:bg-card",
+            "h-10 w-full justify-between rounded-lg border-input bg-card px-3 font-normal shadow-none hover:bg-card enabled:hover:border-foreground/30",
             !display && "text-muted-foreground",
             className,
           )}

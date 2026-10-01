@@ -284,17 +284,17 @@ export function PropertyForm({
             </Field>
             <Field>
               <FieldLabel htmlFor="currency">{t("currency")}</FieldLabel>
-                <Controller
-                  control={form.control}
-                  name="currency"
-                  render={({ field }) => (
-                    <CurrencySelect
-                      id="currency"
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    />
-                  )}
-                />
+              <Controller
+                control={form.control}
+                name="currency"
+                render={({ field }) => (
+                  <CurrencySelect
+                    id="currency"
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  />
+                )}
+              />
             </Field>
           </div>
         </CardContent>
@@ -425,7 +425,7 @@ export function PropertyForm({
                         return (
                           <label
                             key={key}
-                            className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm has-data-checked:border-foreground/30"
+                            className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors hover:border-foreground/30 has-data-checked:border-foreground/30"
                           >
                             <Checkbox
                               checked={checked}

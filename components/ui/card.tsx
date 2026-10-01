@@ -12,7 +12,7 @@ function Card({
       data-size={size}
       className={cn(
         // Hairline border, no shadow; hover deepens the border slightly (docs/01 §4)
-        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-lg border bg-card py-(--card-spacing) text-sm text-card-foreground shadow-none transition-colors [--card-spacing:--spacing(4)] hover:border-foreground/10 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-lg *:[img:last-child]:rounded-b-lg",
+        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-lg border bg-card py-(--card-spacing) text-sm text-card-foreground shadow-none transition-colors duration-(--duration-quick) ease-(--ease-smooth-out) [--card-spacing:--spacing(4)] hover:border-foreground/10 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-lg *:[img:last-child]:rounded-b-lg",
         className,
       )}
       {...props}
@@ -61,7 +61,7 @@ function CardAction({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-action"
       className={cn(
-        "col-start-2 row-span-2 row-start-1 justify-self-end self-center group-has-data-[slot=card-description]/card-header:self-start",
+        "col-start-2 row-span-2 row-start-1 self-center justify-self-end group-has-data-[slot=card-description]/card-header:self-start",
         className,
       )}
       {...props}

@@ -528,7 +528,7 @@ function VariantPreview({
           </SelectContent>
         </Select>
       </div>
-      <div className="flex w-full items-center justify-center">
+      <div key={value} className="flex w-full items-center justify-center">
         {selectedOption?.preview}
       </div>
     </div>
@@ -1711,7 +1711,10 @@ export function UiKitCatalog() {
                           value: "on",
                           label: "Default · on",
                           preview: (
-                            <Field orientation="horizontal">
+                            <Field
+                              orientation="horizontal"
+                              className="max-w-sm"
+                            >
                               <FieldLabel htmlFor="kit-switch-on">
                                 Email notifications
                               </FieldLabel>
@@ -1723,7 +1726,10 @@ export function UiKitCatalog() {
                           value: "off",
                           label: "Off",
                           preview: (
-                            <Field orientation="horizontal">
+                            <Field
+                              orientation="horizontal"
+                              className="max-w-sm"
+                            >
                               <FieldLabel htmlFor="kit-switch-off">
                                 WhatsApp reminders
                               </FieldLabel>
@@ -1737,6 +1743,7 @@ export function UiKitCatalog() {
                           preview: (
                             <Field
                               orientation="horizontal"
+                              className="max-w-sm"
                               data-disabled="true"
                             >
                               <FieldLabel htmlFor="kit-switch-disabled">
@@ -1750,7 +1757,10 @@ export function UiKitCatalog() {
                           value: "small",
                           label: "Small size",
                           preview: (
-                            <Field orientation="horizontal">
+                            <Field
+                              orientation="horizontal"
+                              className="max-w-sm"
+                            >
                               <FieldLabel htmlFor="kit-switch-small">
                                 Compact setting
                               </FieldLabel>
@@ -1766,7 +1776,10 @@ export function UiKitCatalog() {
                           value: "large",
                           label: "Large size",
                           preview: (
-                            <Field orientation="horizontal">
+                            <Field
+                              orientation="horizontal"
+                              className="max-w-sm"
+                            >
                               <FieldLabel htmlFor="kit-switch-large">
                                 Extended setting
                               </FieldLabel>

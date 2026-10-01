@@ -204,7 +204,7 @@ export function PropertyCreateWizard({
                         aria-checked={selected}
                         onClick={() => field.onChange(type)}
                         className={cn(
-                          "flex flex-col items-start gap-2 rounded-xl border px-3 py-3 text-left text-[13px] font-medium transition-colors",
+                          "flex flex-col items-start gap-2 rounded-xl border px-3 py-3 text-left text-[13px] font-medium transition-colors hover:border-foreground/30",
                           selected
                             ? "border-foreground/25 bg-muted/60"
                             : "hover:bg-muted/40",
@@ -482,7 +482,7 @@ export function PropertyCreateWizard({
                           return (
                             <label
                               key={key}
-                              className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm has-data-checked:border-foreground/30"
+                              className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors hover:border-foreground/30 has-data-checked:border-foreground/30"
                             >
                               <Checkbox
                                 checked={checked}

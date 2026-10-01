@@ -152,9 +152,14 @@ export function PromptBar({
   const hint = placeholder ?? t("prompt_placeholder");
   const stacked = expanded || files.length > 0;
   const animate =
-    examples.length > 0 && !value && !focused && !disabled && files.length === 0;
+    examples.length > 0 &&
+    !value &&
+    !focused &&
+    !disabled &&
+    files.length === 0;
   const typed = useTypedPlaceholder(examples, animate, hint);
-  const showSuggestions = !value && files.length === 0 && suggestions.length > 0;
+  const showSuggestions =
+    !value && files.length === 0 && suggestions.length > 0;
   const canSend = (Boolean(value.trim()) || files.length > 0) && !disabled;
   const placeholderText =
     animate && typed.length > 0 ? `${typed}|` : animate ? "|" : typed;
@@ -195,9 +200,7 @@ export function PromptBar({
         next.push({
           id: crypto.randomUUID(),
           file,
-          previewUrl: isImageFile(file)
-            ? URL.createObjectURL(file)
-            : undefined,
+          previewUrl: isImageFile(file) ? URL.createObjectURL(file) : undefined,
         });
       }
       return next;
@@ -230,8 +233,7 @@ export function PromptBar({
       1,
       Math.round((measure.scrollHeight - PAD_Y_COLLAPSED) / LINE_PX),
     );
-    const nextExpanded =
-      files.length > 0 || value.includes("\n") || lines > 1;
+    const nextExpanded = files.length > 0 || value.includes("\n") || lines > 1;
     if (nextExpanded !== expanded) {
       setExpanded(nextExpanded);
       return;
@@ -325,6 +327,7 @@ export function PromptBar({
         }}
         className={cn(
           "relative flex w-full flex-col overflow-hidden rounded-[22px] border-[0.5px] bg-card shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-[box-shadow,border-color] duration-200 ease-out outline-none",
+          !disabled && !focused && !dragging && "hover:border-foreground/30",
           dragging
             ? "border-foreground/25"
             : focused
@@ -347,7 +350,7 @@ export function PromptBar({
           }}
         />
         {files.length > 0 ? (
-          <ul className="flex gap-2 overflow-x-auto px-3 pt-3 pb-1 [scrollbar-width:none]">
+          <ul className="flex [scrollbar-width:none] gap-2 overflow-x-auto px-3 pt-3 pb-1">
             {files.map((item) => (
               <li key={item.id}>
                 <AttachmentChip

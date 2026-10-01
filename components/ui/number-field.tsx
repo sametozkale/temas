@@ -40,7 +40,7 @@ function NumberField({
   return (
     <div
       className={cn(
-        "inline-flex h-8 items-center rounded-lg border border-input bg-card focus-within:border-ring focus-within:ring-1 focus-within:ring-ring",
+        "inline-flex h-8 items-center rounded-lg border border-input bg-card transition-colors duration-(--duration-quick) ease-(--ease-smooth-out) focus-within:border-ring focus-within:ring-1 focus-within:ring-ring hover:border-foreground/30",
         disabled && "pointer-events-none opacity-50",
         className,
       )}
@@ -64,7 +64,7 @@ function NumberField({
         step={step}
         disabled={disabled}
         value={Number.isFinite(value) ? value : ""}
-        className="w-8 border-0 bg-transparent text-center text-[13px] tabular-nums outline-none [appearance:textfield] disabled:cursor-not-allowed [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="w-8 [appearance:textfield] border-0 bg-transparent text-center text-[13px] tabular-nums outline-none disabled:cursor-not-allowed [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         onChange={(e) => {
           const raw = e.target.value;
           if (raw === "") return;

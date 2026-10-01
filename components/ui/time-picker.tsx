@@ -46,7 +46,7 @@ export function TimePicker({
           disabled={disabled}
           aria-label={ariaLabel}
           className={cn(
-            "h-8 w-[7.25rem] justify-between rounded-lg border-input bg-card px-3 font-normal shadow-none hover:bg-card",
+            "h-8 w-[7.25rem] justify-between rounded-lg border-input bg-card px-3 font-normal shadow-none hover:bg-card enabled:hover:border-foreground/30",
             className,
           )}
         >

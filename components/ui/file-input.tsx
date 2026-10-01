@@ -43,7 +43,7 @@ const FileInput = React.forwardRef<HTMLInputElement, FileInputProps>(
     return (
       <div
         className={cn(
-          "flex h-10 w-full min-w-0 items-center gap-2 rounded-lg border border-input bg-card px-2 shadow-none transition-colors has-[:focus-visible]:border-ring has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-ring",
+          "flex h-10 w-full min-w-0 items-center gap-2 rounded-lg border border-input bg-card px-2 shadow-none transition-colors duration-(--duration-quick) ease-(--ease-smooth-out) hover:border-foreground/30 has-[:focus-visible]:border-ring has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-ring",
           disabled && "pointer-events-none opacity-50",
           className,
         )}
