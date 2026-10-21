@@ -6,7 +6,7 @@ import path from "node:path";
  * Lighthouse performance gate for public pages (docs/02 §5: 95+).
  * Requires a running app (`npm run dev`) and Chromium.
  */
-const BASE = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3000";
+const BASE = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3001";
 const THRESHOLD = Number(process.env.LIGHTHOUSE_MIN ?? 95);
 
 function seedTokens() {
