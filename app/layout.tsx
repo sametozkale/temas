@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Newsreader } from "next/font/google";
-import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
+import { DeferredToaster } from "@/components/deferred-toaster";
+import { ClientMessages } from "@/components/intl/client-messages";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
@@ -19,7 +19,9 @@ const newsreader = Newsreader({
   variable: "--font-newsreader",
   subsets: ["latin", "latin-ext"],
   weight: ["400", "500"],
-  style: ["normal", "italic"],
+  // Italic is unused in the UI. Preloading it added two large woff2 files
+  // to every document's critical path.
+  style: ["normal"],
   display: "swap",
 });
 
@@ -47,7 +49,6 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getLocale();
-  const messages = await getMessages();
 
   return (
     <html
@@ -57,12 +58,12 @@ export default async function RootLayout({
     >
       <body suppressHydrationWarning>
         <ThemeProvider>
-          <NextIntlClientProvider locale={locale} messages={messages}>
+          <ClientMessages scope="errors">
             <TooltipProvider>
               {children}
-              <Toaster />
+              <DeferredToaster />
             </TooltipProvider>
-          </NextIntlClientProvider>
+          </ClientMessages>
         </ThemeProvider>
       </body>
     </html>

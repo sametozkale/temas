@@ -11,6 +11,21 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["pdfmake", "pdfkit"],
   // Keep the dev badge away from the sidebar user menu.
   devIndicators: { position: "bottom-right" },
+  async headers() {
+    return [
+      {
+        // Decorative marketing art. Repeat visits on a slow link should not
+        // re-download it. Next/image responses are cached separately.
+        source: "/marketing/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800",
+          },
+        ],
+      },
+    ];
+  },
   experimental: {
     // Next 15 defaults dynamic RSC cache to 0s, so every sidebar click
     // re-runs the app layout (auth + chats + unread). 30s matches the

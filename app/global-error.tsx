@@ -1,6 +1,6 @@
 "use client";
 
-import en from "@/messages/en.json";
+import { errorScreen } from "@/messages/error-screen";
 
 /**
  * Last-resort boundary — no app chrome, fonts, or Tailwind. Inline styles
@@ -22,8 +22,7 @@ export default function GlobalError({
           alignItems: "center",
           justifyContent: "center",
           padding: 24,
-          fontFamily:
-            'Inter, ui-sans-serif, system-ui, sans-serif',
+          fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
           background: "#fafaf7",
           color: "#1c1b19",
         }}
@@ -49,7 +48,7 @@ export default function GlobalError({
                 lineHeight: 1.15,
               }}
             >
-              {en.errors.title}
+              {errorScreen.title}
             </h1>
             <p
               style={{
@@ -59,7 +58,7 @@ export default function GlobalError({
                 color: "#6e6c66",
               }}
             >
-              {en.errors.description}
+              {errorScreen.description}
             </p>
           </div>
           <button
@@ -81,7 +80,7 @@ export default function GlobalError({
               cursor: "pointer",
             }}
           >
-            {en.errors.retry}
+            {errorScreen.retry}
           </button>
         </main>
       </body>

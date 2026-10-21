@@ -31,21 +31,25 @@ export default async function PublicBookingPage({
     notFound();
   }
 
-  const slots = await listOpenSlots(db, found.calendar.id, new Date());
   const address = formatAddress(found.property.address);
-  let assignedAgentName: string | null = null;
-  if (found.property.assignedUserId) {
-    const [agent] = await db
-      .select({ fullName: profiles.fullName })
-      .from(profiles)
-      .where(eq(profiles.id, found.property.assignedUserId))
-      .limit(1);
-    assignedAgentName = agent?.fullName ?? null;
-  }
-  const form = found.calendar.formId
-    ? await getFormByProperty(db, found.property.id)
-    : null;
-  const cookieStore = await cookies();
+  // Slots, the host name, the optional form, and the completion cookie do not
+  // depend on each other once the calendar row exists. Run them together so a
+  // slow database does not add three extra waits before the first byte.
+  const [slots, agentRows, form, cookieStore] = await Promise.all([
+    listOpenSlots(db, found.calendar.id, new Date()),
+    found.property.assignedUserId
+      ? db
+          .select({ fullName: profiles.fullName })
+          .from(profiles)
+          .where(eq(profiles.id, found.property.assignedUserId))
+          .limit(1)
+      : Promise.resolve([]),
+    found.calendar.formId
+      ? getFormByProperty(db, found.property.id)
+      : Promise.resolve(null),
+    cookies(),
+  ]);
+  const assignedAgentName = agentRows[0]?.fullName ?? null;
   const formCompleted = Boolean(
     form && readFormCompletionCookie(cookieStore, form.id),
   );
