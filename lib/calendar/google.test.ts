@@ -26,6 +26,20 @@ describe("hasCalendarScope", () => {
     ).toBe(false);
     expect(hasCalendarScope(undefined)).toBe(false);
   });
+
+  it("does not treat calendar.events as permission to list calendars", () => {
+    expect(
+      hasCalendarScope("https://www.googleapis.com/auth/calendar.events"),
+    ).toBe(false);
+    expect(
+      hasCalendarScope(
+        "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
+      ),
+    ).toBe(true);
+    expect(hasCalendarScope("https://www.googleapis.com/auth/calendar")).toBe(
+      true,
+    );
+  });
 });
 
 describe("resolveGoogleEventColor", () => {
@@ -40,7 +54,9 @@ describe("resolveGoogleEventColor", () => {
       color: "#e1e1e1",
       swatchId: "8",
     });
-    expect(resolveGoogleEventColor(null, null, labels, colors).color).toBeNull();
+    expect(
+      resolveGoogleEventColor(null, null, labels, colors).color,
+    ).toBeNull();
   });
 });
 
@@ -69,6 +85,12 @@ describe("googleIncludesCalendar", () => {
         scope: "https://www.googleapis.com/auth/calendar.readonly",
       }),
     ).toBe(true);
+    expect(
+      googleIncludesCalendar({
+        mode: "oauth",
+        scope: "https://www.googleapis.com/auth/calendar.events",
+      }),
+    ).toBe(false);
   });
 });
 

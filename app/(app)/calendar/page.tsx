@@ -121,14 +121,17 @@ export default async function CalendarPage({
     new Date(addMonths(rangeStart, 1).getTime() + 7 * 24 * 60 * 60_000),
     ctx.workspace.timezone,
     (value) => timeLabelInZone(value, ctx.workspace.timezone),
-  ).catch(() => ({
-    status: "off" as const,
-    calendars: [],
-    events: [],
-    colors: [],
-    labels: {},
-    canColor: false,
-  }));
+  ).catch((error: unknown) => {
+    console.error("[calendar] google overlay failed", error);
+    return {
+      status: "reconnect" as const,
+      calendars: [],
+      events: [],
+      colors: [],
+      labels: {},
+      canColor: false,
+    };
+  });
   const personal =
     !propertyId && (!assignedUserId || assignedUserId === ctx.user.id);
   const googleEvents = personal ? overlay.events : [];

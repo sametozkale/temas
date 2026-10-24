@@ -7,7 +7,10 @@ import { publicAppUrl } from "@/lib/app-url";
 import { getMembership, getUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { integrations } from "@/lib/db/schema";
-import { exchangeCode } from "@/lib/integrations/gmail/oauth";
+import {
+  exchangeCode,
+  googleGrantedScope,
+} from "@/lib/integrations/gmail/oauth";
 import {
   gmailProfile,
   type GmailCredentials,
@@ -72,7 +75,7 @@ export async function GET(request: NextRequest) {
     refreshToken: tokens.refresh_token,
     accessToken: tokens.access_token,
     expiry: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
-    scope: tokens.scope,
+    scope: googleGrantedScope(tokens.scope),
   };
   if (!credentials.refreshToken || !credentials.selectedCalendarIds) {
     const [existing] = await db
@@ -83,7 +86,8 @@ export async function GET(request: NextRequest) {
       )
       .limit(1);
     const prior = existing?.credentials as GmailCredentials | undefined;
-    if (!credentials.refreshToken) credentials.refreshToken = prior?.refreshToken;
+    if (!credentials.refreshToken)
+      credentials.refreshToken = prior?.refreshToken;
     if (prior?.selectedCalendarIds) {
       credentials.selectedCalendarIds = prior.selectedCalendarIds;
     }

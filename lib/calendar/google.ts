@@ -100,18 +100,20 @@ export async function loadGoogleOverlay(
   if (!row) return empty;
   const credentials = asGmailCredentials(row.credentials);
   if (credentials.mode === "dev" || !credentials.refreshToken) return empty;
-  if (!hasCalendarScope(credentials.scope)) {
-    return { status: "reconnect", calendars: [], events: [], colors: [], labels: {}, canColor: false };
+  // A missing scope means the token response omitted it (granted == requested).
+  // `calendar.events` alone cannot list calendars, so that grant must reconnect.
+  if (credentials.scope?.trim() && !hasCalendarScope(credentials.scope)) {
+    return reconnectOverlay();
   }
 
   let calendars: GoogleCalendar[];
   try {
     calendars = await listGoogleCalendars(credentials);
   } catch (error) {
-    if (error instanceof GoogleCalendarForbidden) {
-      return { status: "reconnect", calendars: [], events: [], colors: [], labels: {}, canColor: false };
+    if (!(error instanceof GoogleCalendarForbidden)) {
+      console.error("[calendar] list failed", error);
     }
-    return empty;
+    return reconnectOverlay();
   }
 
   const selected = resolveSelection(calendars, credentials.selectedCalendarIds);
@@ -125,9 +127,11 @@ export async function loadGoogleOverlay(
   try {
     eventColors = await listGoogleColors(credentials);
   } catch (error) {
-    if (error instanceof GoogleCalendarForbidden) {
-      return { status: "reconnect", calendars: [], events: [], colors: [], labels: {}, canColor: false };
+    // Colours are optional. A 403 here used to discard the calendar list.
+    if (!(error instanceof GoogleCalendarForbidden)) {
+      console.error("[calendar] colors failed", error);
     }
+    eventColors = new Map();
   }
   const events: GoogleDayEvent[] = [];
   const labels: Record<string, GoogleEventSwatch[]> = {};
@@ -136,12 +140,14 @@ export async function loadGoogleOverlay(
     try {
       labelList = await listCalendarLabels(credentials, calendar.id);
     } catch (error) {
-      if (error instanceof GoogleCalendarForbidden) {
-        return { status: "reconnect", calendars: [], events: [], colors: [], labels: {}, canColor: false };
+      if (!(error instanceof GoogleCalendarForbidden)) {
+        console.error("[calendar] labels failed", error);
       }
     }
     labels[calendar.id] = labelList;
-    const labelColors = new Map(labelList.map((label) => [label.id, label.color]));
+    const labelColors = new Map(
+      labelList.map((label) => [label.id, label.color]),
+    );
     let rows;
     try {
       rows = await listGoogleEvents(
@@ -153,8 +159,9 @@ export async function loadGoogleOverlay(
         labelColors,
       );
     } catch (error) {
-      if (error instanceof GoogleCalendarForbidden) {
-        return { status: "reconnect", calendars: [], events: [], colors: [], labels: {}, canColor: false };
+      // One calendar the token cannot read must not hide the rest of the list.
+      if (!(error instanceof GoogleCalendarForbidden)) {
+        console.error("[calendar] events failed", error);
       }
       continue;
     }
@@ -229,6 +236,17 @@ export async function loadGoogleOverlay(
   };
 }
 
+function reconnectOverlay(): GoogleOverlay {
+  return {
+    status: "reconnect",
+    calendars: [],
+    events: [],
+    colors: [],
+    labels: {},
+    canColor: false,
+  };
+}
+
 function resolveSelection(
   calendars: GoogleCalendar[],
   saved: string[] | undefined,
@@ -236,7 +254,9 @@ function resolveSelection(
   const ids = new Set(calendars.map((calendar) => calendar.id));
   if (!saved) {
     const primary = calendars.find((calendar) => calendar.primary);
-    return primary ? [primary.id] : calendars.slice(0, 1).map((calendar) => calendar.id);
+    return primary
+      ? [primary.id]
+      : calendars.slice(0, 1).map((calendar) => calendar.id);
   }
   return saved.filter((id) => ids.has(id));
 }

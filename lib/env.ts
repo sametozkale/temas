@@ -63,6 +63,18 @@ export function env(): ServerEnv {
     ...(duringNextBuild() && !process.env.DATABASE_URL
       ? { DATABASE_URL: "postgresql://127.0.0.1/temas-build" }
       : null),
+    // Unit tests call env() without a local Supabase stack. These defaults are
+    // not written back to process.env, so DB suites still skip without DATABASE_URL.
+    ...(process.env.NODE_ENV === "test"
+      ? {
+          DATABASE_URL:
+            process.env.DATABASE_URL ?? "postgresql://127.0.0.1/temas-test",
+          NEXT_PUBLIC_SUPABASE_URL:
+            process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321",
+          NEXT_PUBLIC_SUPABASE_ANON_KEY:
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "test-anon-key",
+        }
+      : null),
   });
   if (!parsed.success) {
     const issues = parsed.error.issues
