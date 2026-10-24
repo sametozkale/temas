@@ -2,13 +2,25 @@ import { configuredAppUrl } from "@/lib/app-url";
 import { env, integrations } from "@/lib/env";
 import { secureToken } from "@/lib/slug";
 
-const SCOPES = [
+export const GOOGLE_OAUTH_SCOPES = [
   "https://www.googleapis.com/auth/gmail.readonly",
   "https://www.googleapis.com/auth/gmail.send",
   "https://www.googleapis.com/auth/gmail.modify",
   "https://www.googleapis.com/auth/calendar.readonly",
   "https://www.googleapis.com/auth/calendar.events",
 ].join(" ");
+
+const SCOPES = GOOGLE_OAUTH_SCOPES;
+
+/**
+ * Google omits `scope` on the token response when it matches the request
+ * (RFC 6749). Missing must not be stored as "no calendar access".
+ * A present value is the granted set, including a partial consent.
+ */
+export function googleGrantedScope(scope: string | undefined) {
+  const granted = scope?.trim();
+  return granted ? granted : GOOGLE_OAUTH_SCOPES;
+}
 
 export function gmailRedirectUri() {
   return new URL(

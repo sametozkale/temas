@@ -1,4 +1,7 @@
-import { ensureAccessToken, type GmailCredentials } from "@/lib/integrations/gmail/client";
+import {
+  ensureAccessToken,
+  type GmailCredentials,
+} from "@/lib/integrations/gmail/client";
 import {
   readGoogleEventDetails,
   type GoogleEventGuest,
@@ -61,7 +64,8 @@ async function calendarFetch(
       ...(init?.body ? { "Content-Type": "application/json" } : {}),
     },
   });
-  if (res.status === 403 || res.status === 401) throw new GoogleCalendarForbidden();
+  if (res.status === 403 || res.status === 401)
+    throw new GoogleCalendarForbidden();
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`google_calendar_${res.status}:${text.slice(0, 160)}`);
@@ -69,9 +73,24 @@ async function calendarFetch(
   return res.json();
 }
 
+/**
+ * Scopes that can call `calendarList.list`. `calendar.events` matches a
+ * substring check for "/auth/calendar" but Google rejects the list call with
+ * 403, so the account looks like it has no calendars.
+ */
+const CALENDAR_LIST_SCOPES = new Set([
+  "calendar",
+  "calendar.readonly",
+  "calendar.calendarlist",
+  "calendar.calendarlist.readonly",
+]);
+
 export function hasCalendarScope(scope: string | undefined) {
   if (!scope) return false;
-  return scope.split(/\s+/).some((item) => item.includes("/auth/calendar"));
+  return scope.split(/\s+/).some((item) => {
+    const name = item.split("/").pop();
+    return Boolean(name && CALENDAR_LIST_SCOPES.has(name));
+  });
 }
 
 /** `calendar.events` can recolor an event. Read-only calendar scopes cannot. */
@@ -152,7 +171,11 @@ export async function listCalendarLabels(
       `/calendars/${encodeURIComponent(calendarId)}`,
     )) as {
       labelProperties?: {
-        eventLabels?: { id?: string; backgroundColor?: string; name?: string }[];
+        eventLabels?: {
+          id?: string;
+          backgroundColor?: string;
+          name?: string;
+        }[];
       };
     };
     const labels: GoogleEventLabel[] = [];
@@ -172,34 +195,81 @@ export async function listCalendarLabels(
   }
 }
 
-export async function listGoogleCalendars(credentials: GmailCredentials) {
-  const data = (await calendarFetch(
-    credentials,
-    "/users/me/calendarList?minAccessRole=reader",
-  )) as {
-    items?: {
-      id?: string;
-      summary?: string;
-      primary?: boolean;
-      backgroundColor?: string;
-      accessRole?: string;
-    }[];
-  };
-  return (data.items ?? [])
-    .filter((item): item is {
-      id: string;
-      summary?: string;
-      primary?: boolean;
-      backgroundColor?: string;
-      accessRole?: string;
-    } => Boolean(item.id))
-    .map((item) => ({
+export type GoogleCalendarListEntry = {
+  id?: string;
+  summary?: string;
+  summaryOverride?: string;
+  primary?: boolean;
+  backgroundColor?: string;
+  accessRole?: string;
+  hidden?: boolean;
+  /** Google Calendar UI checkbox. Omitted means false. Not a reason to drop the row. */
+  selected?: boolean;
+  deleted?: boolean;
+};
+
+const CALENDAR_LIST_MAX_PAGES = 20;
+
+/**
+ * One page of `calendarList.list`.
+ *
+ * `minAccessRole` is intentionally omitted. Google applies it after cutting
+ * the page, so the first response can be `items: []` with a `nextPageToken`
+ * while the primary calendar sits on the next page. `showHidden` defaults to
+ * false and does the same to calendars the user hid in Google Calendar.
+ * `showDeleted` stays false so removed entries are not calendars to pick.
+ */
+export function calendarListPath(pageToken?: string) {
+  const query = new URLSearchParams({
+    maxResults: "250",
+    showHidden: "true",
+    showDeleted: "false",
+  });
+  if (pageToken) query.set("pageToken", pageToken);
+  return `/users/me/calendarList?${query.toString()}`;
+}
+
+export function readGoogleCalendarList(items: GoogleCalendarListEntry[]) {
+  const seen = new Set<string>();
+  const calendars: GoogleCalendar[] = [];
+  for (const item of items) {
+    if (!item.id || item.deleted === true || seen.has(item.id)) continue;
+    seen.add(item.id);
+    const name =
+      item.summaryOverride?.trim() || item.summary?.trim() || item.id;
+    calendars.push({
       id: item.id,
-      name: item.summary?.trim() || item.id,
+      name,
       primary: item.primary === true,
       color: safeGoogleColor(item.backgroundColor),
-      writable: item.accessRole === "owner" || item.accessRole === "writer",
-    }));
+      writable:
+        item.accessRole === "owner" ||
+        item.accessRole === "writer" ||
+        item.accessRole === "writerWithoutPrivateAccess",
+    });
+  }
+  return calendars;
+}
+
+export async function listGoogleCalendars(credentials: GmailCredentials) {
+  const items: GoogleCalendarListEntry[] = [];
+  let pageToken: string | undefined;
+  const seenTokens = new Set<string>();
+  for (let page = 0; page < CALENDAR_LIST_MAX_PAGES; page += 1) {
+    const data = (await calendarFetch(
+      credentials,
+      calendarListPath(pageToken),
+    )) as {
+      items?: GoogleCalendarListEntry[];
+      nextPageToken?: string;
+    };
+    items.push(...(data.items ?? []));
+    const next = data.nextPageToken;
+    if (!next || seenTokens.has(next)) break;
+    seenTokens.add(next);
+    pageToken = next;
+  }
+  return readGoogleCalendarList(items);
 }
 
 export async function listGoogleEvents(
@@ -286,14 +356,17 @@ export async function patchGoogleEventColor(
   eventId: string,
   swatchId: string,
 ) {
-  const label = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    swatchId,
-  );
+  const label =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      swatchId,
+    );
   const path = `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}${
     label ? "?eventLabelVersion=1" : ""
   }`;
   await calendarFetch(credentials, path, {
     method: "PATCH",
-    body: JSON.stringify(label ? { eventLabelId: swatchId } : { colorId: swatchId }),
+    body: JSON.stringify(
+      label ? { eventLabelId: swatchId } : { colorId: swatchId },
+    ),
   });
 }
