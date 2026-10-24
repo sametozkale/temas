@@ -3,7 +3,7 @@ import { config as loadEnv } from "dotenv";
 
 loadEnv({ path: [".env.local", ".env"] });
 
-const port = Number(process.env.E2E_PORT ?? 3000);
+const port = Number(process.env.E2E_PORT ?? 3001);
 const baseURL =
   process.env.E2E_BASE_URL ?? process.env.APP_URL ?? `http://localhost:${port}`;
 

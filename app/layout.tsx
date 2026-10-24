@@ -28,7 +28,7 @@ const newsreader = Newsreader({
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("marketing");
   return {
-    metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
+    metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3001"),
     title: { default: "Temas", template: "%s · Temas" },
     description: t("meta_description"),
     applicationName: "Temas",
