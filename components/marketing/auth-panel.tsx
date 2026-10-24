@@ -31,7 +31,6 @@ export async function AuthPanel() {
             width={900}
             height={900}
             sizes="(min-width: 1280px) 440px, 360px"
-            priority
             className="aspect-[4/3] w-full object-cover"
           />
         </div>

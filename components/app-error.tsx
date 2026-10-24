@@ -4,7 +4,7 @@ import { NextIntlClientProvider, useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import en from "@/messages/en.json";
+import { errorScreen } from "@/messages/error-screen";
 
 export function AppError({
   reset,
@@ -14,7 +14,7 @@ export function AppError({
   className?: string;
 }) {
   return (
-    <NextIntlClientProvider locale="en" messages={en}>
+    <NextIntlClientProvider locale="en" messages={{ errors: errorScreen }}>
       <AppErrorBody reset={reset} className={className} />
     </NextIntlClientProvider>
   );

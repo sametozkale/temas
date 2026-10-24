@@ -935,3 +935,33 @@ html.contrast [data-slot="sheet-overlay"] {
     translate: var(--toggle-travel) 0 !important;
   }
 }
+
+/* Marketing reveal. Visible immediately; a short slide plays as the block
+   enters the viewport in browsers that support scroll-driven animations.
+   Opacity stays at 1 so a slow script never leaves the page blank. */
+.reveal {
+  opacity: 1;
+}
+
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: reveal-rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 30%;
+  }
+}
+
+@keyframes reveal-rise {
+  from {
+    translate: 0 1rem;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    animation: none;
+  }
+}
